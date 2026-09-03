@@ -1,6 +1,5 @@
+import { by } from '@locators/helpers';
 import type { Page } from '@playwright/test';
-
-import { by } from '../../../locators/helpers';
 
 /** Locators used only by the home scenario. */
 export function homeLocators(page: Page) {

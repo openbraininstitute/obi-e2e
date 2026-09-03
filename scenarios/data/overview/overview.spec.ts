@@ -1,6 +1,7 @@
-import { routes } from '../../../fixtures/routes';
-import { expect, test } from '../../../fixtures/test';
-import { dataPage } from '../../../locators/data';
+import { routes } from '@fixtures/routes';
+import { PRIVATE_READONLY } from '@fixtures/tags';
+import { expect, test } from '@fixtures/test';
+import { dataPage } from '@locators/data';
 
 // Scenario: scenarios/data-page/scenario.md
 test.describe('Data page', () => {
@@ -16,7 +17,7 @@ test.describe('Data page', () => {
 
   test(
     'shows the experimental data types and their counts',
-    { tag: ['@private', '@readonly'] },
+    { tag: PRIVATE_READONLY },
     async ({ page }) => {
       const data = dataPage(page);
 
@@ -35,7 +36,7 @@ test.describe('Data page', () => {
     }
   );
 
-  test('switches to the model data types', { tag: ['@private', '@readonly'] }, async ({ page }) => {
+  test('switches to the model data types', { tag: PRIVATE_READONLY }, async ({ page }) => {
     const data = dataPage(page);
 
     await data.section('models').click();
@@ -46,7 +47,7 @@ test.describe('Data page', () => {
 
   test(
     "switches to the project's own data",
-    { tag: ['@private', '@readonly'] },
+    { tag: PRIVATE_READONLY },
     async ({ page, workspace }) => {
       const data = dataPage(page);
 

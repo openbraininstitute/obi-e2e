@@ -64,11 +64,22 @@ being written twice.
 Public pages carry `@public` and run signed out, because that is what a visitor
 actually sees. Checking them while signed in would test a different page.
 
+Tags are written once in `fixtures/tags.ts` and imported, so a typo cannot
+silently stop a test from running.
+
 ```ts
-test('opens the Simulate workflows', { tag: ['@private'] }, async ({ page }) => {
+import { PRIVATE_READONLY } from '@fixtures/tags';
+
+test('opens the Simulate workflows', { tag: PRIVATE_READONLY }, async ({ page }) => {
   // ...
 });
 ```
+
+| Constant                                                     | Tags                         |
+| ------------------------------------------------------------ | ---------------------------- |
+| `PUBLIC`, `PRIVATE`, `ONBOARDING`                            | the context on its own       |
+| `PUBLIC_READONLY`, `PRIVATE_READONLY`, `ONBOARDING_READONLY` | context plus `@readonly`     |
+| `PUBLIC_SMOKE`, `PRIVATE_SMOKE`                              | also runs against production |
 
 A scenario that should hold in more than one context carries more than one tag,
 or extracts its steps into a function that each tagged test calls.

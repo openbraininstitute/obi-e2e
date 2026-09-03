@@ -1,7 +1,6 @@
+import { checkAllServices, formatStatusTable } from '@api/health';
+import { services } from '@api/services';
 import { expect, test as setup } from '@playwright/test';
-
-import { checkAllServices, formatStatusTable } from '../api/health';
-import { services } from '../api/services';
 
 /**
  * Runs before every other project. A service that is down produces one clear

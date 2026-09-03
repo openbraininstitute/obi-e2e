@@ -1,6 +1,6 @@
+import { virtualLabApiUrl } from '@fixtures/env';
 import { Result } from 'better-result';
 
-import { virtualLabApiUrl } from '../fixtures/env';
 import { describe, type RequestError } from './errors';
 import { requestJson } from './http';
 

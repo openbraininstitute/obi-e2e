@@ -1,6 +1,7 @@
-import { routes } from '../../../fixtures/routes';
-import { expect, test } from '../../../fixtures/test';
-import { entityListing } from '../../../locators/listing';
+import { routes } from '@fixtures/routes';
+import { PRIVATE_READONLY } from '@fixtures/tags';
+import { expect, test } from '@fixtures/test';
+import { entityListing } from '@locators/listing';
 
 // Scenario: scenarios/data/me-model-circuit-simulation/scenario.md
 // Full column names, units included, because several share a prefix:
@@ -50,7 +51,7 @@ test.describe('Single neuron listing', () => {
     await expect(entityListing(page).table).toBeVisible();
   });
 
-  test('shows its own columns', { tag: ['@private', '@readonly'] }, async ({ page }) => {
+  test('shows its own columns', { tag: PRIVATE_READONLY }, async ({ page }) => {
     const listing = entityListing(page);
 
     for (const column of COLUMNS) {
@@ -58,7 +59,7 @@ test.describe('Single neuron listing', () => {
     }
   });
 
-  test('offers exactly these columns', { tag: ['@private', '@readonly'] }, async ({ page }) => {
+  test('offers exactly these columns', { tag: PRIVATE_READONLY }, async ({ page }) => {
     const listing = entityListing(page);
 
     await listing.columns.click();
@@ -75,7 +76,7 @@ test.describe('Single neuron listing', () => {
     await expect(listing.columnToggles).toHaveCount(TOGGLE_COUNT);
   });
 
-  test('shows results', { tag: ['@private', '@readonly'] }, async ({ page }) => {
+  test('shows results', { tag: PRIVATE_READONLY }, async ({ page }) => {
     const listing = entityListing(page);
 
     await expect(listing.resultCount).toBeVisible();
@@ -83,19 +84,15 @@ test.describe('Single neuron listing', () => {
     await expect(listing.cells.first()).toBeVisible();
   });
 
-  test(
-    'search narrows and clearing restores',
-    { tag: ['@private', '@readonly'] },
-    async ({ page }) => {
-      const listing = entityListing(page);
-      await expect(listing.cells.first()).toBeVisible();
-      const before = await listing.resultCount.innerText();
+  test('search narrows and clearing restores', { tag: PRIVATE_READONLY }, async ({ page }) => {
+    const listing = entityListing(page);
+    await expect(listing.cells.first()).toBeVisible();
+    const before = await listing.resultCount.innerText();
 
-      await listing.search.fill('zzzz-no-such-entity');
-      await expect(listing.resultCount).toHaveText(/^0 results/);
+    await listing.search.fill('zzzz-no-such-entity');
+    await expect(listing.resultCount).toHaveText(/^0 results/);
 
-      await listing.search.clear();
-      await expect(listing.resultCount).toHaveText(before);
-    }
-  );
+    await listing.search.clear();
+    await expect(listing.resultCount).toHaveText(before);
+  });
 });

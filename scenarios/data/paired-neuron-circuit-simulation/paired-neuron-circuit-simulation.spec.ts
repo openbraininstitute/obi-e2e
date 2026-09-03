@@ -1,6 +1,7 @@
-import { routes } from '../../../fixtures/routes';
-import { expect, test } from '../../../fixtures/test';
-import { entityListing } from '../../../locators/listing';
+import { routes } from '@fixtures/routes';
+import { PRIVATE_READONLY } from '@fixtures/tags';
+import { expect, test } from '@fixtures/test';
+import { entityListing } from '@locators/listing';
 
 // Scenario: scenarios/data/paired-neuron-circuit-simulation/scenario.md
 // Full column names, units included, because several share a prefix:
@@ -48,7 +49,7 @@ test.describe('Paired neurons listing', () => {
     await expect(entityListing(page).table).toBeVisible();
   });
 
-  test('shows its own columns', { tag: ['@private', '@readonly'] }, async ({ page }) => {
+  test('shows its own columns', { tag: PRIVATE_READONLY }, async ({ page }) => {
     const listing = entityListing(page);
 
     for (const column of COLUMNS) {
@@ -56,7 +57,7 @@ test.describe('Paired neurons listing', () => {
     }
   });
 
-  test('offers exactly these columns', { tag: ['@private', '@readonly'] }, async ({ page }) => {
+  test('offers exactly these columns', { tag: PRIVATE_READONLY }, async ({ page }) => {
     const listing = entityListing(page);
 
     await listing.columns.click();
@@ -73,7 +74,7 @@ test.describe('Paired neurons listing', () => {
     await expect(listing.columnToggles).toHaveCount(TOGGLE_COUNT);
   });
 
-  test('shows an empty listing', { tag: ['@private', '@readonly'] }, async ({ page }) => {
+  test('shows an empty listing', { tag: PRIVATE_READONLY }, async ({ page }) => {
     const listing = entityListing(page);
 
     // Nothing of this type exists yet. The listing still has to build, so this

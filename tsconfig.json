@@ -16,8 +16,9 @@
     "skipLibCheck": true,
     "noEmit": true,
     "paths": {
-      "@pages/*": ["./pages/*"],
+      "@/*": ["./*"],
       "@fixtures/*": ["./fixtures/*"],
+      "@locators/*": ["./locators/*"],
       "@api/*": ["./api/*"]
     }
   },

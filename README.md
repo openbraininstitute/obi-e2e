@@ -122,6 +122,25 @@ versions. A service that is down fails there, with its name, instead of showing
 up as a wall of broken tests. The launch system is skipped because it answers
 only inside the VPC. See `api/README.md`.
 
+## Imports and shared values
+
+Modules are imported by alias, not by counting `../` segments:
+
+| Alias         | Points at           |
+| ------------- | ------------------- |
+| `@/*`         | the repository root |
+| `@fixtures/*` | `fixtures/`         |
+| `@locators/*` | `locators/`         |
+| `@api/*`      | `api/`              |
+
+`fixtures/entity-types.ts` mirrors the application's `ExtendedEntitiesTypeDict`
+and is the single source of truth for entity types. Listing slugs are derived
+from it with `kebabCase` from `es-toolkit`, the same way the application builds
+them, so a slug is never written down twice.
+
+`fixtures/tags.ts` holds the tag combinations. Import one rather than retyping
+the strings: a typo in a tag means the test never runs and nothing warns you.
+
 ## Writing a test
 
 1. Write the scenario in `specs/`. See `specs/README.md` for the format.

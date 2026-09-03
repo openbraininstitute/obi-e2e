@@ -1,20 +1,18 @@
-import { expect, test } from '../../../fixtures/test';
-import { navigation } from '../../../locators/navigation';
+import { PUBLIC_SMOKE } from '@fixtures/tags';
+import { expect, test } from '@fixtures/test';
+import { navigation } from '@locators/navigation';
+
 import { homeLocators } from './locators';
 
 test.describe('Home page', () => {
-  test(
-    'shows the landing page and a way to log in',
-    { tag: ['@public', '@smoke', '@readonly'] },
-    async ({ page }) => {
-      const home = homeLocators(page);
-      const nav = navigation(page);
+  test('shows the landing page and a way to log in', { tag: PUBLIC_SMOKE }, async ({ page }) => {
+    const home = homeLocators(page);
+    const nav = navigation(page);
 
-      await page.goto('/');
+    await page.goto('/');
 
-      await expect(home.heroHeading).toBeVisible();
-      await expect(nav.login).toBeVisible();
-      await expect(nav.virtualLabs).toBeVisible();
-    }
-  );
+    await expect(home.heroHeading).toBeVisible();
+    await expect(nav.login).toBeVisible();
+    await expect(nav.virtualLabs).toBeVisible();
+  });
 });

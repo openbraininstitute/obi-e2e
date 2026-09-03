@@ -1,42 +1,53 @@
+import {
+  entitySlug,
+  ExtendedEntitiesTypeDict as Type,
+  type TExtendedEntitiesTypeDict,
+} from './entity-types';
+
 /**
- * Every data type the Data page offers, per section.
+ * The data types each section of the Data page offers, in the order the
+ * application lists them.
  *
- * Read from the running application rather than copied from the product code,
- * so a type disappearing from the UI fails a test instead of quietly matching a
- * stale constant. `slug` is the last segment of the listing URL.
+ * Only the entity type is written down. The label comes from the UI and the
+ * slug is derived, so a rename in the application shows up as a failing test
+ * rather than as two lists quietly disagreeing.
  */
 export type DataSectionName = 'experimental' | 'models' | 'simulations';
 
-export type DataType = { label: string; slug: string };
+export type DataType = { type: TExtendedEntitiesTypeDict; label: string; slug: string };
+
+function dataType(type: TExtendedEntitiesTypeDict, label: string): DataType {
+  return { type, label, slug: entitySlug(type) };
+}
 
 export const DATA_TYPES: Record<DataSectionName, DataType[]> = {
   experimental: [
-    { label: 'Morphology', slug: 'cell-morphology' },
-    { label: 'Single cell electrophysiology', slug: 'electrical-cell-recording' },
-    { label: 'Ion channel electrophysiology', slug: 'ion-channel-recording' },
-    { label: 'Neuron density', slug: 'experimental-neuron-density' },
-    { label: 'Bouton density', slug: 'experimental-bouton-density' },
-    { label: 'Synapse per connection', slug: 'experimental-synapses-per-connection' },
-    { label: 'EM mesh', slug: 'em-cell-mesh' },
+    dataType(Type.CellMorphology, 'Morphology'),
+    dataType(Type.ElectricalCellRecording, 'Single cell electrophysiology'),
+    dataType(Type.IonChannelRecording, 'Ion channel electrophysiology'),
+    dataType(Type.ExperimentalNeuronDensity, 'Neuron density'),
+    dataType(Type.ExperimentalBoutonDensity, 'Bouton density'),
+    dataType(Type.ExperimentalSynapsesPerConnection, 'Synapse per connection'),
+    dataType(Type.EMCellMesh, 'EM mesh'),
   ],
   models: [
-    { label: 'Ion channel model', slug: 'ion-channel-model' },
-    { label: 'Synthesized morphology', slug: 'synthesized-cell-morphology' },
-    { label: 'E-model', slug: 'emodel' },
-    { label: 'ME-model', slug: 'memodel' },
-    { label: 'Synaptome', slug: 'single-neuron-circuit' },
-    { label: 'Circuit', slug: 'circuit' },
-    { label: 'Synaptome (legacy)', slug: 'single-neuron-synaptome' },
+    dataType(Type.IonChannelModel, 'Ion channel model'),
+    dataType(Type.SynthesizedCellMorphology, 'Synthesized morphology'),
+    dataType(Type.Emodel, 'E-model'),
+    dataType(Type.Memodel, 'ME-model'),
+    dataType(Type.SingleNeuronCircuit, 'Synaptome'),
+    dataType(Type.Circuit, 'Circuit'),
+    dataType(Type.SingleNeuronSynaptome, 'Synaptome (legacy)'),
   ],
   simulations: [
-    { label: 'Ion channel', slug: 'ion-channel-model-simulation' },
-    { label: 'Single neuron', slug: 'me-model-circuit-simulation' },
-    { label: 'Synaptome', slug: 'single-neuron-circuit-simulation' },
-    { label: 'Paired neurons', slug: 'paired-neuron-circuit-simulation' },
-    { label: 'Small microcircuit', slug: 'small-microcircuit-simulation' },
-    { label: 'Microcircuit', slug: 'microcircuit-simulation' },
-    { label: 'Whole brain circuit', slug: 'whole-brain-circuit-simulation' },
-    { label: 'Single neuron (legacy)', slug: 'single-neuron-simulation' },
-    { label: 'Synaptome (legacy)', slug: 'single-neuron-synaptome-simulation' },
+    dataType(Type.IonChannelModelSimulation, 'Ion channel'),
+    dataType(Type.MemodelCircuitSimulation, 'Single neuron'),
+    dataType(Type.SingleNeuronCircuitSimulation, 'Synaptome'),
+    dataType(Type.PairedNeuronCircuitSimulation, 'Paired neurons'),
+    dataType(Type.SmallMicrocircuitSimulation, 'Small microcircuit'),
+    dataType(Type.MicrocircuitSimulation, 'Microcircuit'),
+    dataType(Type.WholeBrainCircuitSimulation, 'Whole brain circuit'),
+    dataType(Type.SingleNeuronSimulation, 'Single neuron (legacy)'),
+    dataType(Type.SingleNeuronSynaptomeSimulation, 'Synaptome (legacy)'),
   ],
 };

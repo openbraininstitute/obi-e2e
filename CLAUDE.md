@@ -15,7 +15,10 @@ bun run test    # or a single spec while iterating
 
 ## Conventions
 
-- Import `test` and `expect` from `fixtures/test.ts`, never from `@playwright/test`.
+- Import `test` and `expect` from `@fixtures/test`, never from `@playwright/test`.
+- Import by alias (`@/`, `@fixtures/`, `@locators/`, `@api/`), never `../../..`.
+- Tags come from `@fixtures/tags`. Entity types come from `@fixtures/entity-types`,
+  and listing slugs are derived from them with `kebabCase`.
 - Locators: `getByRole`, `getByLabel`, `getByText`. Never CSS classes.
   `first()` / `nth()` need a comment explaining why.
 - Locators live in the scenario's own `locators.ts`. Move one to the root

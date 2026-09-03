@@ -1,6 +1,7 @@
-import { routes } from '../../../fixtures/routes';
-import { expect, test } from '../../../fixtures/test';
-import { entityListing } from '../../../locators/listing';
+import { routes } from '@fixtures/routes';
+import { PRIVATE_READONLY } from '@fixtures/tags';
+import { expect, test } from '@fixtures/test';
+import { entityListing } from '@locators/listing';
 
 /**
  * Scenario: scenarios/data/listing-filters/scenario.md
@@ -16,7 +17,7 @@ test.describe('Filtering a listing', () => {
     await expect(entityListing(page).cells.first()).toBeVisible();
   });
 
-  test('search narrows the results', { tag: ['@private', '@readonly'] }, async ({ page }) => {
+  test('search narrows the results', { tag: PRIVATE_READONLY }, async ({ page }) => {
     const listing = entityListing(page);
     const before = await listing.resultCount.innerText();
 
@@ -26,7 +27,7 @@ test.describe('Filtering a listing', () => {
     await expect(listing.cells.first()).toBeVisible();
   });
 
-  test('clearing the search restores it', { tag: ['@private', '@readonly'] }, async ({ page }) => {
+  test('clearing the search restores it', { tag: PRIVATE_READONLY }, async ({ page }) => {
     const listing = entityListing(page);
     const before = await listing.resultCount.innerText();
 
@@ -38,7 +39,7 @@ test.describe('Filtering a listing', () => {
     await expect(listing.resultCount).toHaveText(before);
   });
 
-  test('a search that matches nothing', { tag: ['@private', '@readonly'] }, async ({ page }) => {
+  test('a search that matches nothing', { tag: PRIVATE_READONLY }, async ({ page }) => {
     const listing = entityListing(page);
 
     await listing.search.fill('zzzz-no-such-entity');
@@ -46,7 +47,7 @@ test.describe('Filtering a listing', () => {
     await expect(listing.resultCount).toHaveText(/^0 results/);
   });
 
-  test('offers the additional filters', { tag: ['@private', '@readonly'] }, async ({ page }) => {
+  test('offers the additional filters', { tag: PRIVATE_READONLY }, async ({ page }) => {
     const listing = entityListing(page);
 
     await listing.filters.click();
@@ -60,16 +61,12 @@ test.describe('Filtering a listing', () => {
     }
   });
 
-  test(
-    'opening a filter reveals its control',
-    { tag: ['@private', '@readonly'] },
-    async ({ page }) => {
-      const listing = entityListing(page);
+  test('opening a filter reveals its control', { tag: PRIVATE_READONLY }, async ({ page }) => {
+    const listing = entityListing(page);
 
-      await listing.filters.click();
-      await listing.advancedFilters.getByRole('menuitem', { name: /^ID/ }).click();
+    await listing.filters.click();
+    await listing.advancedFilters.getByRole('menuitem', { name: /^ID/ }).click();
 
-      await expect(listing.advancedFilters.getByRole('textbox')).toBeVisible();
-    }
-  );
+    await expect(listing.advancedFilters.getByRole('textbox')).toBeVisible();
+  });
 });

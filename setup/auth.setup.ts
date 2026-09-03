@@ -1,7 +1,6 @@
+import { signIn } from '@fixtures/auth';
+import { hasCredentials, ROLES } from '@fixtures/env';
 import { test as setup } from '@playwright/test';
-
-import { signIn } from '../fixtures/auth';
-import { hasCredentials, ROLES } from '../fixtures/env';
 
 // One sign-in per role, in parallel. Every later spec reuses the saved state.
 for (const role of ROLES) {

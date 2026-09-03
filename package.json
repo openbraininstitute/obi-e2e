@@ -25,7 +25,8 @@
     "check": "bun run format:check && bun run lint && bun run typecheck && bun run test:unit"
   },
   "dependencies": {
-    "better-result": "^3.0.1"
+    "better-result": "^3.0.1",
+    "es-toolkit": "^1.52.0"
   },
   "devDependencies": {
     "@playwright/test": "1.62.1",
