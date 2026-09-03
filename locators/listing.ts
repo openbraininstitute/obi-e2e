@@ -30,5 +30,14 @@ export function entityListing(page: Page) {
     /** Data cells only, so this ignores the grid's two header rows. */
     cells: table.getByRole('gridcell'),
     resultCount: page.getByText(/[\d,]+ results/),
+
+    pagination: page.getByTestId('data-grid-pagination'),
+    pageSize: page.getByTestId('data-grid-page-size'),
+    /** A page number in the pager. Anchored, so 2 does not also match 12. */
+    pageLink: (number: number) =>
+      page
+        .getByTestId('data-grid-pagination')
+        .getByRole('listitem')
+        .filter({ hasText: new RegExp(`^${number}$`) }),
   };
 }
