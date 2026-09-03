@@ -88,23 +88,31 @@ export function buildCard(summary: Summary) {
   };
 }
 
-const webhook = process.env.TEAMS_WEBHOOK_URL;
-const [summaryPath = 'test-results/summary.json'] = Bun.argv.slice(2);
+async function post(): Promise<void> {
+  const webhook = process.env.TEAMS_WEBHOOK_URL;
+  const [summaryPath = 'test-results/summary.json'] = Bun.argv.slice(2);
 
-if (!webhook) {
-  console.error('TEAMS_WEBHOOK_URL is not set — skipping Teams notification.');
-  process.exit(0);
+  if (!webhook) {
+    console.error('TEAMS_WEBHOOK_URL is not set — skipping Teams notification.');
+    return;
+  }
+
+  const response = await fetch(webhook, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(buildCard((await Bun.file(summaryPath).json()) as Summary)),
+  });
+
+  if (!response.ok) {
+    console.error(`Teams webhook failed: ${response.status} ${await response.text()}`);
+    process.exit(1);
+  }
+
+  console.log('Posted Teams card.');
 }
 
-const response = await fetch(webhook, {
-  method: 'POST',
-  headers: { 'content-type': 'application/json' },
-  body: JSON.stringify(buildCard((await Bun.file(summaryPath).json()) as Summary)),
-});
-
-if (!response.ok) {
-  console.error(`Teams webhook failed: ${response.status} ${await response.text()}`);
-  process.exit(1);
+// Only post when run as a script. Importing this file for `buildCard` must not
+// send anything to the channel.
+if (import.meta.main) {
+  await post();
 }
-
-console.log('Posted Teams card.');
