@@ -1,30 +1,37 @@
 # /e2e-generate — write a test from a scenario
 
-Usage: `/e2e-generate specs/<file>.md "<Scenario name>"`
+Usage: `/e2e-generate scenarios/<section>/<name> ["<Scenario name>"]`
 
 ## Steps
 
-1. Read the named scenario in the spec file. If the scenario name does not match
-   exactly one scenario, stop and list the ones you found.
-2. Read `pages/`, `fixtures/`, and neighbouring specs in `tests/`. Reuse existing
-   page objects and fixtures before adding new ones.
-3. **Look at the real application** with the Playwright MCP browser against
-   `E2E_BASE_URL`. Walk the scenario and read the accessible names of the
-   elements involved. Never write a locator from the English text alone.
-4. Write the test under `tests/public/` (no login needed) or `tests/private/`
-   (signed in). Import `test`/`expect` from `fixtures/test.ts`.
-5. Add or extend a page object for any screen the test touches. Locators live in
-   the page object; assertions live in the spec.
-6. Run it: `bun run test <path>`. Fix and rerun until it passes twice in a row.
-7. Report the test name and the `Then` checks so the author can confirm they
-   match the scenario.
+1. Read the scenario's `scenario.md`. With no scenario name, cover every
+   `Scenario:` in it; with one, cover that one. If it matches none, list what is
+   there and stop.
+2. Reuse before adding. Read `locators/`, `fixtures/`, and the neighbouring
+   scenarios in the same section. A locator moves from a scenario folder to
+   `locators/` only once a second scenario needs it.
+3. **Open the real application** with the Playwright MCP browser against
+   `E2E_BASE_URL`. Walk the scenario. Never write a locator from the English
+   alone.
+4. Address elements by test id. If one is missing, add it to `core-web-app` on
+   the branch under test, guard it with a unit test there, and say so in the
+   report. Fall back to a role only when nothing else identifies the element,
+   and say why in a comment.
+5. Write the spec beside its scenario as `<name>.spec.ts`. Import from
+   `@fixtures/test`, tag from `@fixtures/tags`, and put anything the test feeds
+   the application under `data/`.
+6. Run `bun run test <path>` until it passes twice, then `bun run check`.
+7. Report the tests, the `Then` checks behind them, and any test id you added.
 
 ## Rules
 
-- Locators: `getByRole`, `getByLabel`, `getByText`. Never CSS classes, never
-  `first()`/`nth()` without a comment saying why.
-- No `waitForTimeout`. Use web-first assertions and `waitFor`.
-- Every test is independent. No test relies on another having run.
-- Tag the test with the scenario's tags.
-- Assert only what the user sees. Do not assert internal services.
-- Never weaken an expected result to make a run pass.
+- Locators: a test id first; `getByRole`/`getByLabel`/`getByText` as a stated
+  fallback. Never CSS classes. `first()`/`nth()` needs a comment.
+- Assert exactly: counts as well as contents, so something added or removed
+  fails here rather than passing unnoticed.
+- No `waitForTimeout`. Web-first assertions already retry.
+- Every test is independent and leaves nothing behind outside the QA lab.
+- Something a deployment does not have is a `test.skip` with the reason. Wait
+  before deciding an element is absent — still rendering is not missing.
+- Assert only what a user sees. Never weaken an expected result to make a run
+  pass.
