@@ -32,4 +32,11 @@ Scenario: Search narrows the Single neuron listing
   When I search for something no entity matches
   Then I see no results
   And clearing the search brings them all back
+
+@private @readonly
+Scenario: The Single neuron table offers no columns beyond these
+  Given I am on the Single neuron listing
+  When I open the column chooser
+  Then 8 columns are on and 0 are off
+  And there are no other columns on offer
 ```

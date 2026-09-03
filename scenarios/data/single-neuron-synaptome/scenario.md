@@ -33,4 +33,18 @@ Scenario: Search narrows the Synaptome (legacy) listing
   When I search for something no entity matches
   Then I see no results
   And clearing the search brings them all back
+
+@private @readonly
+Scenario: Add a hidden column to the Synaptome (legacy) table
+  Given I am on the Synaptome (legacy) listing
+  When I open the column chooser
+  And I turn on a column that is off, such as "ME-model validation status", "Contributors"
+  Then that column appears in the table
+
+@private @readonly
+Scenario: The Synaptome (legacy) table offers no columns beyond these
+  Given I am on the Synaptome (legacy) listing
+  When I open the column chooser
+  Then 10 columns are on and 2 are off
+  And there are no other columns on offer
 ```

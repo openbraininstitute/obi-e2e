@@ -34,4 +34,18 @@ Scenario: Search narrows the Circuit listing
   When I search for something no entity matches
   Then I see no results
   And clearing the search brings them all back
+
+@private @readonly
+Scenario: Add a hidden column to the Circuit table
+  Given I am on the Circuit listing
+  When I open the column chooser
+  And I turn on a column that is off, such as "Has morphologies", "Has point neurons", "Has electrical cell models", "Has spines", "Strain", "Subject name", "Contributors"
+  Then that column appears in the table
+
+@private @readonly
+Scenario: The Circuit table offers no columns beyond these
+  Given I am on the Circuit listing
+  When I open the column chooser
+  Then 15 columns are on and 7 are off
+  And there are no other columns on offer
 ```

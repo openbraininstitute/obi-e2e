@@ -33,4 +33,18 @@ Scenario: Search narrows the Ion channel model listing
   When I search for something no entity matches
   Then I see no results
   And clearing the search brings them all back
+
+@private @readonly
+Scenario: Add a hidden column to the Ion channel model table
+  Given I am on the Ion channel model listing
+  When I open the column chooser
+  And I turn on a column that is off, such as "NMODL suffix", "Conductance name", "Max permeability name", "Stochastic", "Strain", "Subject name", "Contributors"
+  Then that column appears in the table
+
+@private @readonly
+Scenario: The Ion channel model table offers no columns beyond these
+  Given I am on the Ion channel model listing
+  When I open the column chooser
+  Then 9 columns are on and 7 are off
+  And there are no other columns on offer
 ```

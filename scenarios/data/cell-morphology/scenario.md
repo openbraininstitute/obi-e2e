@@ -32,4 +32,18 @@ Scenario: Search narrows the Morphology listing
   When I search for something no entity matches
   Then I see no results
   And clearing the search brings them all back
+
+@private @readonly
+Scenario: Add a hidden column to the Morphology table
+  Given I am on the Morphology listing
+  When I open the column chooser
+  And I turn on a column that is off, such as "Generation type", "Protocol design", "Protocol name", "Protocol document", "Strain", "Subject name", "Segmented spines"
+  Then that column appears in the table
+
+@private @readonly
+Scenario: The Morphology table offers no columns beyond these
+  Given I am on the Morphology listing
+  When I open the column chooser
+  Then 8 columns are on and 7 are off
+  And there are no other columns on offer
 ```

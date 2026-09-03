@@ -14,6 +14,15 @@ export function entityListing(page: Page) {
     filters: page.getByRole('button', { name: 'Filters' }),
     columns: page.getByRole('button', { name: 'Columns' }),
     advancedFilters: page.getByTestId('advanced-filters-pane'),
+    /**
+     * The column chooser. It is an antd popover, which carries the tooltip
+     * role, and it is the only one on the page while it is open.
+     */
+    columnsMenu: page.getByRole('tooltip'),
+    columnToggle: (name: string) =>
+      page.getByRole('tooltip').getByRole('checkbox', { name, exact: true }),
+    /** Every toggle in the chooser, including its "Select all". */
+    columnToggles: page.getByRole('tooltip').getByRole('checkbox'),
     /** The funnel beside a column header. Its name is "Filter <column>". */
     columnFilter: (column: string) => page.getByRole('button', { name: `Filter ${column}` }),
     columnHeader: (name: string | RegExp) => table.getByRole('columnheader', { name }),

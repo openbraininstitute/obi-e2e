@@ -32,4 +32,18 @@ Scenario: Search narrows the Single cell electrophysiology listing
   When I search for something no entity matches
   Then I see no results
   And clearing the search brings them all back
+
+@private @readonly
+Scenario: Add a hidden column to the Single cell electrophysiology table
+  Given I am on the Single cell electrophysiology listing
+  When I open the column chooser
+  And I turn on a column that is off, such as "Recording type", "Recording origin", "Strain", "Subject name"
+  Then that column appears in the table
+
+@private @readonly
+Scenario: The Single cell electrophysiology table offers no columns beyond these
+  Given I am on the Single cell electrophysiology listing
+  When I open the column chooser
+  Then 8 columns are on and 4 are off
+  And there are no other columns on offer
 ```

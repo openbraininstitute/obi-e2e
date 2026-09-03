@@ -31,4 +31,11 @@ Scenario: Search narrows the Microcircuit listing
   When I search for something no entity matches
   Then I see no results
   And clearing the search brings them all back
+
+@private @readonly
+Scenario: The Microcircuit table offers no columns beyond these
+  Given I am on the Microcircuit listing
+  When I open the column chooser
+  Then 7 columns are on and 0 are off
+  And there are no other columns on offer
 ```

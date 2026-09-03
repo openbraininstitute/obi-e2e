@@ -34,4 +34,18 @@ Scenario: Search narrows the Ion channel electrophysiology listing
   When I search for something no entity matches
   Then I see no results
   And clearing the search brings them all back
+
+@private @readonly
+Scenario: Add a hidden column to the Ion channel electrophysiology table
+  Given I am on the Ion channel electrophysiology listing
+  When I open the column chooser
+  And I turn on a column that is off, such as "Ion channel label", "Gene", "Validation passed", "Validation name", "Recording type", "Strain", "Subject name"
+  Then that column appears in the table
+
+@private @readonly
+Scenario: The Ion channel electrophysiology table offers no columns beyond these
+  Given I am on the Ion channel electrophysiology listing
+  When I open the column chooser
+  Then 10 columns are on and 7 are off
+  And there are no other columns on offer
 ```

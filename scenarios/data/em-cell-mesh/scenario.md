@@ -31,4 +31,18 @@ Scenario: Search narrows the EM mesh listing
   When I search for something no entity matches
   Then I see no results
   And clearing the search brings them all back
+
+@private @readonly
+Scenario: Add a hidden column to the EM mesh table
+  Given I am on the EM mesh listing
+  When I open the column chooser
+  And I turn on a column that is off, such as "Mesh type", "Level of detail", "M-type", "Dataset published in", "Dataset experiment date", "Strain", "Subject name"
+  Then that column appears in the table
+
+@private @readonly
+Scenario: The EM mesh table offers no columns beyond these
+  Given I am on the EM mesh listing
+  When I open the column chooser
+  Then 7 columns are on and 7 are off
+  And there are no other columns on offer
 ```

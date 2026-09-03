@@ -34,4 +34,18 @@ Scenario: Search narrows the ME-model listing
   When I search for something no entity matches
   Then I see no results
   And clearing the search brings them all back
+
+@private @readonly
+Scenario: Add a hidden column to the ME-model table
+  Given I am on the ME-model listing
+  When I open the column chooser
+  And I turn on a column that is off, such as "Morphology name", "Segmented spines", "E-model name", "E-model score", "Strain", "Contributors"
+  Then that column appears in the table
+
+@private @readonly
+Scenario: The ME-model table offers no columns beyond these
+  Given I am on the ME-model listing
+  When I open the column chooser
+  Then 11 columns are on and 6 are off
+  And there are no other columns on offer
 ```

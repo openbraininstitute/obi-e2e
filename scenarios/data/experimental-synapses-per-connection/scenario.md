@@ -33,4 +33,18 @@ Scenario: Search narrows the Synapse per connection listing
   When I search for something no entity matches
   Then I see no results
   And clearing the search brings them all back
+
+@private @readonly
+Scenario: Add a hidden column to the Synapse per connection table
+  Given I am on the Synapse per connection listing
+  When I open the column chooser
+  And I turn on a column that is off, such as "Name", "Brain region", "Brain region acronym", "Strain", "Subject name"
+  Then that column appears in the table
+
+@private @readonly
+Scenario: The Synapse per connection table offers no columns beyond these
+  Given I am on the Synapse per connection listing
+  When I open the column chooser
+  Then 9 columns are on and 5 are off
+  And there are no other columns on offer
 ```

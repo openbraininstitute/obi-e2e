@@ -27,4 +27,11 @@ Scenario: See the Single neuron (legacy) results
   Given I am on the Single neuron (legacy) listing
   Then I see how many results there are
   And I see that there is nothing to show yet
+
+@private @readonly
+Scenario: The Single neuron (legacy) table offers no columns beyond these
+  Given I am on the Single neuron (legacy) listing
+  When I open the column chooser
+  Then 10 columns are on and 0 are off
+  And there are no other columns on offer
 ```

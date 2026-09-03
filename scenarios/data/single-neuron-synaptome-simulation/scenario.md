@@ -26,4 +26,11 @@ Scenario: See the Synaptome (legacy) results
   Given I am on the Synaptome (legacy) listing
   Then I see how many results there are
   And I see that there is nothing to show yet
+
+@private @readonly
+Scenario: The Synaptome (legacy) table offers no columns beyond these
+  Given I am on the Synaptome (legacy) listing
+  When I open the column chooser
+  Then 9 columns are on and 0 are off
+  And there are no other columns on offer
 ```

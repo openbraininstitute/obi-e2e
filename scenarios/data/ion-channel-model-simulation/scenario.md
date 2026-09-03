@@ -23,4 +23,11 @@ Scenario: See the Ion channel results
   Given I am on the Ion channel listing
   Then I see how many results there are
   And I see that there is nothing to show yet
+
+@private @readonly
+Scenario: The Ion channel table offers no columns beyond these
+  Given I am on the Ion channel listing
+  When I open the column chooser
+  Then 6 columns are on and 0 are off
+  And there are no other columns on offer
 ```
