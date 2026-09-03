@@ -22,39 +22,41 @@ the grid, and once to the generation endpoint, which returns a campaign id.
 A _sweep_ is a field that accepts either one number or a list. Every combination
 of swept values is one coordinate in the campaign grid.
 
-## The blocker: the editor is not addressable by accessible name
+## Addressing fields in the editor
 
-This is the main risk and it should be settled before tests are written.
+Field labels render as `<label for={propertyKey}>`, but only a handful of controls
+render a matching `id`. For most fields the label points at an element that does
+not exist, so `getByLabel` cannot find the input. Checkboxes are the exception and
+are wired correctly.
 
-Field labels render as `<label htmlFor={propertyKey}>`, but only a handful of
-controls render a matching `id`. For most fields the label points at an element
-that does not exist, so `getByLabel` cannot find the input. Checkboxes are the
-exception and are correctly wired.
+The attributes the editor already carried identify a field's _kind_, never _which_
+field it is, so two duration inputs in one block were indistinguishable.
 
-What is available instead:
+**Resolved.** `core-web-app` now adds two test ids on branch
+`test/scan-config-field-testids`:
 
-| Handle                                        | Where it sits        | Value                                             |
-| --------------------------------------------- | -------------------- | ------------------------------------------------- |
-| `data-scan-config-block-element`              | on the control       | the `ui_element` name                             |
-| `data-scan-config-block-element-container-of` | on the field wrapper | the `ui_element` name                             |
-| `data-scan-config-block`                      | on the block wrapper | `block_single`, `block_dictionary`, `block_union` |
-| `data-scan-config-menu`                       | on left-nav items    | `left-menu-top-item`                              |
+| Test id                                     | Sits on           | Example                               |
+| ------------------------------------------- | ----------------- | ------------------------------------- |
+| `scan-config-field-<propertyKey>`           | the field wrapper | `scan-config-field-simulation_length` |
+| `scan-config-block-<rootElement>[-<entry>]` | the block wrapper | `scan-config-block-recordings-Soma`   |
 
-These identify a field's _kind_, never _which_ field it is. Two duration inputs
-in the same block are indistinguishable. Locating a specific field therefore
-means scoping by its visible label text and then reaching for the control inside
-that wrapper, which breaks the moment a label is reworded.
+A property key is unique only inside its block, because a key such as `dt`
+repeats across dictionary entries, so a test scopes by block first:
 
-Some parts are well built and should be used directly. The sweep controls all
-carry real accessible names: `Scan over several values`, `Add a value`,
-`Remove this value`, `Use a single value`, and `Show value N in the preview`.
-Block and variant pickers are buttons named by their schema title.
+```ts
+page
+  .getByTestId('scan-config-block-recordings-Soma')
+  .getByTestId('scan-config-field-dt')
+  .getByRole('spinbutton');
+```
 
-**Recommendation.** Ask for one line in the application: put
-`data-scan-config-field={propertyKey}` on the control inside the field renderer.
-That turns the whole plan below from label-scraping into a direct lookup from a
-fixture key to an element, and it is the difference between tests that survive
-copy changes and tests that do not. The plan works without it, less well.
+A unit test in the application guards both ids, so removing one fails there rather
+than silently breaking the E2E suite.
+
+Parts of the editor were already well built and are used as they are. Every sweep
+control carries a real accessible name, including `Scan over several values`,
+`Add a value` and `Use a single value`. Block and variant pickers are buttons
+named by their schema title.
 
 ## Fixture format
 
@@ -183,5 +185,5 @@ is not worth the review gap it opens.
 | 4     | Levels 2 and 5                                                         | Validation and grid-size coverage                       |
 | 5     | Levels 3 and 4, with cleanup                                           | Full coverage on staging                                |
 
-Phase 1 gates nothing. Work can start on phase 2 in parallel and switch locator
-strategy later, because the driver is the only place that resolves a field.
+The walker is the only place that resolves a field to an element, so the locator
+strategy stays reversible if the application changes shape again.
