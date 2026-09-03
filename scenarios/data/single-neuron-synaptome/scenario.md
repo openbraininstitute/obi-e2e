@@ -11,15 +11,10 @@ Scenario: See the Synaptome (legacy) table
   And I am inside my project
   When I open the Synaptome (legacy) listing
   Then I see the table
-    And I see the "Name" column
-    And I see the "Description" column
-    And I see the "ME-model" column
-    And I see the "M-type" column
-    And I see the "E-type" column
-    And I see the "Brain region" column
-    And I see the "Species" column
-    And I see the "Created by" column
-    And I see the "Registration date" column
+  And I see these columns:
+    "Name", "Description", "ME-model"
+    "M-type", "E-type", "Brain region"
+    "Species", "Created by", "Registration date"
 
 @private @readonly
 Scenario: See the Synaptome (legacy) results
@@ -28,7 +23,7 @@ Scenario: See the Synaptome (legacy) results
   And I see at least one result
 
 @private @readonly
-Scenario: Search narrows the Synaptome (legacy) listing
+Scenario: Search the Synaptome (legacy) listing
   Given I am on the Synaptome (legacy) listing
   When I search for something no entity matches
   Then I see no results
@@ -38,13 +33,27 @@ Scenario: Search narrows the Synaptome (legacy) listing
 Scenario: Add a hidden column to the Synaptome (legacy) table
   Given I am on the Synaptome (legacy) listing
   When I open the column chooser
-  And I turn on a column that is off, such as "ME-model validation status", "Contributors"
+  And I turn on a column that is off:
+    "ME-model validation status", "Contributors"
   Then that column appears in the table
+  And turning it back off removes it
 
 @private @readonly
 Scenario: The Synaptome (legacy) table offers no columns beyond these
   Given I am on the Synaptome (legacy) listing
   When I open the column chooser
   Then 10 columns are on and 2 are off
-  And there are no other columns on offer
+  And no other column is on offer
+
+@private @readonly
+Scenario: Every Synaptome (legacy) filter narrows the listing
+  Given I am on the Synaptome (legacy) listing
+  When I filter by each of these columns in turn:
+    "Name", "ME-model", "M-type"
+    "E-type", "Brain region", "Species"
+    "Created by", "Registration date", "Lifecycle status"
+  Then a filter offering a list of values gives exactly the count it promised
+  And a filter I type into gives no results for a value nothing matches
+  And a range filter given a minimum above its maximum gives no results
+  And clearing each filter brings the listing back
 ```
