@@ -18,6 +18,27 @@ You write the same tags twice.
 The English one documents the intent. The TypeScript one is the one that
 actually decides anything. If they disagree, the TypeScript one wins.
 
+## The format `scenario.md` uses
+
+**Gherkin** — the language Cucumber invented. We borrow the syntax only. No
+Cucumber runs here; the `.md` file is read by people, and a developer or the AI
+turns it into a Playwright test.
+
+We use a small part of it:
+
+| Keyword                   | Meaning                                             |
+| ------------------------- | --------------------------------------------------- |
+| `Feature:`                | the group, once at the top                          |
+| `Scenario:`               | one case                                            |
+| `Given` / `When` / `Then` | starting point / what the user does / what they see |
+| `And`                     | one more line of the same kind                      |
+| `@tag`                    | on its own line, directly above `Scenario:`         |
+
+Gherkin also has `Background`, `Scenario Outline`, `Examples`, `Rule` and `But`.
+We do not use them. Keep a scenario under 10 lines instead.
+
+Full reference: <https://cucumber.io/docs/gherkin/reference>.
+
 ## Reading the TypeScript line
 
 ```ts
@@ -71,6 +92,19 @@ A test may carry two context tags. It then runs twice, once per user.
 `@smoke` is the only extra tag a job filters on today. `@readonly` is a promise
 you write down for the next reader; you can still filter on it by hand with
 `--grep @readonly`.
+
+### No tool knows these words
+
+Playwright reserves no tag names. It takes any string starting with `@`, adds it
+to the test title, and lets `--grep` match it. `@smoke` and `@banana` behave the
+same way. All the meaning comes from two files we wrote:
+[playwright.config.ts](../playwright.config.ts) and
+[.github/workflows/e2e.yml](../.github/workflows/e2e.yml).
+
+`@smoke` is still worth keeping: a _smoke test_ is standard industry vocabulary
+for a thin, fast check that a build is alive, and `@smoke` is the usual tag name
+for it. `@public`, `@private` and `@onboarding` are ours, named after our two
+test users.
 
 ## So what does `{ tag: ['@private', '@readonly'] }` mean?
 
