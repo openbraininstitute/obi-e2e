@@ -118,13 +118,20 @@ function fact(title: string, value: string) {
 const FEATURE_COLUMNS = [3, 2, 2, 1, 2];
 
 /**
+ * Expand and collapse affordance. Plain glyphs on purpose: Teams renders images
+ * only from a public HTTPS URL, rejects SVG and redirects, and ignores base64
+ * data URIs on desktop and web. A glyph costs nothing and always draws.
+ */
+const CHEVRON = { collapsed: '▸', expanded: '▾' } as const;
+
+/**
  * A table row cannot be hidden: `TableRow` has no `id` or `isVisible`. A whole
  * `Table` can. So each section becomes a one-row table plus a hidden table of
  * its features, all sharing the same column widths so they line up as one grid.
  * Clicking any cell of the section row toggles its features and swaps the
  * chevron, using `Action.ToggleVisibility`, which needs no server round trip.
  */
-function featureTables(sections: Section[]): unknown[] {
+function featureTables(sections: Section[], expandable: boolean): unknown[] {
   const elements: unknown[] = [
     table(
       [...FEATURE_COLUMNS],
@@ -148,8 +155,15 @@ function featureTables(sections: Section[]): unknown[] {
       verticalContentAlignment: 'Center',
       selectAction: toggle,
       items: [
-        { ...text(`▸ ${section.name}`, { weight: 'Bolder' }), id: collapsedId },
-        { ...text(`▾ ${section.name}`, { weight: 'Bolder' }), id: expandedId, isVisible: false },
+        {
+          ...text(`${CHEVRON.collapsed} ${section.name}`, { weight: 'Bolder' }),
+          id: collapsedId,
+        },
+        {
+          ...text(`${CHEVRON.expanded} ${section.name}`, { weight: 'Bolder' }),
+          id: expandedId,
+          isVisible: false,
+        },
       ],
     };
 
@@ -160,7 +174,7 @@ function featureTables(sections: Section[]): unknown[] {
           {
             type: 'TableRow',
             cells: [
-              sectionCell,
+              expandable ? sectionCell : cell(section.name, { weight: 'Bolder' }),
               cell(
                 `${section.features.length} ${section.features.length === 1 ? 'feature' : 'features'}`,
                 {
@@ -175,7 +189,12 @@ function featureTables(sections: Section[]): unknown[] {
           },
         ],
         { firstRowAsHeader: false }
-      ),
+      )
+    );
+
+    if (!expandable) continue;
+
+    elements.push(
       table(
         [...FEATURE_COLUMNS],
         section.features.map((feature: Feature) => ({
@@ -196,10 +215,41 @@ function featureTables(sections: Section[]): unknown[] {
   return elements;
 }
 
-export function buildCard(summary: Summary) {
+/**
+ * The largest card that still fits Teams' payload limit. Detail is dropped a
+ * level at a time rather than letting the post be rejected.
+ */
+export function buildCardWithinLimit(summary: Summary): {
+  card: ReturnType<typeof buildCard>;
+  detail: Detail;
+  bytes: number;
+} {
+  let last = { card: buildCard(summary, 'full'), detail: 'full' as Detail, bytes: 0 };
+
+  for (const detail of ['full', 'sections', 'summary'] as const) {
+    const card = buildCard(summary, detail);
+    const bytes = JSON.stringify(card).length;
+    last = { card, detail, bytes };
+    if (bytes <= TEAMS_PAYLOAD_LIMIT) return last;
+  }
+
+  return last;
+}
+
+/**
+ * Teams rejects a message whose payload exceeds this, card JSON included. The
+ * feature tables grow with every scenario, so the card is trimmed to fit rather
+ * than being refused outright.
+ */
+export const TEAMS_PAYLOAD_LIMIT = 25_000;
+
+/** How much of the card to draw. Each level is smaller than the one before. */
+export type Detail = 'full' | 'sections' | 'summary';
+
+export function buildCard(summary: Summary, detail: Detail = 'full') {
   const ok = summary.failed === 0 && summary.flaky === 0;
-  const endpoints = summary.endpoints ?? [];
-  const features = summary.features ?? [];
+  const endpoints = detail === 'summary' ? [] : (summary.endpoints ?? []);
+  const features = detail === 'summary' ? [] : (summary.features ?? []);
 
   const body: unknown[] = [
     {
@@ -256,7 +306,7 @@ export function buildCard(summary: Summary) {
   if (features.length > 0) {
     body.push(
       text('Features', { size: 'Medium', weight: 'Bolder', spacing: 'Medium' }),
-      ...featureTables(collectSections(features))
+      ...featureTables(collectSections(features), detail === 'full')
     );
   }
 
@@ -306,10 +356,19 @@ async function post(): Promise<void> {
     return;
   }
 
+  const summary = (await Bun.file(summaryPath).json()) as Summary;
+  const { card, detail, bytes } = buildCardWithinLimit(summary);
+
+  if (detail !== 'full') {
+    console.error(
+      `Card trimmed to "${detail}" at ${bytes} bytes to stay under the ${TEAMS_PAYLOAD_LIMIT} byte Teams limit.`
+    );
+  }
+
   const response = await fetch(webhook, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(buildCard((await Bun.file(summaryPath).json()) as Summary)),
+    body: JSON.stringify(card),
   });
 
   if (!response.ok) {
@@ -317,7 +376,7 @@ async function post(): Promise<void> {
     process.exit(1);
   }
 
-  console.log('Posted Teams card.');
+  console.log(`Posted Teams card (${detail}, ${bytes} bytes).`);
 }
 
 // Only post when run as a script. Importing this file for `buildCard` must not

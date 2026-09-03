@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
-import { buildSummary } from './summarize-results';
-import { buildCard } from './teams-card';
+import { type Summary, buildSummary } from './summarize-results';
+import { buildCard, buildCardWithinLimit, TEAMS_PAYLOAD_LIMIT } from './teams-card';
 
 type Node = Record<string, unknown> & { type?: string };
 
@@ -175,5 +175,60 @@ describe('buildCard', () => {
       const [rowsId] = toggle.targetElements as string[];
       expect(hidden.some((table) => table.id === rowsId)).toBe(true);
     }
+  });
+});
+
+function summaryWith(sectionCount: number, featuresPerSection: number): Summary {
+  const features = [];
+  for (let s = 0; s < sectionCount; s += 1) {
+    for (let f = 0; f < featuresPerSection; f += 1) {
+      features.push({
+        name: `Feature ${s}-${f} with a fairly long descriptive name`,
+        section: `section-${s}`,
+        passed: 3,
+        failed: 0,
+        flaky: 0,
+        skipped: 0,
+        durationMs: 4_000,
+      });
+    }
+  }
+
+  return {
+    passed: features.length * 3,
+    failed: 0,
+    flaky: 0,
+    skipped: 0,
+    durationMs: 60_000,
+    environment: 'staging',
+    baseUrl: 'https://staging.example',
+    browser: 'chromium',
+    commit: 'abcdef1234',
+    runUrl: '',
+    trigger: 'Scheduled',
+    failures: [],
+    totalFailures: 0,
+    endpoints: [],
+    features,
+  };
+}
+
+describe('buildCardWithinLimit', () => {
+  test('keeps full detail while it fits', () => {
+    const { detail, bytes } = buildCardWithinLimit(summaryWith(2, 2));
+
+    expect(detail).toBe('full');
+    expect(bytes).toBeLessThanOrEqual(TEAMS_PAYLOAD_LIMIT);
+  });
+
+  test('drops detail rather than exceeding the Teams limit', () => {
+    const big = summaryWith(30, 8);
+
+    // Full detail on this many scenarios would be refused by Teams.
+    expect(JSON.stringify(buildCard(big, 'full')).length).toBeGreaterThan(TEAMS_PAYLOAD_LIMIT);
+
+    const { detail, bytes } = buildCardWithinLimit(big);
+    expect(detail).not.toBe('full');
+    expect(bytes).toBeLessThanOrEqual(TEAMS_PAYLOAD_LIMIT);
   });
 });
