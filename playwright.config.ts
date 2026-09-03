@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-import { AUTH_STATE_PATH, baseURL, isCI, resolveBrowser, resolveWorkers } from './fixtures/env';
+import { authStatePath, baseURL, isCI, resolveBrowser, resolveWorkers } from './fixtures/env';
 
 // Not a sleep: a web-first assertion resolves as soon as its condition holds
 // and only spends this budget when the condition never becomes true.
@@ -54,7 +54,14 @@ export default defineConfig({
       name: 'private',
       testDir: './tests/private',
       dependencies: ['setup'],
-      use: { storageState: AUTH_STATE_PATH },
+      use: { storageState: authStatePath('primary') },
+    },
+    {
+      // Lab and project creation, run as a user that owns nothing.
+      name: 'onboarding',
+      testDir: './tests/onboarding',
+      dependencies: ['setup'],
+      use: { storageState: authStatePath('onboarding') },
     },
   ],
 });

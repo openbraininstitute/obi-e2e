@@ -19,6 +19,9 @@ Repository **secrets** (same names as the Selenium repo, plus one):
 `PROJECT_ID_STAGING`, `PROJECT_ID_PRODUCTION`, `MS_TEAMS_NEW_WEBHOOK_URI`,
 and `CORE_WEB_APP_PR_TOKEN` (a token that may comment on `core-web-app` PRs).
 
+Optional: `OBI_ONBOARDING_USERNAME` and `OBI_ONBOARDING_PASSWORD` for the second
+user that tests virtual lab creation. Leave them unset and those tests skip.
+
 ## The `e2e` label bridge
 
 `core-web-app` deploys every PR to a preview URL. Adding the `e2e` label to a PR

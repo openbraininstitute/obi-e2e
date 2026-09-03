@@ -61,13 +61,24 @@ bun run check            # format check + lint + typecheck
 
 ## Environments
 
-An environment is one URL plus one test user.
+An environment is one URL plus the test users.
 
-| Variable                                  | Meaning                        |
-| ----------------------------------------- | ------------------------------ |
-| `E2E_BASE_URL`                            | the application under test     |
-| `E2E_TEST_USERNAME` / `E2E_TEST_PASSWORD` | the QA user                    |
-| `LAB_ID` / `PROJECT_ID`                   | the QA virtual lab and project |
+| Variable                                              | Meaning                                    |
+| ----------------------------------------------------- | ------------------------------------------ |
+| `E2E_BASE_URL`                                        | the application under test                 |
+| `E2E_TEST_USERNAME` / `E2E_TEST_PASSWORD`             | the primary user                           |
+| `LAB_ID` / `PROJECT_ID`                               | the primary user's virtual lab and project |
+| `E2E_ONBOARDING_USERNAME` / `E2E_ONBOARDING_PASSWORD` | the onboarding user, optional              |
+
+There are two test users because a user may own only one virtual lab. The
+primary user owns the lab the suite runs inside. The onboarding user owns
+nothing, so it can test creating a lab from scratch. Leave the onboarding
+credentials blank and those tests skip rather than fail.
+
+Sign-in happens once per user per run. The Keycloak theme hides the username and
+password fields and offers only social providers, so the login form is submitted
+directly. Each sign-in saves browser storage state and an access token that API
+helpers use to arrange and clean up test data.
 
 On production only `@smoke` tests run, and they must not create or delete
 anything outside the QA lab and project.

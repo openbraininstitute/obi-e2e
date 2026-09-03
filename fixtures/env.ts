@@ -12,10 +12,48 @@ process.env.E2E_RUN_ID = RUN_ID;
 
 export const RUN_DIR = path.resolve(process.cwd(), '.e2e-runs', RUN_ID);
 
-export const AUTH_STATE_PATH =
-  process.env.E2E_AUTH_STATE_PATH ?? path.join(RUN_DIR, 'auth', 'user.json');
+/**
+ * `primary` owns the virtual lab the suite runs inside.
+ * `onboarding` owns nothing, so it can test creating a lab from scratch.
+ */
+export const ROLES = ['primary', 'onboarding'] as const;
+export type Role = (typeof ROLES)[number];
 
-type RequiredVar = 'E2E_TEST_USERNAME' | 'E2E_TEST_PASSWORD' | 'LAB_ID' | 'PROJECT_ID';
+const CREDENTIAL_VARS = {
+  primary: ['E2E_TEST_USERNAME', 'E2E_TEST_PASSWORD'],
+  onboarding: ['E2E_ONBOARDING_USERNAME', 'E2E_ONBOARDING_PASSWORD'],
+} as const satisfies Record<Role, readonly [string, string]>;
+
+export function authStatePath(role: Role): string {
+  return path.join(RUN_DIR, 'auth', `${role}.json`);
+}
+
+export function tokenPath(role: Role): string {
+  return path.join(RUN_DIR, 'auth', `${role}.token`);
+}
+
+/** Whether a role's credentials are configured. `onboarding` is optional. */
+export function hasCredentials(role: Role): boolean {
+  return CREDENTIAL_VARS[role].every((name) => Boolean(process.env[name]));
+}
+
+export function credentials(role: Role): { username: string; password: string } {
+  const [usernameVar, passwordVar] = CREDENTIAL_VARS[role];
+  const missing = CREDENTIAL_VARS[role].filter((name) => !process.env[name]);
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing credentials for the ${role} user: ${missing.join(', ')}. ` +
+        'Copy .env.example to .env and fill it in, or set them as CI secrets.'
+    );
+  }
+
+  return {
+    username: process.env[usernameVar] as string,
+    password: process.env[passwordVar] as string,
+  };
+}
+
+type RequiredVar = 'LAB_ID' | 'PROJECT_ID';
 
 /**
  * Reads required environment variables.
@@ -36,11 +74,6 @@ export function requireEnv<T extends RequiredVar>(...keys: T[]): Record<T, strin
     T,
     string
   >;
-}
-
-export function testUser() {
-  const env = requireEnv('E2E_TEST_USERNAME', 'E2E_TEST_PASSWORD');
-  return { username: env.E2E_TEST_USERNAME, password: env.E2E_TEST_PASSWORD };
 }
 
 /** The only lab and project tests may write to. */

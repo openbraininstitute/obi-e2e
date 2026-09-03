@@ -7,8 +7,6 @@
  * Usage: bun scripts/ci/summarize-results.ts <results.json> [outDir]
  */
 
-import { argv, env, exit } from 'node:process';
-
 type Result = { status?: string; duration?: number; error?: { message?: string } };
 type TestCase = { status?: string; projectName?: string; results?: Result[] };
 type Spec = { title?: string; file?: string; line?: number; tests?: TestCase[] };
@@ -23,11 +21,11 @@ const FAILED = new Set(['failed', 'timedOut', 'interrupted']);
 // oxlint-disable-next-line no-control-regex -- matching the ANSI escape prefix is the point
 const ANSI = /\u001B\[[0-9;]*m/g;
 
-function firstLine(message: string): string {
+export function firstLine(message: string): string {
   return (message.replace(ANSI, '').split('\n')[0] ?? '').trim();
 }
 
-function collectFailures(suites: Suite[] = [], parents: string[] = []): Failure[] {
+export function collectFailures(suites: Suite[] = [], parents: string[] = []): Failure[] {
   const failures: Failure[] = [];
 
   for (const suite of suites) {
@@ -54,10 +52,10 @@ function collectFailures(suites: Suite[] = [], parents: string[] = []): Failure[
   return failures;
 }
 
-const [inputPath, outDir = 'test-results'] = argv.slice(2);
+const [inputPath, outDir = 'test-results'] = Bun.argv.slice(2);
 if (!inputPath) {
   console.error('usage: bun scripts/ci/summarize-results.ts <results.json> [outDir]');
-  exit(2);
+  process.exit(2);
 }
 
 const report = (await Bun.file(inputPath).json()) as Report;
@@ -70,13 +68,13 @@ const summary = {
   flaky: stats.flaky ?? 0,
   skipped: stats.skipped ?? 0,
   durationMs: Math.round(stats.duration ?? 0),
-  environment: env.E2E_ENVIRONMENT ?? 'unknown',
-  baseUrl: env.E2E_BASE_URL ?? '',
-  browser: env.PLAYWRIGHT_BROWSER ?? 'chromium',
-  commit: env.GITHUB_SHA ?? '',
+  environment: process.env.E2E_ENVIRONMENT ?? 'unknown',
+  baseUrl: process.env.E2E_BASE_URL ?? '',
+  browser: process.env.PLAYWRIGHT_BROWSER ?? 'chromium',
+  commit: process.env.GITHUB_SHA ?? '',
   runUrl:
-    env.GITHUB_SERVER_URL && env.GITHUB_REPOSITORY && env.GITHUB_RUN_ID
-      ? `${env.GITHUB_SERVER_URL}/${env.GITHUB_REPOSITORY}/actions/runs/${env.GITHUB_RUN_ID}`
+    process.env.GITHUB_SERVER_URL && process.env.GITHUB_REPOSITORY && process.env.GITHUB_RUN_ID
+      ? `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
       : '',
   // Card shows at most five; the report has the rest.
   failures: failures.slice(0, 5),
@@ -108,4 +106,4 @@ await Bun.write(`${outDir}/summary.md`, `${lines.join('\n')}\n`);
 await Bun.write(`${outDir}/summary.json`, `${JSON.stringify(summary, null, 2)}\n`);
 
 console.log(lines.join('\n'));
-exit(0);
+process.exit(0);

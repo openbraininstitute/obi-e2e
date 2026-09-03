@@ -77,6 +77,8 @@ jobs:
             || vars.E2E_BASE_URL_STAGING }}
       E2E_TEST_USERNAME: ${{ secrets.OBI_USERNAME }}
       E2E_TEST_PASSWORD: ${{ secrets.OBI_PASSWORD }}
+      E2E_ONBOARDING_USERNAME: ${{ secrets.OBI_ONBOARDING_USERNAME }}
+      E2E_ONBOARDING_PASSWORD: ${{ secrets.OBI_ONBOARDING_PASSWORD }}
       LAB_ID: >-
         ${{ matrix.run.environment == 'production' && secrets.LAB_ID_PRODUCTION
             || secrets.LAB_ID_STAGING }}
