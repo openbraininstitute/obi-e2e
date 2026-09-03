@@ -3,6 +3,20 @@ import { describe, expect, test } from 'bun:test';
 import { buildSummary } from './summarize-results';
 import { buildCard } from './teams-card';
 
+type Node = Record<string, unknown> & { type?: string };
+
+/** Every object in the card tree that matches. */
+function collect(root: unknown, predicate: (node: Node) => boolean): Node[] {
+  const found: Node[] = [];
+  const visit = (node: unknown): void => {
+    if (!node || typeof node !== 'object') return;
+    if (!Array.isArray(node) && predicate(node as Node)) found.push(node as Node);
+    for (const value of Object.values(node)) visit(value);
+  };
+  visit(root);
+  return found;
+}
+
 function walk(node: unknown, found: string[]): void {
   if (!node || typeof node !== 'object') return;
   const record = node as {
@@ -58,17 +72,22 @@ describe('buildCard', () => {
 
     expect(found).toContain('schema:1.5');
     expect(found).toContain('width:Full');
-    expect(found.filter((item) => item === 'Table')).toHaveLength(2);
+    // Endpoints, the feature header, then a parent and a hidden child table
+    // for each section.
+    expect(found.filter((item) => item === 'Table')).toHaveLength(4);
     expect(found).toContain('Endpoints');
     expect(found).toContain('Features');
     expect(found).toContain('Entity core');
     expect(found).toContain('1.2.3');
     expect(found).toContain('● Healthy');
     expect(found).toContain('● Skipped');
-    expect(found).toContain('Home page');
     expect(found).toContain('● Passed');
     expect(found).toContain('100%');
     expect(found).toContain('E2E passed');
+    expect(found).toContain('▸ site');
+    expect(found).toContain('▾ site');
+    expect(found).toContain('↳ Home page');
+    expect(found).toContain('1 feature');
     // A skipped endpoint has to say why, or the reader cannot act on it.
     expect(found).toContain('reachable only inside the VPC');
   });
@@ -107,5 +126,54 @@ describe('buildCard', () => {
     // The message is the part a reader acts on, so it belongs on the card.
     expect(found).toContain('timeout');
     expect(found).not.toContain('Table');
+  });
+
+  test('each section toggles its own hidden table', () => {
+    const summary = buildSummary(
+      {
+        suites: [
+          {
+            title: 'Data page',
+            specs: [
+              {
+                title: 'shows types',
+                file: 'scenarios/data/overview/overview.spec.ts',
+                tests: [{ status: 'expected', results: [{ status: 'passed', duration: 1_000 }] }],
+              },
+            ],
+          },
+          {
+            title: 'Home page',
+            specs: [
+              {
+                title: 'shows the landing page',
+                file: 'scenarios/site/home/home.spec.ts',
+                tests: [{ status: 'expected', results: [{ status: 'passed', duration: 2_000 }] }],
+              },
+            ],
+          },
+        ],
+        stats: { expected: 2, unexpected: 0, flaky: 0, skipped: 0, duration: 3_000 },
+      },
+      [],
+      {}
+    );
+
+    const card = buildCard(summary);
+    const toggles = collect(card, (node) => node.type === 'Action.ToggleVisibility');
+    const hidden = collect(
+      card,
+      (node) => node.type === 'Table' && node.isVisible === false && typeof node.id === 'string'
+    );
+
+    // One toggle per cell of each section row, over two sections.
+    expect(new Set(toggles.map((t) => JSON.stringify(t.targetElements))).size).toBe(2);
+    expect(hidden.map((t) => t.id)).toEqual(['features-0', 'features-1']);
+
+    // Every toggle names an id that exists on a hidden table.
+    for (const toggle of toggles) {
+      const [rowsId] = toggle.targetElements as string[];
+      expect(hidden.some((table) => table.id === rowsId)).toBe(true);
+    }
   });
 });

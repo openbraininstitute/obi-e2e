@@ -55,7 +55,8 @@ request comment and the Teams card:
 
 - **Endpoints** — each backend service with its version and health, and the
   reason when one is down or skipped.
-- **Features** — each scenario folder with its status, pass rate and duration.
+- **Features** — one row per product section, which expands to the scenarios
+  under it, each with its status, pass rate and duration.
 
 `bun run summarize` rebuilds them from `test-results/results.json`.
 `bun run notify` does that and posts the Teams card.

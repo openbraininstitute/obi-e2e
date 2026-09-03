@@ -84,39 +84,9 @@ describe('collectFeatures', () => {
 
 describe('feature helpers', () => {
   test('status and pass rate follow failed then flaky then skipped', () => {
-    expect(
-      featureStatus({
-        name: 'a',
-        section: 'data',
-        passed: 1,
-        failed: 1,
-        flaky: 0,
-        skipped: 0,
-        durationMs: 0,
-      })
-    ).toBe('failed');
-    expect(
-      featureStatus({
-        name: 'a',
-        section: 'data',
-        passed: 1,
-        failed: 0,
-        flaky: 1,
-        skipped: 0,
-        durationMs: 0,
-      })
-    ).toBe('flaky');
-    expect(
-      featureStatus({
-        name: 'a',
-        section: 'data',
-        passed: 0,
-        failed: 0,
-        flaky: 0,
-        skipped: 2,
-        durationMs: 0,
-      })
-    ).toBe('skipped');
+    expect(featureStatus({ passed: 1, failed: 1, flaky: 0, skipped: 0 })).toBe('failed');
+    expect(featureStatus({ passed: 1, failed: 0, flaky: 1, skipped: 0 })).toBe('flaky');
+    expect(featureStatus({ passed: 0, failed: 0, flaky: 0, skipped: 2 })).toBe('skipped');
     expect(passRate({ passed: 4, failed: 1, flaky: 0 })).toBe('80%');
     expect(passRate({ passed: 0, failed: 0, flaky: 0 })).toBe('—');
     // The same helper serves the whole run, not just one feature.

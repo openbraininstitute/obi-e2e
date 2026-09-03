@@ -33,6 +33,17 @@ export type Feature = {
   durationMs: number;
 };
 
+/** A product section with the features under it. */
+export type Section = {
+  name: string;
+  passed: number;
+  failed: number;
+  flaky: number;
+  skipped: number;
+  durationMs: number;
+  features: Feature[];
+};
+
 export type Summary = {
   passed: number;
   failed: number;
@@ -85,10 +96,13 @@ export function detectTrigger(eventName = process.env.GITHUB_EVENT_NAME): string
   }
 }
 
-export function featureStatus(feature: Feature): 'passed' | 'failed' | 'flaky' | 'skipped' {
-  if (feature.failed > 0) return 'failed';
-  if (feature.flaky > 0) return 'flaky';
-  if (feature.passed === 0 && feature.skipped > 0) return 'skipped';
+type Counts = { passed: number; failed: number; flaky: number; skipped: number };
+
+/** Worst outcome wins, so a section shows red when any feature under it is red. */
+export function featureStatus(counts: Counts): 'passed' | 'failed' | 'flaky' | 'skipped' {
+  if (counts.failed > 0) return 'failed';
+  if (counts.flaky > 0) return 'flaky';
+  if (counts.passed === 0 && counts.skipped > 0) return 'skipped';
   return 'passed';
 }
 
@@ -100,6 +114,33 @@ export function passRate(counts: { passed: number; failed: number; flaky: number
   const total = counts.passed + counts.failed + counts.flaky;
   if (total === 0) return '—';
   return `${Math.round((counts.passed / total) * 100)}%`;
+}
+
+/** Rolls features up into their section, keeping the features underneath. */
+export function collectSections(features: Feature[]): Section[] {
+  const sections = new Map<string, Section>();
+
+  for (const feature of features) {
+    const section = sections.get(feature.section) ?? {
+      name: feature.section,
+      passed: 0,
+      failed: 0,
+      flaky: 0,
+      skipped: 0,
+      durationMs: 0,
+      features: [],
+    };
+
+    section.passed += feature.passed;
+    section.failed += feature.failed;
+    section.flaky += feature.flaky;
+    section.skipped += feature.skipped;
+    section.durationMs += feature.durationMs;
+    section.features.push(feature);
+    sections.set(feature.section, section);
+  }
+
+  return [...sections.values()].toSorted((left, right) => left.name.localeCompare(right.name));
 }
 
 export function collectFailures(suites: Suite[] = [], parents: string[] = []): Failure[] {
@@ -260,17 +301,25 @@ export function renderMarkdown(summary: Summary): string {
   }
 
   if (summary.features.length > 0) {
-    lines.push(
-      '',
-      `### Features`,
-      '',
-      `| Feature | Section | Status | Pass rate | Duration |`,
-      `| --- | --- | --- | --- | --- |`
-    );
-    for (const feature of summary.features) {
+    lines.push('', `### Features`);
+
+    // `<details>` collapses in the job summary and the pull request comment,
+    // which is the closest markdown gets to the expandable card rows.
+    for (const section of collectSections(summary.features)) {
       lines.push(
-        `| ${feature.name} | ${feature.section} | ${featureStatus(feature)} | ${passRate(feature)} | ${formatDuration(feature.durationMs)} |`
+        '',
+        '<details>',
+        `<summary><b>${section.name}</b> — ${featureStatus(section)} · ${passRate(section)} · ${formatDuration(section.durationMs)}</summary>`,
+        '',
+        `| Feature | Status | Pass rate | Duration |`,
+        `| --- | --- | --- | --- |`
       );
+      for (const feature of section.features) {
+        lines.push(
+          `| ${feature.name} | ${featureStatus(feature)} | ${passRate(feature)} | ${formatDuration(feature.durationMs)} |`
+        );
+      }
+      lines.push('', '</details>');
     }
   }
 
