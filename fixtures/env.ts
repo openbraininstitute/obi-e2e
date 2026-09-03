@@ -4,6 +4,15 @@ export const isCI = Boolean(process.env.CI);
 
 export const baseURL = process.env.E2E_BASE_URL ?? 'https://staging.openbraininstitute.org';
 
+/** The virtual lab manager sits on a different host from the application. */
+export function virtualLabApiUrl(): string {
+  const url = process.env.VIRTUAL_LAB_API_URL;
+  if (!url) {
+    throw new Error('VIRTUAL_LAB_API_URL is not set. See .env.example for the staging value.');
+  }
+  return url.replace(/\/$/, '');
+}
+
 export const RUN_ID = process.env.E2E_RUN_ID ?? `${Date.now()}-${process.pid}`;
 
 // Worker processes re-evaluate this module and would otherwise each generate a
