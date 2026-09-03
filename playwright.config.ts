@@ -7,7 +7,6 @@ import { authStatePath, baseURL, isCI, resolveBrowser, resolveWorkers } from './
 const ASSERTION_TIMEOUT = 30_000;
 
 export default defineConfig({
-  testDir: '.',
   testIgnore: ['node_modules/**', 'test-results/**', 'playwright-report/**'],
   timeout: isCI ? 120_000 : 90_000,
   expect: { timeout: ASSERTION_TIMEOUT },
@@ -46,20 +45,25 @@ export default defineConfig({
       testDir: './setup',
       testMatch: /.*\.setup\.ts/,
     },
+    // Every project reads the same scenario folders and selects its tests by
+    // tag, so one scenario can run signed out and signed in without duplication.
     {
       name: 'public',
-      testDir: './tests/public',
+      testDir: './scenarios',
+      grep: /@public/,
     },
     {
       name: 'private',
-      testDir: './tests/private',
+      testDir: './scenarios',
+      grep: /@private/,
       dependencies: ['setup'],
       use: { storageState: authStatePath('primary') },
     },
     {
       // Lab and project creation, run as a user that owns nothing.
       name: 'onboarding',
-      testDir: './tests/onboarding',
+      testDir: './scenarios',
+      grep: /@onboarding/,
       dependencies: ['setup'],
       use: { storageState: authStatePath('onboarding') },
     },

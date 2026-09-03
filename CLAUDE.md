@@ -18,10 +18,12 @@ bun run test    # or a single spec while iterating
 - Import `test` and `expect` from `fixtures/test.ts`, never from `@playwright/test`.
 - Locators: `getByRole`, `getByLabel`, `getByText`. Never CSS classes.
   `first()` / `nth()` need a comment explaining why.
-- Locators live in a page object under `pages/`. Assertions live in the spec.
+- Locators live in the scenario's own `locators.ts`. Move one to the root
+  `locators/` folder only once a second scenario needs it.
+- Assertions live in the spec, never in a locator module.
 - No `waitForTimeout`. Web-first assertions already retry.
 - Every test is independent and leaves no data behind outside the QA lab.
-- `tests/public/` needs no login. `tests/private/` reuses the saved auth state.
+- A test declares its context with a tag: `@public`, `@private` or `@onboarding`.
 
 ## Generating and healing tests
 

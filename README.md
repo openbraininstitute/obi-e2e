@@ -33,16 +33,18 @@ bun run check            # format check + lint + typecheck
 
 ## Layout
 
-| Path          | What lives there                                                      |
-| ------------- | --------------------------------------------------------------------- |
-| `specs/`      | English scenarios, one file per feature                               |
-| `tests/`      | Playwright tests: `public/` needs no login, `private/` runs signed in |
-| `pages/`      | Page objects — locators and actions, no assertions                    |
-| `fixtures/`   | Environment config and the extended `test` object                     |
-| `setup/`      | One-time sign-in that saves storage state                             |
-| `api/`        | HTTP helpers for arranging test data                                  |
-| `prompts/`    | What the AI does for `/e2e-generate` and `/e2e-heal`                  |
-| `scripts/ci/` | Result summary and Teams card                                         |
+| Path          | What lives there                                                                     |
+| ------------- | ------------------------------------------------------------------------------------ |
+| `scenarios/`  | one folder per scenario: the English scenario, its locators, its test, its artifacts |
+| `locators/`   | locators shared by more than one scenario                                            |
+| `fixtures/`   | environment config, sign-in, and the extended `test` object                          |
+| `setup/`      | one sign-in per user, saved for every later test                                     |
+| `api/`        | HTTP helpers for arranging test data                                                 |
+| `prompts/`    | what the AI does for `/e2e-generate` and `/e2e-heal`                                 |
+| `scripts/ci/` | result summary and Teams card                                                        |
+
+Tests select their context by tag rather than by folder, so one scenario can run
+signed out and signed in. See `scenarios/README.md`.
 
 ## Writing a test
 
