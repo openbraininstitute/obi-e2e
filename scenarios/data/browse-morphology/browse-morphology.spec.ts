@@ -1,7 +1,7 @@
 import { routes } from '../../../fixtures/routes';
 import { expect, test } from '../../../fixtures/test';
 import { dataPage } from '../../../locators/data';
-import { morphologyListing } from './locators';
+import { entityListing } from '../../../locators/listing';
 
 // Scenario: scenarios/data-browse-morphology/scenario.md
 test.describe('Browse morphologies', () => {
@@ -10,7 +10,7 @@ test.describe('Browse morphologies', () => {
     { tag: ['@private', '@readonly'] },
     async ({ page, workspace }) => {
       const data = dataPage(page);
-      const listing = morphologyListing(page);
+      const listing = entityListing(page);
 
       await page.goto(routes.data(workspace.labId, workspace.projectId));
 
@@ -38,7 +38,7 @@ test.describe('Browse morphologies', () => {
     'offers filters and column choices',
     { tag: ['@private', '@readonly'] },
     async ({ page, workspace }) => {
-      const listing = morphologyListing(page);
+      const listing = entityListing(page);
 
       await page.goto(routes.dataEntity(workspace.labId, workspace.projectId, 'cell-morphology'));
 
