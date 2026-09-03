@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
 import { type Summary, buildSummary } from './summarize-results';
-import { buildCard, buildCardWithinLimit, TEAMS_PAYLOAD_LIMIT } from './teams-card';
+import { buildCard, buildCardWithinLimit, buildPosts, TEAMS_PAYLOAD_LIMIT } from './teams-card';
 
 type Node = Record<string, unknown> & { type?: string };
 
@@ -72,10 +72,10 @@ describe('buildCard', () => {
 
     expect(found).toContain('schema:1.5');
     expect(found).toContain('width:Full');
-    // Endpoints, the feature header, then a parent and a hidden child table
+    // Services, the feature header, then a parent and a hidden child table
     // for each section.
     expect(found.filter((item) => item === 'Table')).toHaveLength(4);
-    expect(found).toContain('Endpoints');
+    expect(found).toContain('Services');
     expect(found).toContain('Features');
     expect(found).toContain('Entity core');
     expect(found).toContain('1.2.3');
@@ -115,7 +115,7 @@ describe('buildCard', () => {
         },
       ],
       totalFailures: 1,
-      endpoints: [],
+      services: [],
       features: [],
     });
 
@@ -208,7 +208,7 @@ function summaryWith(sectionCount: number, featuresPerSection: number): Summary 
     trigger: 'Scheduled',
     failures: [],
     totalFailures: 0,
-    endpoints: [],
+    services: [{ key: 'entitycore', label: 'Entity core', version: '1.2.3', status: 'healthy' }],
     features,
   };
 }
@@ -230,5 +230,49 @@ describe('buildCardWithinLimit', () => {
     const { detail, bytes } = buildCardWithinLimit(big);
     expect(detail).not.toBe('full');
     expect(bytes).toBeLessThanOrEqual(TEAMS_PAYLOAD_LIMIT);
+  });
+});
+
+describe('buildPosts', () => {
+  test('leads with the summary and services, then one post per section', () => {
+    const posts = buildPosts(summaryWith(3, 2));
+
+    expect(posts.map((post) => post.label)).toEqual([
+      'summary',
+      'section-0',
+      'section-1',
+      'section-2',
+    ]);
+
+    // The summary post carries the services, not the features.
+    const first: string[] = [];
+    walk(posts[0]?.message, first);
+    expect(first).toContain('Services');
+    expect(first).not.toContain('Feature');
+  });
+
+  test('splits one section across numbered posts when it is too big', () => {
+    const posts = buildPosts(summaryWith(1, 120));
+    const labels = posts.map((post) => post.label);
+
+    expect(labels[0]).toBe('summary');
+    expect(labels.length).toBeGreaterThan(2);
+    expect(labels[1]).toMatch(/^section-0 \(1\/\d+\)$/);
+
+    for (const post of posts) {
+      expect(post.bytes).toBeLessThanOrEqual(TEAMS_PAYLOAD_LIMIT);
+    }
+  });
+
+  test('every feature appears exactly once across the posts', () => {
+    const summary = summaryWith(1, 120);
+    const posts = buildPosts(summary);
+
+    const rendered: string[] = [];
+    for (const post of posts) walk(post.message, rendered);
+
+    for (const feature of summary.features) {
+      expect(rendered.filter((item) => item === feature.name)).toHaveLength(1);
+    }
   });
 });

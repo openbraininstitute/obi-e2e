@@ -61,6 +61,29 @@ request comment and the Teams card:
 `bun run summarize` rebuilds them from `test-results/results.json`.
 `bun run notify` does that and posts the Teams card.
 
+### Posting one message or several
+
+`TEAMS_LAYOUT=split` posts the summary and services first, then one message per
+section, splitting a section across numbered messages when its table would
+exceed the payload limit.
+
+These arrive as separate channel messages, not as replies in a thread. The
+webhook answers `202 Accepted` with an empty body and no message id, so nothing
+on our side can address the message it just created. Real threading needs the
+message id, which only the Power Automate flow behind the webhook can see:
+
+1. Have the flow post the first card and keep the `messageId` it returns.
+2. Have it loop the remaining cards through **Reply with a message in a channel**.
+
+That moves the threading into the flow and is a change on the Teams side, not
+here. The alternative is Microsoft Graph
+(`POST /teams/{id}/channels/{id}/messages/{id}/replies`), which threads properly
+but needs an app registration and the `ChannelMessage.Send` permission.
+
+Ordering is not guaranteed either, since the webhook returns before the message
+exists. Posts are sent one at a time with a short gap, and split messages are
+numbered, so the sequence stays readable even if it arrives out of order.
+
 ## Before the tests run
 
 Every run first checks that the backend services are healthy and reports their

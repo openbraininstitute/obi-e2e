@@ -19,7 +19,7 @@ setup('backend services are healthy', async () => {
     ].join('\n')
   );
 
-  const endpoints = [
+  const rows = [
     ...statuses.map((status) => ({
       key: status.service.key,
       label: status.service.label,
@@ -37,7 +37,7 @@ setup('backend services are healthy', async () => {
 
   // Written before the assertion so a down service still reaches the Teams
   // card. Bun.write creates test-results on the way.
-  await Bun.write('test-results/services.json', `${JSON.stringify({ endpoints }, null, 2)}\n`);
+  await Bun.write('test-results/services.json', `${JSON.stringify({ services: rows }, null, 2)}\n`);
 
   expect(
     unhealthy,

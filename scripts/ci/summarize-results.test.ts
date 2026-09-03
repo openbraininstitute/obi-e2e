@@ -104,7 +104,7 @@ describe('feature helpers', () => {
 });
 
 describe('buildSummary', () => {
-  test('includes endpoints, features and trigger from the environment', () => {
+  test('includes services, features and trigger from the environment', () => {
     const summary = buildSummary(
       { suites, stats: { expected: 2, unexpected: 1, flaky: 0, skipped: 0, duration: 24_000 } },
       [{ key: 'entitycore', label: 'Entity core', version: '1.2.3', status: 'healthy' }],
@@ -118,7 +118,7 @@ describe('buildSummary', () => {
     );
 
     expect(summary.trigger).toBe('Scheduled');
-    expect(summary.endpoints).toHaveLength(1);
+    expect(summary.services).toHaveLength(1);
     expect(summary.features).toHaveLength(2);
     expect(summary.failed).toBe(1);
     expect(summary.commit).toBe('abcdef123456');

@@ -15,7 +15,7 @@ type Report = { suites?: Suite[]; stats?: Record<string, number> };
 
 export type Failure = { title: string; file: string; line: number; project: string; error: string };
 
-export type Endpoint = {
+export type ServiceSummary = {
   key: string;
   label: string;
   version?: string;
@@ -58,7 +58,7 @@ export type Summary = {
   trigger: string;
   failures: Failure[];
   totalFailures: number;
-  endpoints: Endpoint[];
+  services: ServiceSummary[];
   features: Feature[];
 };
 
@@ -248,7 +248,7 @@ export function collectFeatures(suites: Suite[] = [], parents: string[] = []): F
 
 export function buildSummary(
   report: Report,
-  endpoints: Endpoint[] = [],
+  services: ServiceSummary[] = [],
   env: NodeJS.ProcessEnv = process.env
 ): Summary {
   const failures = collectFailures(report.suites);
@@ -271,7 +271,7 @@ export function buildSummary(
     trigger: detectTrigger(env.GITHUB_EVENT_NAME),
     failures: failures.slice(0, 5),
     totalFailures: failures.length,
-    endpoints,
+    services,
     features: collectFeatures(report.suites),
   };
 }
@@ -285,15 +285,15 @@ export function renderMarkdown(summary: Summary): string {
     `| ${summary.passed} | ${summary.failed} | ${summary.flaky} | ${summary.skipped} | ${passRate(summary)} | ${formatDuration(summary.durationMs)} |`,
   ];
 
-  if (summary.endpoints.length > 0) {
+  if (summary.services.length > 0) {
     lines.push(
       '',
-      `### Endpoints`,
+      `### Services`,
       '',
-      `| Endpoint | Version | Status | Note |`,
+      `| Service | Version | Status | Note |`,
       `| --- | --- | --- | --- |`
     );
-    for (const endpoint of summary.endpoints) {
+    for (const endpoint of summary.services) {
       lines.push(
         `| ${endpoint.label} | ${endpoint.version ?? '—'} | ${endpoint.status} | ${endpoint.problem ?? ''} |`
       );
@@ -339,11 +339,11 @@ export function renderMarkdown(summary: Summary): string {
   return lines.join('\n');
 }
 
-export async function loadEndpoints(outDir: string): Promise<Endpoint[]> {
+export async function loadServices(outDir: string): Promise<ServiceSummary[]> {
   const file = Bun.file(`${outDir}/services.json`);
   if (!(await file.exists())) return [];
-  const parsed = (await file.json()) as { endpoints?: Endpoint[] };
-  return parsed.endpoints ?? [];
+  const parsed = (await file.json()) as { services?: ServiceSummary[] };
+  return parsed.services ?? [];
 }
 
 async function main(): Promise<void> {
@@ -355,7 +355,7 @@ async function main(): Promise<void> {
 
   const summary = buildSummary(
     (await Bun.file(inputPath).json()) as Report,
-    await loadEndpoints(outDir)
+    await loadServices(outDir)
   );
   const markdown = renderMarkdown(summary);
 
