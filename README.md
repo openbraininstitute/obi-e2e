@@ -34,15 +34,15 @@ bun run check            # format check + lint + typecheck
 
 ## Layout
 
-| Path          | What lives there                                                                     |
-| ------------- | ------------------------------------------------------------------------------------ |
-| `scenarios/`  | one folder per scenario: the English scenario, its locators, its test, its artifacts |
-| `locators/`   | locators shared by more than one scenario                                            |
-| `fixtures/`   | environment config, sign-in, and the extended `test` object                          |
-| `setup/`      | one sign-in per user, saved for every later test                                     |
-| `api/`        | HTTP helpers for arranging test data                                                 |
-| `prompts/`    | what the AI does for `/e2e-generate` and `/e2e-heal`                                 |
-| `scripts/ci/` | result summary and Teams card                                                        |
+| Path          | What lives there                                                                                     |
+| ------------- | ---------------------------------------------------------------------------------------------------- |
+| `scenarios/`  | grouped by product section, then one folder per scenario with its text, locators, test and artifacts |
+| `locators/`   | locators shared by more than one scenario                                                            |
+| `fixtures/`   | environment config, sign-in, and the extended `test` object                                          |
+| `setup/`      | one sign-in per user, saved for every later test                                                     |
+| `api/`        | HTTP helpers for arranging test data                                                                 |
+| `prompts/`    | what the AI does for `/e2e-generate` and `/e2e-heal`                                                 |
+| `scripts/ci/` | result summary and Teams card                                                                        |
 
 Tests select their context by tag rather than by folder, so one scenario can run
 signed out and signed in. See `scenarios/README.md`, and `docs/scenario-tags.md`

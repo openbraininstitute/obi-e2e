@@ -1,6 +1,6 @@
-import { routes } from '../../fixtures/routes';
-import { expect, test } from '../../fixtures/test';
-import { dataPage } from '../../locators/data';
+import { routes } from '../../../fixtures/routes';
+import { expect, test } from '../../../fixtures/test';
+import { dataPage } from '../../../locators/data';
 import { morphologyListing } from './locators';
 
 // Scenario: scenarios/data-browse-morphology/scenario.md

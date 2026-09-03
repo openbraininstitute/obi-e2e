@@ -1,6 +1,6 @@
-import { routes } from '../../fixtures/routes';
-import { expect, test } from '../../fixtures/test';
-import { dataPage } from '../../locators/data';
+import { routes } from '../../../fixtures/routes';
+import { expect, test } from '../../../fixtures/test';
+import { dataPage } from '../../../locators/data';
 
 // Scenario: scenarios/data-page/scenario.md
 test.describe('Data page', () => {

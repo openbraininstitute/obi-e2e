@@ -1,5 +1,5 @@
-import { expect, test } from '../../fixtures/test';
-import { navigation } from '../../locators/navigation';
+import { expect, test } from '../../../fixtures/test';
+import { navigation } from '../../../locators/navigation';
 import { homeLocators } from './locators';
 
 test.describe('Home page', () => {

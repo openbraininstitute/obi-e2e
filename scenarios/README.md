@@ -1,15 +1,27 @@
 # Scenarios
 
-One folder per scenario. Everything a scenario needs lives inside it.
+Scenarios are grouped by the section of the product they cover. Inside a
+section, one folder per scenario holds everything that scenario needs.
 
 ```text
 scenarios/
-  workflow-build-memodel/
-    scenario.md          # the English scenario
-    locators.ts          # locators only this scenario uses
-    workflow.spec.ts     # the test
-    config/scan.json     # artifacts the test feeds to the app
+  data/                      the Data section
+    overview/
+      scenario.md            the English scenario
+      locators.ts            locators only this scenario uses
+      overview.spec.ts       the test
+    browse-morphology/
+      scenario.md
+      locators.ts
+      browse-morphology.spec.ts
+      config/scan.json       artifacts the test feeds to the app
+  site/                      public pages, outside a lab
+    home/
 ```
+
+Sections follow the product: `data`, `workflows`, `notebooks`, `reports`,
+`workspace` for the lab and project shell, and `site` for the public pages a
+visitor sees. A section folder appears when its first scenario does.
 
 A locator moves to the shared `locators/` folder at the root once a second
 scenario needs it. Not before.
