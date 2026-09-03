@@ -1,0 +1,179 @@
+name: E2E
+
+on:
+  schedule:
+    # 07:00 UTC daily — staging (full suite) and production (@smoke only).
+    - cron: '0 7 * * *'
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        type: choice
+        options: [staging, production]
+        default: staging
+      grep:
+        description: Only run tests matching this tag or title (e.g. @smoke)
+        type: string
+        default: ''
+  repository_dispatch:
+    # Sent by core-web-app when the `e2e` label is added to a PR.
+    types: [e2e-preview]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.action }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  matrix:
+    # Builds the list of runs for this trigger, so the run job stays a single definition.
+    runs-on: ubuntu-latest
+    outputs:
+      runs: ${{ steps.plan.outputs.runs }}
+    steps:
+      - id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_ENV: ${{ inputs.environment }}
+          INPUT_GREP: ${{ inputs.grep }}
+          PREVIEW_URL: ${{ github.event.client_payload.preview_url }}
+        run: |
+          # jq builds the JSON so values containing spaces or quotes stay intact.
+          case "$EVENT" in
+            schedule)
+              runs=$(jq -cn '[{name:"staging",environment:"staging",grep:""},
+                              {name:"production-smoke",environment:"production",grep:"@smoke"}]') ;;
+            repository_dispatch)
+              runs=$(jq -cn --arg url "$PREVIEW_URL" \
+                '[{name:"pr-preview",environment:"preview",grep:"",base_url:$url}]') ;;
+            workflow_dispatch)
+              runs=$(jq -cn --arg env "$INPUT_ENV" --arg grep "$INPUT_GREP" \
+                '[{name:$env,environment:$env,grep:$grep}]') ;;
+            *)
+              runs=$(jq -cn '[{name:"staging",environment:"staging",grep:""}]') ;;
+          esac
+          echo "runs=$runs" >> "$GITHUB_OUTPUT"
+
+  run:
+    needs: matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        run: ${{ fromJSON(needs.matrix.outputs.runs) }}
+    name: ${{ matrix.run.name }}
+    env:
+      CI: 'true'
+      E2E_ENVIRONMENT: ${{ matrix.run.environment }}
+      E2E_BASE_URL: >-
+        ${{ matrix.run.base_url
+            || (matrix.run.environment == 'production' && vars.E2E_BASE_URL_PRODUCTION)
+            || vars.E2E_BASE_URL_STAGING }}
+      E2E_TEST_USERNAME: ${{ secrets.OBI_USERNAME }}
+      E2E_TEST_PASSWORD: ${{ secrets.OBI_PASSWORD }}
+      LAB_ID: >-
+        ${{ matrix.run.environment == 'production' && secrets.LAB_ID_PRODUCTION
+            || secrets.LAB_ID_STAGING }}
+      PROJECT_ID: >-
+        ${{ matrix.run.environment == 'production' && secrets.PROJECT_ID_PRODUCTION
+            || secrets.PROJECT_ID_STAGING }}
+      PLAYWRIGHT_BROWSER: chromium
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+
+      - run: bun install --frozen-lockfile
+
+      - name: Cache Playwright browsers
+        id: browser-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+
+      - name: Install browsers
+        run: bunx playwright install --with-deps chromium
+
+      - name: Check required configuration
+        run: |
+          missing=()
+          [[ -n "$E2E_BASE_URL" ]] || missing+=(E2E_BASE_URL)
+          [[ -n "$E2E_TEST_USERNAME" ]] || missing+=(E2E_TEST_USERNAME)
+          [[ -n "$E2E_TEST_PASSWORD" ]] || missing+=(E2E_TEST_PASSWORD)
+          [[ -n "$LAB_ID" ]] || missing+=(LAB_ID)
+          [[ -n "$PROJECT_ID" ]] || missing+=(PROJECT_ID)
+          if (( ${#missing[@]} )); then
+            echo "Missing configuration: ${missing[*]}" >&2
+            exit 1
+          fi
+
+      - name: Run tests
+        id: tests
+        env:
+          # Passed as an environment variable so a filter containing spaces is not
+          # re-split by the shell.
+          E2E_GREP: ${{ matrix.run.grep }}
+        run: |
+          if [[ -n "$E2E_GREP" ]]; then
+            bunx playwright test --grep "$E2E_GREP"
+          else
+            bunx playwright test
+          fi
+
+      - name: Summarize results
+        if: always()
+        run: bun scripts/ci/summarize-results.ts test-results/results.json test-results
+
+      - name: Job summary
+        if: always()
+        run: cat test-results/summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-${{ matrix.run.name }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+
+      - name: Post Teams card
+        if: always() && github.event_name != 'pull_request'
+        env:
+          TEAMS_WEBHOOK_URL: ${{ secrets.MS_TEAMS_NEW_WEBHOOK_URI }}
+        run: bun scripts/ci/teams-card.ts test-results/summary.json
+
+  report-to-pr:
+    # Writes the result back onto the core-web-app PR that asked for this run.
+    needs: run
+    if: always() && github.event_name == 'repository_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          name: playwright-report-pr-preview
+          path: artifact
+
+      - name: Comment on the source pull request
+        env:
+          GH_TOKEN: ${{ secrets.CORE_WEB_APP_PR_TOKEN }}
+          REPO: ${{ github.event.client_payload.repository }}
+          PR: ${{ github.event.client_payload.pr_number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          {
+            cat artifact/test-results/summary.md
+            printf '\n[Full report and traces](%s)\n' "$RUN_URL"
+          } > comment.md
+          gh pr comment "$PR" --repo "$REPO" --body-file comment.md

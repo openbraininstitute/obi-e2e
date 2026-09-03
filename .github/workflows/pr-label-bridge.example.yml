@@ -1,0 +1,39 @@
+# Reference only. This file belongs in `core-web-app`, not here.
+# It asks obi-e2e to test a pull request preview when the `e2e` label is added.
+name: Request E2E run
+
+on:
+  pull_request:
+    types: [labeled]
+
+jobs:
+  dispatch:
+    if: github.event.label.name == 'e2e'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for the Amplify preview to be ready
+        id: preview
+        env:
+          PR: ${{ github.event.number }}
+        run: |
+          # Replace with the real preview URL pattern / readiness check.
+          url="https://pr-${PR}.<amplify-app-id>.amplifyapp.com"
+          for _ in $(seq 1 60); do
+            if curl -sSfo /dev/null "$url"; then
+              echo "url=$url" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "Preview never became reachable: $url" >&2
+          exit 1
+
+      - name: Dispatch to obi-e2e
+        env:
+          GH_TOKEN: ${{ secrets.OBI_E2E_DISPATCH_TOKEN }}
+        run: |
+          gh api repos/<org>/obi-e2e/dispatches \
+            --field event_type=e2e-preview \
+            --field 'client_payload[preview_url]=${{ steps.preview.outputs.url }}' \
+            --field 'client_payload[pr_number]=${{ github.event.number }}' \
+            --field 'client_payload[repository]=${{ github.repository }}'
