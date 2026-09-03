@@ -4,4 +4,7 @@ export const routes = {
 
   dataEntity: (labId: string, projectId: string, slug: string) =>
     `/app/virtual-lab/${labId}/${projectId}/data/browse/entity/${slug}`,
+
+  workflows: (labId: string, projectId: string) =>
+    `/app/virtual-lab/${labId}/${projectId}/workflows`,
 };

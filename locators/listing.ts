@@ -10,7 +10,7 @@ export function entityListing(page: Page) {
   return {
     table,
     toolbar: page.getByTestId('data-grid-toolbar'),
-    search: page.getByPlaceholder(/Search for entities/i),
+    search: page.getByTestId('data-grid-search'),
     filters: page.getByRole('button', { name: 'Filters' }),
     columns: page.getByRole('button', { name: 'Columns' }),
     advancedFilters: page.getByTestId('advanced-filters-pane'),
