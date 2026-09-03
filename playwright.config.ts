@@ -41,9 +41,16 @@ export default defineConfig({
 
   projects: [
     {
+      // Runs first. A down service fails here, not as a wall of broken tests.
+      name: 'health',
+      testDir: './setup',
+      testMatch: /health\.setup\.ts/,
+    },
+    {
       name: 'setup',
       testDir: './setup',
-      testMatch: /.*\.setup\.ts/,
+      testMatch: /auth\.setup\.ts/,
+      dependencies: ['health'],
     },
     // Every project reads the same scenario folders and selects its tests by
     // tag, so one scenario can run signed out and signed in without duplication.
@@ -51,6 +58,7 @@ export default defineConfig({
       name: 'public',
       testDir: './scenarios',
       grep: /@public/,
+      dependencies: ['health'],
     },
     {
       name: 'private',

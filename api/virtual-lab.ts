@@ -1,4 +1,8 @@
+import { Result } from 'better-result';
+
 import { virtualLabApiUrl } from '../fixtures/env';
+import { describe, type RequestError } from './errors';
+import { requestJson } from './http';
 
 export type Lab = { id: string; name: string; created_at?: string };
 export type Project = { id: string; name: string; created_at?: string };
@@ -6,42 +10,38 @@ export type Project = { id: string; name: string; created_at?: string };
 /** A virtual lab may hold at most this many projects. */
 export const PROJECT_LIMIT = 40;
 
-type Json = Record<string, unknown>;
-
 export class VirtualLabApi {
   constructor(
     private readonly token: string,
     private readonly baseUrl = virtualLabApiUrl()
   ) {}
 
-  private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${path}`, {
+  private async call<T>(path: string, init: RequestInit = {}): Promise<T> {
+    const result = await requestJson<T>(`${this.baseUrl}${path}`, {
       ...init,
-      headers: {
-        Authorization: `Bearer ${this.token}`,
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        ...init.headers,
-      },
+      headers: { Authorization: `Bearer ${this.token}`, ...init.headers },
     });
 
-    const body = await response.text();
-    if (!response.ok) {
-      throw new Error(`${init.method ?? 'GET'} ${path} failed: ${response.status} ${body}`);
+    if (Result.isError(result)) {
+      // Callers are test setup and teardown, where a failure should stop the
+      // run loudly rather than be handled.
+      throw new Error(`${init.method ?? 'GET'} ${path}: ${describe(result.error as RequestError)}`);
     }
 
-    return (body ? JSON.parse(body) : {}) as T;
+    return result.value;
   }
 
-  /** Unwraps the `{ data: { results: [...] } }` envelope the service returns. */
+  /** Unwraps the `{ data: ... }` envelope the service returns. */
   private async list<T>(path: string): Promise<T[]> {
-    const payload = await this.request<{ data?: Json }>(path);
-    const data = payload.data ?? {};
+    const payload = await this.call<{ data?: unknown }>(path);
+    const data = payload.data;
+    if (Array.isArray(data)) return data as T[];
+
     for (const key of ['results', 'virtual_labs', 'projects']) {
-      const value = (data as Json)[key];
+      const value = (data as Record<string, unknown> | undefined)?.[key];
       if (Array.isArray(value)) return value as T[];
     }
-    return Array.isArray(data) ? (data as T[]) : [];
+    return [];
   }
 
   listLabs(): Promise<Lab[]> {
@@ -53,7 +53,7 @@ export class VirtualLabApi {
   }
 
   async createLab(name: string, description: string): Promise<string> {
-    const payload = await this.request<{ data?: { virtual_lab?: Lab }; id?: string }>(
+    const payload = await this.call<{ data?: { virtual_lab?: Lab }; id?: string }>(
       '/virtual-labs',
       {
         method: 'POST',
@@ -61,33 +61,29 @@ export class VirtualLabApi {
       }
     );
     const id = payload.data?.virtual_lab?.id ?? payload.id;
-    if (!id)
-      throw new Error(`Created a lab but the response carried no id: ${JSON.stringify(payload)}`);
+    if (!id) throw new Error('Created a lab but the response carried no id.');
     return id;
   }
 
   async createProject(labId: string, name: string, description: string): Promise<string> {
-    const payload = await this.request<{ data?: { project?: Project }; id?: string }>(
+    const payload = await this.call<{ data?: { project?: Project }; id?: string }>(
       `/virtual-labs/${encodeURIComponent(labId)}/projects`,
       { method: 'POST', body: JSON.stringify({ name, description, include_members: [] }) }
     );
     const id = payload.data?.project?.id ?? payload.id;
-    if (!id)
-      throw new Error(
-        `Created a project but the response carried no id: ${JSON.stringify(payload)}`
-      );
+    if (!id) throw new Error('Created a project but the response carried no id.');
     return id;
   }
 
   deleteProject(labId: string, projectId: string): Promise<unknown> {
-    return this.request(
+    return this.call(
       `/virtual-labs/${encodeURIComponent(labId)}/projects/${encodeURIComponent(projectId)}`,
       { method: 'DELETE' }
     );
   }
 
   deleteLab(labId: string): Promise<unknown> {
-    return this.request(`/virtual-labs/${encodeURIComponent(labId)}`, { method: 'DELETE' });
+    return this.call(`/virtual-labs/${encodeURIComponent(labId)}`, { method: 'DELETE' });
   }
 
   /**

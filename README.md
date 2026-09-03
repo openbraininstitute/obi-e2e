@@ -48,6 +48,13 @@ Tests select their context by tag rather than by folder, so one scenario can run
 signed out and signed in. See `scenarios/README.md`, and `docs/scenario-tags.md`
 for what each tag means and how to choose one.
 
+## Before the tests run
+
+Every run first checks that the backend services are healthy and reports their
+versions. A service that is down fails there, with its name, instead of showing
+up as a wall of broken tests. The launch system is skipped because it answers
+only inside the VPC. See `api/README.md`.
+
 ## Writing a test
 
 1. Write the scenario in `specs/`. See `specs/README.md` for the format.
