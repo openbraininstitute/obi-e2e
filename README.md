@@ -37,6 +37,7 @@ bun run check            # format check + lint + typecheck
 | Path          | What lives there                                                                                     |
 | ------------- | ---------------------------------------------------------------------------------------------------- |
 | `scenarios/`  | grouped by product section, then one folder per scenario with its text, locators, test and artifacts |
+| `data/`       | fixtures a test feeds to the application, such as the scan configurations under `data/scan-configs/` |
 | `locators/`   | locators shared by more than one scenario                                                            |
 | `fixtures/`   | environment config, sign-in, and the extended `test` object                                          |
 | `setup/`      | one sign-in per user, saved for every later test                                                     |

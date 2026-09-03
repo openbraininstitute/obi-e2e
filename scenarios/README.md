@@ -23,6 +23,25 @@ Sections follow the product: `data`, `workflows`, `notebooks`, `reports`,
 `workspace` for the lab and project shell, and `site` for the public pages a
 visitor sees. A section folder appears when its first scenario does.
 
+A scenario that is driven by a file keeps that file under `data/`, not beside
+the spec, when more than one scenario could use it. The build workflows read
+their configuration from `data/scan-configs/`; see
+[docs/scan-config-testing-plan.md](../docs/scan-config-testing-plan.md).
+
+## Skipping what a deployment does not have
+
+A workflow can be absent from one environment and present in another: it may sit
+behind a feature flag, or postdate the build under test. A test says so and skips
+rather than failing, because a red suite should mean the application is broken.
+
+```ts
+const unavailable = await startWorkflow(page, fixture.activity, fixture.workflow.type);
+test.skip(unavailable !== null, unavailable ?? '');
+```
+
+The reason reaches the report, so a skipped run still says which environment was
+missing what. Never skip to hide a real failure.
+
 A locator moves to the shared `locators/` folder at the root once a second
 scenario needs it. Not before.
 

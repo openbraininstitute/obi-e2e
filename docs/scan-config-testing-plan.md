@@ -1,12 +1,12 @@
-# Plan: testing the scan-configuration editor from fixture files
+# Testing the scan-configuration editor from fixture files
 
-Status: proposed. Owner: E2E. Depends on Phase 1 of the migration.
+Status: build workflows implemented. Simulate, extract and process still to do.
 
 ## What the editor is
 
 The scan-configuration editor is the form behind every
-`/app/virtual-lab/{lab}/{project}/workflows/{activity}/configure/{type}` route,
-for the four activities `simulate`, `build`, `extract` and `process`.
+`/app/virtual-lab/{lab}/{project}/workflows/{activity}/configure/{type}/{session}`
+route, for the four activities `simulate`, `build`, `extract` and `process`.
 
 It is not a hand-written form. At runtime it fetches `${OBI_ONE_URL}/openapi.json`,
 dereferences it in the browser, and renders one of a fixed list of schemas such as
@@ -15,175 +15,235 @@ and every field's control is chosen by a custom OpenAPI extension, `ui_element`.
 There are 23 `ui_element` kinds today and the dispatcher handles 20 of them.
 
 A user submits with a button labelled per activity, for example
-`Generate simulation(s)`. The application then posts the same configuration
-object twice: once to `/declared/scan_config/grid-scan-coordinate-count` to size
-the grid, and once to the generation endpoint, which returns a campaign id.
+`Generate build(s)`. The application then posts the same configuration object
+twice: once to `/declared/scan_config/grid-scan-coordinate-count` to size the
+grid, and once to the generation endpoint, which returns a campaign id.
 
 A _sweep_ is a field that accepts either one number or a list. Every combination
 of swept values is one coordinate in the campaign grid.
 
-## Addressing fields in the editor
+## Reaching the editor
 
-Field labels render as `<label for={propertyKey}>`, but only a handful of controls
-render a matching `id`. For most fields the label points at an element that does
-not exist, so `getByLabel` cannot find the input. Checkboxes are the exception and
-are wired correctly.
+`{type}` is the kebab-case campaign type, and `{session}` is a workflow session
+id (`wf_…`). The session is not a record on any service: it is a key into
+`sessionStorage`, written by the `/new` browse step, holding the entities the
+editor initialises from. A test therefore cannot deep-link to a configured
+editor; it walks the hub, the type card and the browse table, which is what a
+user does anyway.
 
-The attributes the editor already carried identify a field's _kind_, never _which_
-field it is, so two duration inputs in one block were indistinguishable.
+Deep links to `/workflows` are routed through `/app/virtual-lab/sync` and can
+land on the project home instead. `openWorkflowsHub` in `fixtures/workflows.ts`
+retries from the nav.
 
-**Resolved.** `core-web-app` now adds two test ids on branch
-`test/scan-config-field-testids`:
+## Addressing the editor
 
-| Test id                                     | Sits on           | Example                               |
-| ------------------------------------------- | ----------------- | ------------------------------------- |
-| `scan-config-field-<propertyKey>`           | the field wrapper | `scan-config-field-simulation_length` |
-| `scan-config-block-<rootElement>[-<entry>]` | the block wrapper | `scan-config-block-recordings-Soma`   |
+Field labels render as `<label for={propertyKey}>`, but only a handful of
+controls render a matching `id`, so `getByLabel` cannot find most inputs. Titles
+are worse than absent: they come from a live schema and CSS rewrites their case,
+so `Postsynaptic ME-model` reads as `Postsynaptic me model` on screen.
+
+`core-web-app` therefore carries test ids keyed on the schema's own names, all
+guarded by `src/__tests__/scan-config/block-field-testids.test.tsx`.
+
+| Test id                                     | Sits on               | Example                                          |
+| ------------------------------------------- | --------------------- | ------------------------------------------------ |
+| `workflow-type-<kebab campaign type>`       | a type card           | `workflow-type-build-synaptome-campaign`         |
+| `workflow-use-model`                        | confirming one entity | —                                                |
+| `workflow-browse-use-selection`             | confirming several    | —                                                |
+| `scan-config-tab-<id>`                      | a tab                 | `scan-config-tab-results`                        |
+| `scan-config-root-element-<key>`            | a left-hand nav item  | `scan-config-root-element-distributions`         |
+| `scan-config-add-entry-<rootElement>`       | the add button        | `scan-config-add-entry-distributions`            |
+| `scan-config-variant-<obi-one type>`        | a block variant       | `scan-config-variant-FloatConstantDistribution`  |
+| `scan-config-entry-<rootElement>-<entry>`   | a dictionary entry    | `scan-config-entry-distributions-Distribution 0` |
+| `scan-config-block-<rootElement>[-<entry>]` | the block wrapper     | `scan-config-block-recordings-Soma`              |
+| `scan-config-field-<propertyKey>`           | the field wrapper     | `scan-config-field-simulation_length`            |
+| `scan-config-submit`                        | the generate button   | —                                                |
+| `scan-config-coordinate-<configId>`         | one grid coordinate   | —                                                |
+| `scan-config-status`                        | a coordinate's status | —                                                |
+| `scan-config-launch`                        | running the builds    | —                                                |
+| `scan-config-cost-confirm` / `-cancel`      | the cost dialog       | —                                                |
 
 A property key is unique only inside its block, because a key such as `dt`
 repeats across dictionary entries, so a test scopes by block first:
 
 ```ts
-page
-  .getByTestId('scan-config-block-recordings-Soma')
-  .getByTestId('scan-config-field-dt')
-  .getByRole('spinbutton');
+scanConfigField(editor.block('recordings', 'Soma'), 'dt').getByRole('spinbutton');
 ```
 
-A unit test in the application guards both ids, so removing one fails there rather
-than silently breaking the E2E suite.
+The field wrapper also carries `data-scan-config-block-element-container-of`,
+the `ui_element` it was rendered from. The driver reads it back rather than
+guessing from the shape of the control.
 
-Parts of the editor were already well built and are used as they are. Every sweep
-control carries a real accessible name, including `Scan over several values`,
-`Add a value` and `Use a single value`. Block and variant pickers are buttons
-named by their schema title.
+Two places still fall back to a role, because nothing better exists: the shared
+data grid's rows and cells, which carry the standard `row` and `gridcell` roles
+and nothing else, and the `combobox` inside an antd select, read only for the
+`aria-controls` that names the list it owns.
 
 ## Fixture format
 
-One file per case under `data/scan-configs/`. The file carries the configuration
-itself plus the small amount of context a test needs to open the right editor.
+One file per workflow under `data/scan-configs/`. The file carries the context a
+test needs to open the right editor, and then one entry in `cases` per
+configuration worth building. Every case becomes a test of its own, so they run
+in parallel and a failure names the configuration that broke.
 
 ```jsonc
 {
-  "name": "Circuit simulation with a two-value duration sweep",
-  "activity": "simulate",
-  "type": "circuit-simulation",
-  "schemaName": "CircuitSimulationScanConfig",
-  "config": {
-    "initialize": {
-      "type": "CircuitSimulationScanConfig.Initialize",
-      "circuit": { "type": "CircuitFromID", "id_str": "<uuid>" },
-      "simulation_length": [1000, 2000],
-      "v_init": -80,
+  "name": "Synaptome build with one excitatory synapse group",
+  "activity": "build",
+  "workflow": { "label": "Synaptome", "type": "build-synaptome-campaign" },
+  "schemaName": "MEModelSynapticModelPlacementScanConfig",
+  "selection": { "mode": "single", "entities": ["MEM__jy180314_B_idA__dNAD_ltb_VPM_TC"] },
+  "cases": [
+    {
+      "name": "one excitatory synapse group",
+      "config": {
+        "info": { "type": "Info", "campaign_name": "…", "campaign_description": "…" },
+        "distributions": {
+          "exc_conductance": { "type": "FloatConstantDistribution", "value": 0.4 },
+        },
+      },
+      "expect": { "coordinateCount": 1, "submitLabel": "Generate build(s)" },
     },
-    "stimuli": {
-      "Clamp": { "type": "ConstantCurrentClampSomaticStimulus", "amplitude": 0.2 },
-    },
-  },
-  "expect": { "coordinateCount": 2 },
+  ],
 }
 ```
 
-`config` is exactly the object the application posts, so the same file can drive
-the browser and, later, an API-level check. `expect` holds only what a user can
-see or count.
+`config` is the object the application posts, keyed by root element, so the same
+file can later drive an API-level check. `expect` holds only what a user can see
+or count.
 
-Two rules keep this maintainable. Entity ids belong in the fixture only when the
-QA project actually owns that entity, otherwise they go in a lookup resolved at
-run time. Fixtures never contain credentials.
+Two rules keep this maintainable. The `initialize` model field is set by the
+browse step, so the fixture names the entity under `selection` rather than
+pinning an id it does not own. Fixtures never contain credentials.
+
+`selection.scope` picks the tab above the table, `public` by default. Entities a
+project derives for itself, such as the morphologies behind an electron
+microscopy circuit, live under `project`.
+
+`requires.featureFlag` names an experimental feature the workflow needs. The test
+writes the application's own `feature-flags` cookie, so the page renders with the
+flag set from its first request.
+
+Order matters inside `config`: a block that references another must come after
+it, because the driver resolves references through the entries it has created.
 
 ## Loading and validating fixtures
 
-A loader in `fixtures/scan-config.ts` reads a fixture, validates its envelope
-with Zod, and exposes it as a typed object. Validation covers the envelope
-fields, not the configuration body, which is schema-driven and open-ended.
-
-A single unit-level test walks every file in `data/scan-configs/` and validates
-it. A malformed fixture then fails in seconds instead of halfway through a
-browser run.
+`fixtures/scan-config.ts` reads a fixture, validates its envelope, and exposes it
+as a typed object. Validation covers the envelope fields, not the configuration
+body, which is schema-driven and open-ended. `fixtures/scan-config.test.ts` walks
+every file in `data/scan-configs/` under `bun test`, so a malformed fixture fails
+in milliseconds instead of halfway through a browser run.
 
 ## Driving the editor
 
-Add `pages/scan-config.page.ts` with two parts.
+`fixtures/scan-config-driver.ts` walks the fixture root element by root element.
+Fields only mount once their nav item is clicked and the middle column remounts
+on every change, so each root element is opened before its fields are touched.
 
-**Navigation.** Open the configure route for an activity and type, then select a
-root element in the left nav. Fields for a root element only mount after its
-nav item is clicked, and the middle column fully remounts on each change, so
-every field interaction must follow a navigation step.
+| `ui_element`                                                                                  | How the driver acts                                                                                           |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `string_input`                                                                                | fill the text input                                                                                           |
+| `float_parameter_sweep`, `int_parameter_sweep`, `float_optional`                              | a number fills the spinbutton; an array clicks `Scan over several values`, then `Add a value` per extra entry |
+| `boolean_input`                                                                               | check or uncheck                                                                                              |
+| `string_selection_enhanced`, `reference`, `entity_property_dropdown`, `model_selector_single` | open the dropdown, pick by the option's title                                                                 |
+| `block_dictionary`, `block_union`                                                             | click the variant by its obi-one type, then recurse                                                           |
+| `model_identifier`, `model_identifier_multiple`                                               | nothing: the browse step already set it                                                                       |
 
-**A config driver.** A walker takes the fixture `config` and applies it, keyed on
-the `ui_element` of each field:
+The driver throws on an unrecognised `ui_element` rather than skipping it. Three
+of the 23 kinds are unhandled in the application dispatcher today, and a silent
+skip would turn a real gap into a passing test.
 
-| `ui_element`                                                                         | How the driver acts                                                                                           |
-| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| `string_input`                                                                       | fill the text input                                                                                           |
-| `float_parameter_sweep`, `int_parameter_sweep`                                       | a number fills the spinbutton; an array clicks `Scan over several values`, then `Add a value` per extra entry |
-| `boolean_input`                                                                      | check or uncheck by accessible label                                                                          |
-| `string_selection_enhanced`                                                          | open the popover, pick the option by name                                                                     |
-| `reference`, `entity_property_dropdown`, `model_identifier`, `model_selector_single` | open the dropdown, pick by visible text                                                                       |
-| `block_dictionary`, `block_union`                                                    | click the variant button named by its schema title, then recurse                                              |
+Explicit morphology locations are picked, not typed: the section id is a SONATA
+index the viewer supplies, so a fixture declares only how many locations to place
+and the offset along each. Which pixel of the scene holds a neurite is not
+knowable in advance, so the driver works through a spread of points and keeps the
+ones that land.
 
-The driver must throw on an unrecognised `ui_element` rather than skipping it.
-Three of the 23 kinds are unhandled in the application dispatcher today, and a
-silent skip would turn a real gap into a passing test.
+`morphology_section_type_selection` is deliberately unsupported: its options are
+labelled by obi-one at run time, so a fixture holding SWC codes cannot name the
+text a user picks. Leave the field out and the schema default applies.
+
+One antd quirk the driver works around, commented where it occurs: a select
+paints its chosen value over its own input, so the click is forced rather than
+aimed elsewhere. Its options had nothing stable to click either — the elements a
+user clicks carry no role, and the `option` roles sit in a zero-height mirror
+kept for screen readers — so `reference.tsx` now renders each option with a
+`scan-config-option-<value>` id.
+
+Entry names are generated by the editor, not chosen by the fixture, so the
+driver maps each fixture key to the entry that was created and resolves
+`{ block_dict_name, block_name }` references through that map.
 
 ## What the tests prove
 
-Four levels, each building on the one before.
+1. **The editor renders the configuration.** Fields, labels and defaults appear.
+   Creates nothing.
+2. **Fill and validate.** Apply the fixture; confirm the submit button is
+   disabled while the configuration is incomplete.
+3. **Launch and check the campaign.** Submit, confirm the results tab opens with
+   one coordinate per expected grid point, each `created`, and the generated
+   `obi_one_coordinate.json` listed under its inputs.
+4. **Run it.** Press `Launch builds`, confirm the cost dialog, and follow the
+   coordinate from `created` through `pending` and `running` to `done`. A
+   synaptome build takes about two minutes, so these tests set their own
+   timeout. Then confirm the files, exactly: `expect.generated` is what the
+   coordinate carries the moment the campaign exists, `expect.completed` what it
+   carries once the run has finished. Both lists are complete, so a file the
+   application starts or stops producing fails here rather than passing
+   unnoticed. Only names seen on a real run belong there; a workflow that has
+   never been run through leaves them out. `expect.built` goes further, naming
+   the entity the run registered and the properties its preview shows — a
+   synaptome built from one explicit location reports one synapse.
+   The two outputs are different kinds of thing and the pane beside them shows
+   each differently, so both are opened: the logs are a stream that ends with the
+   task completing, the synaptome is a registered entity with a name, its
+   make-up, and a way to download it or open it in full.
+5. **Refuse to run it.** A project with no credits is stopped before anything is
+   created. The empty balance is arranged by answering the one request the
+   application makes for it, rather than by draining the project, which would
+   take the rest of the suite down and could not be undone. See
+   `fixtures/credits.ts`. The balance is read once when the editor opens, so the
+   answer goes in place and the page is reloaded; the workflow session lives in
+   the URL and survives that.
 
-1. **The editor renders the configuration.** Open the editor, confirm the fields,
-   labels, units and defaults appear. Creates nothing, so it is safe anywhere and
-   should be tagged `@readonly`.
-2. **Fill and validate.** Apply the fixture, then push a value out of bounds and
-   confirm the message, for example `Value should be greater than or equal to 0`.
-   Confirm the submit button is disabled while an error stands.
-3. **Launch and check the campaign.** Submit, confirm a campaign is created, and
-   confirm it appears in the activity table on the workflows page. This writes
-   data, so it is staging only and must clean up after itself.
-4. **Round trip a saved configuration.** Reopen a saved campaign's configuration
-   and confirm every value from the fixture survived, sweeps included.
-
-The list is open. A fifth level worth adding early is the grid size check: assert
-that a fixture with a two-value and a three-value sweep reports six coordinates,
-which catches sweep-handling bugs without launching anything.
+Still to add: a round trip that reopens a saved campaign and confirms every value
+survived, and a grid-size check that a two-value and a three-value sweep reports
+six coordinates.
 
 ## Keeping runs deterministic
 
 The schema arrives from a live service, so a schema change can turn every editor
-test red at once. Two measures, in this order.
-
-Run against the live schema by default. These are end-to-end tests and a schema
-change genuinely is a change the user sees.
-
-Add one guard test that fulfils the `openapi.json` request with a committed copy
-and asserts the editor renders it. When the live tests go red together and the
-guard stays green, the cause is the schema, not the editor. The schema request
-is cached for the page's lifetime, so one interception per page load is enough.
+test red at once. Run against the live schema by default: these are end-to-end
+tests and a schema change genuinely is a change the user sees. Worth adding: one
+guard test that fulfils the `openapi.json` request with a committed copy and
+asserts the editor renders it. When the live tests go red together and the guard
+stays green, the cause is the schema, not the editor.
 
 ## Safety
 
-Levels 1 and 2 create nothing and may run anywhere. Levels 3 and 4 create
-campaigns and are staging only, never tagged `@smoke`. They must write only
-inside the lab and project named by `LAB_ID` and `PROJECT_ID`, and delete what
-they create.
+Levels 1 and 2 create nothing. Levels 3 and 4 create a campaign and spend project
+credits, so they are staging only, never tagged `@smoke`, and write only inside
+the lab and project named by `LAB_ID` and `PROJECT_ID`.
+
+Credits are the real constraint on how often these run. One synaptome build costs
+about ten credits. A project at zero cannot generate a campaign at all, which is
+what the no-credits test asserts — and what a whole suite would hit silently if
+the QA project ran dry, since the editor accepts the configuration and the button
+stays live while nothing happens. Before scheduling these, decide who tops the QA
+project up.
+
+A workflow a deployment does not offer is skipped with the reason, not failed.
+As of this writing only the Synaptome build runs end to end, and only against a
+build that carries the test ids above:
+
+| Workflow                      | State                                                               |
+| ----------------------------- | ------------------------------------------------------------------- |
+| Synaptome                     | runs                                                                |
+| Electron microscopy circuit   | reachable, but no morphology derives from any EM dataset on staging |
+| Extracellular recording array | behind a feature flag that is only visible in `local` and `preview` |
 
 ## CI
 
 No new inputs are needed. Fixtures are versioned, so a run tests whatever is on
-the branch. If a one-off configuration ever needs testing without a commit, add
-a single optional `scan_config_fixture` input to the manual trigger that names a
-file already in `data/scan-configs/`. Accepting inline JSON from a workflow input
-is not worth the review gap it opens.
-
-## Phases
-
-| Phase | Work                                                                   | Ends with                                               |
-| ----- | ---------------------------------------------------------------------- | ------------------------------------------------------- |
-| 1     | Agree the `data-scan-config-field` attribute with the application team | A decision, and a locator strategy that follows from it |
-| 2     | Fixture format, loader, envelope validation                            | A validated fixture in the repo, checked in CI          |
-| 3     | Page object, navigation, and the config driver                         | One fixture rendering in the editor, level 1 green      |
-| 4     | Levels 2 and 5                                                         | Validation and grid-size coverage                       |
-| 5     | Levels 3 and 4, with cleanup                                           | Full coverage on staging                                |
-
-The walker is the only place that resolves a field to an element, so the locator
-strategy stays reversible if the application changes shape again.
+the branch.
