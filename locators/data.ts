@@ -21,6 +21,12 @@ export function dataPage(page: Page) {
     typeList,
     /** The entity counter carries the entity's snake_case name. */
     typeCounter: (entity: string) => page.getByTestId(`entity-link-counter-${entity}`),
+    /**
+     * One data type, found by its listing slug. Labels are not unique on their
+     * own: "Synaptome" is a prefix of "Synaptome (legacy)".
+     */
+    typeLink: (slug: string) =>
+      page.getByTestId(`entity-link-counter-${slug.replaceAll('-', '_')}`),
     dataType: (name: string | RegExp) => typeList.getByRole('button', { name }),
   };
 }
