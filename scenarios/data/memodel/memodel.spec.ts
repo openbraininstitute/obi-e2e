@@ -1,3 +1,5 @@
+import { checkFilter } from '@fixtures/check-filter';
+import { checkPagination } from '@fixtures/check-pagination';
 import { routes } from '@fixtures/routes';
 import { PRIVATE_READONLY } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
@@ -45,6 +47,17 @@ const HIDDEN_COLUMNS: string[] = [
 ];
 
 // The chooser adds its own "Select all" alongside one toggle per column.
+const FILTERS = [
+  'Name',
+  'Brain region',
+  'Species',
+  'M-type',
+  'E-type',
+  'Created by',
+  'Registration date',
+  'Lifecycle status',
+];
+
 const TOGGLE_COUNT = SHOWN_COLUMNS.length + HIDDEN_COLUMNS.length + 1;
 
 function startsWith(column: string): RegExp {
@@ -131,5 +144,18 @@ test.describe('ME-model listing', () => {
 
     await listing.search.clear();
     await expect(listing.resultCount).toHaveText(before);
+  });
+
+  test('every filter narrows the listing', { tag: PRIVATE_READONLY }, async ({ page }) => {
+    await expect(entityListing(page).table).toBeVisible();
+
+    // One step per column, so a failure names the filter that broke.
+    for (const column of FILTERS) {
+      await test.step(column, () => checkFilter(page, column));
+    }
+  });
+
+  test('pages through the listing', { tag: PRIVATE_READONLY }, async ({ page }) => {
+    await checkPagination(page);
   });
 });
