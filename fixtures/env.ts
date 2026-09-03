@@ -13,8 +13,14 @@ process.env.E2E_RUN_ID = RUN_ID;
 export const RUN_DIR = path.resolve(process.cwd(), '.e2e-runs', RUN_ID);
 
 /**
- * `primary` owns the virtual lab the suite runs inside.
- * `onboarding` owns nothing, so it can test creating a lab from scratch.
+ * The suite is split by what each user is responsible for.
+ *
+ * `primary` owns one established virtual lab and covers the work inside it:
+ * workflows, data, notebooks. It never creates or deletes a lab.
+ *
+ * `onboarding` starts owning nothing and covers everything before that point:
+ * creating a lab, creating projects, and inviting members. It deletes what it
+ * creates, because a user may own only one lab.
  */
 export const ROLES = ['primary', 'onboarding'] as const;
 export type Role = (typeof ROLES)[number];

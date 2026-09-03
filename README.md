@@ -78,10 +78,19 @@ An environment is one URL plus the test users.
 | `LAB_ID` / `PROJECT_ID`                               | the primary user's virtual lab and project |
 | `E2E_ONBOARDING_USERNAME` / `E2E_ONBOARDING_PASSWORD` | the onboarding user, optional              |
 
-There are two test users because a user may own only one virtual lab. The
-primary user owns the lab the suite runs inside. The onboarding user owns
-nothing, so it can test creating a lab from scratch. Leave the onboarding
-credentials blank and those tests skip rather than fail.
+There are two test users because a user may own only one virtual lab, and the
+suite is split by what each is responsible for.
+
+The **primary** user owns one established lab and covers the work inside it:
+workflows, data and notebooks. It never creates or deletes a lab.
+
+The **onboarding** user starts owning nothing and covers everything before that
+point: creating a lab, creating projects and inviting members. It deletes what
+it creates, and cleans up at the start of a run as well as the end, so one
+cancelled run does not block the next. Leave its credentials blank and those
+tests skip rather than fail.
+
+Pages any visitor can reach are checked signed out, by neither user.
 
 Sign-in happens once per user per run. The Keycloak theme hides the username and
 password fields and offers only social providers, so the login form is submitted

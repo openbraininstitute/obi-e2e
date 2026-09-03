@@ -41,13 +41,16 @@ A test declares the contexts it runs in. Every project reads the same folders an
 picks its tests by tag, so one scenario can run signed out and signed in without
 being written twice.
 
-| Tag           | Runs as                             | Project          |
-| ------------- | ----------------------------------- | ---------------- |
-| `@public`     | nobody, signed out                  | `public`         |
-| `@private`    | the primary user, inside its lab    | `private`        |
-| `@onboarding` | the onboarding user, owning nothing | `onboarding`     |
-| `@smoke`      | also runs against production        | any of the above |
-| `@readonly`   | creates nothing                     | any of the above |
+| Tag           | Runs as                                      | Covers                                                   |
+| ------------- | -------------------------------------------- | -------------------------------------------------------- |
+| `@public`     | nobody, signed out                           | pages any visitor can reach, outside `/app/virtual-lab/` |
+| `@private`    | the primary user, inside its established lab | workflows, data, notebooks: the work inside a lab        |
+| `@onboarding` | the onboarding user, owning nothing          | creating a lab, creating projects, inviting members      |
+| `@smoke`      | added to any of the above                    | also runs against production                             |
+| `@readonly`   | added to any of the above                    | creates nothing                                          |
+
+Public pages carry `@public` and run signed out, because that is what a visitor
+actually sees. Checking them while signed in would test a different page.
 
 ```ts
 test('opens the Simulate workflows', { tag: ['@private'] }, async ({ page }) => {

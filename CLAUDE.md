@@ -23,7 +23,9 @@ bun run test    # or a single spec while iterating
 - Assertions live in the spec, never in a locator module.
 - No `waitForTimeout`. Web-first assertions already retry.
 - Every test is independent and leaves no data behind outside the QA lab.
-- A test declares its context with a tag: `@public`, `@private` or `@onboarding`.
+- A test declares its context with a tag. `@public` runs signed out. `@private`
+  runs as the primary user inside its established lab. `@onboarding` runs as the
+  second user, which creates labs, projects and invites, and cleans up after itself.
 
 ## Generating and healing tests
 
