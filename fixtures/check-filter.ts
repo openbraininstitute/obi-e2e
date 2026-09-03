@@ -1,6 +1,6 @@
 import { columnFilter, filterKind } from '@locators/column-filter';
 import { entityListing } from '@locators/listing';
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 const NO_MATCH = 'zzzz-no-such-value';
 
@@ -8,6 +8,38 @@ const NO_MATCH = 'zzzz-no-such-value';
 async function resultCount(page: Page): Promise<number> {
   const text = await entityListing(page).resultCount.innerText();
   return Number(text.replace(/[^\d]/g, ''));
+}
+
+/**
+ * The result count once it has stopped moving.
+ *
+ * The listing renders its table before the rows arrive, so reading the count
+ * too early captures the previous number and every later comparison is wrong.
+ */
+async function settledCount(page: Page): Promise<number> {
+  const listing = entityListing(page);
+  await expect(listing.resultCount).toBeVisible();
+
+  let last = Number.NaN;
+  await expect
+    .poll(
+      async () => {
+        const now = await resultCount(page);
+        const stable = now === last;
+        last = now;
+        return stable;
+      },
+      {
+        message: 'the result count never settled',
+        // A second apart, so a value the listing only passes through on its way
+        // to the real one cannot be read twice and mistaken for the answer.
+        intervals: [1_000],
+        timeout: 30_000,
+      }
+    )
+    .toBe(true);
+
+  return last;
 }
 
 /**
@@ -21,17 +53,38 @@ async function open(page: Page, column: string) {
   const filter = columnFilter(page);
 
   await entityListing(page).table.waitFor();
-  await page.waitForLoadState('networkidle').catch(() => {});
 
+  // Retrying the open is cheaper than waiting for the network to go quiet
+  // first, and it recovers from the same problem: a re-render closing the panel.
   await expect(async () => {
     if (!(await filter.panel.isVisible().catch(() => false))) {
       await filter.trigger(column).click();
     }
-    await expect(filter.apply).toBeVisible({ timeout: 2_000 });
-    await expect(filter.reset).toBeVisible({ timeout: 2_000 });
+    await expect(filter.apply).toBeVisible({ timeout: 1_500 });
   }).toPass({ timeout: 45_000 });
 
   return filter;
+}
+
+/**
+ * Clicks a button inside the panel, reopening the panel if it has gone.
+ *
+ * Only safe for buttons that need no value typed first: reopening starts the
+ * panel from scratch, so anything pending would be thrown away. Apply is
+ * clicked directly, while the panel is still up from entering the value.
+ */
+async function clickInPanel(
+  page: Page,
+  column: string,
+  button: (filter: ReturnType<typeof columnFilter>) => Locator
+): Promise<void> {
+  await expect(async () => {
+    const filter = columnFilter(page);
+    if (!(await filter.panel.isVisible().catch(() => false))) {
+      await filter.trigger(column).click();
+    }
+    await button(filter).click({ timeout: 3_000 });
+  }).toPass({ timeout: 45_000 });
 }
 
 /**
@@ -48,17 +101,31 @@ async function open(page: Page, column: string) {
  */
 export async function checkFilter(page: Page, column: string): Promise<void> {
   const listing = entityListing(page);
-  const before = await resultCount(page);
+
+  // Read the starting point only once the listing has stopped moving. Reading
+  // it while rows are still arriving captures the wrong number and every later
+  // comparison in this check is then measured against it.
+  await listing.table.waitFor();
+  const before = await settledCount(page);
   const filter = await open(page, column);
   const kind = await filterKind(filter.panel);
 
+  // Only a filter that actually changed the listing has a reset worth checking.
+  let applied = false;
+
   switch (kind) {
     case 'facet': {
-      // A facet with no options has nothing to choose, so there is nothing to
-      // assert beyond the panel having offered the search box.
-      if ((await filter.noOptions.count()) > 0) break;
+      // The options arrive from their own request. Wait for either them or the
+      // empty state, so a facet that never populates fails here, naming the
+      // column, rather than further down where the cause is not obvious.
+      await expect(
+        filter.options.first().or(filter.noOptions),
+        `the "${column}" facet never offered any options`
+      ).toBeVisible({ timeout: 20_000 });
 
-      await filter.options.first().waitFor();
+      // Nothing to choose, so nothing more to check.
+      if ((await filter.noOptions.count()) > 0) break;
+      applied = true;
       // The option carries its own count, which is the number of results the
       // listing must show once it is applied. That is the strongest check
       // available: the application states the answer before we ask for it.
@@ -75,26 +142,36 @@ export async function checkFilter(page: Page, column: string): Promise<void> {
       await filter.apply.click();
 
       if (Number.isFinite(expected) && expected > 0) {
-        await expect(listing.resultCount).toHaveText(
-          new RegExp(`^${expected.toLocaleString('en-US')} results`)
-        );
+        await expect(
+          listing.resultCount,
+          `the "${column}" facet promised ${expected} results`
+        ).toHaveText(new RegExp(`^${expected.toLocaleString('en-US')} results`));
       }
       break;
     }
 
     case 'value': {
+      applied = true;
       await filter.value.fill(NO_MATCH);
       await filter.apply.click();
-      await expect(listing.resultCount).toHaveText(/^0 results/);
+      await expect(
+        listing.resultCount,
+        `the "${column}" filter matched something it should not have`
+      ).toHaveText(/^0 results/);
       break;
     }
 
     case 'range': {
-      // Min above max can match nothing, so the listing must end up empty.
+      // The application accepts a minimum above the maximum rather than
+      // refusing it, so the check is that nothing can fall inside such a range.
+      applied = true;
       await filter.min.fill('999999999');
       await filter.max.fill('1');
       await filter.apply.click();
-      await expect(listing.resultCount).toHaveText(/^0 results/);
+      await expect(
+        listing.resultCount,
+        `the "${column}" range accepted a minimum above its maximum`
+      ).toHaveText(/^0 results/);
       break;
     }
 
@@ -110,10 +187,17 @@ export async function checkFilter(page: Page, column: string): Promise<void> {
       throw new Error(`Unknown filter kind for the "${column}" column.`);
   }
 
+  if (!applied) return;
+
   // Whatever was applied, resetting must bring the listing back.
-  const reopened = await open(page, column);
-  await reopened.reset.click();
-  await expect(listing.resultCount).toHaveText(
-    new RegExp(`^${before.toLocaleString('en-US')} results`)
-  );
+  await clickInPanel(page, column, (f) => f.reset);
+
+  // Poll rather than match once: a large listing takes a while to come back,
+  // and the count passes through intermediate values on the way.
+  await expect
+    .poll(() => resultCount(page), {
+      message: `resetting the "${column}" filter did not restore the listing`,
+      timeout: 45_000,
+    })
+    .toBe(before);
 }
