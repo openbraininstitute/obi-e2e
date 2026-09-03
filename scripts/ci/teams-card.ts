@@ -125,6 +125,28 @@ const FEATURE_COLUMNS = [3, 2, 2, 1, 2];
 const CHEVRON = { collapsed: '▸', expanded: '▾' } as const;
 
 /**
+ * Card text comes from test titles, service errors and scenario names, none of
+ * which have a bound. One long string could push a message past the payload
+ * limit and get the whole post rejected, so every variable string is clamped
+ * before it reaches a cell.
+ */
+function clamp(value: string, max: number): string {
+  return value.length <= max ? value : `${value.slice(0, max - 1)}…`;
+}
+
+const MAX = {
+  featureName: 120,
+  sectionName: 60,
+  serviceLabel: 60,
+  serviceVersion: 40,
+  problem: 140,
+  failureTitle: 160,
+  failureError: 200,
+  filePath: 120,
+  baseUrl: 120,
+} as const;
+
+/**
  * A table row cannot be hidden: `TableRow` has no `id` or `isVisible`. A whole
  * `Table` can. So each section becomes a one-row table plus a hidden table of
  * its features, all sharing the same column widths so they line up as one grid.
@@ -156,11 +178,15 @@ function featureTables(sections: Section[], expandable: boolean): unknown[] {
       selectAction: toggle,
       items: [
         {
-          ...text(`${CHEVRON.collapsed} ${section.name}`, { weight: 'Bolder' }),
+          ...text(`${CHEVRON.collapsed} ${clamp(section.name, MAX.sectionName)}`, {
+            weight: 'Bolder',
+          }),
           id: collapsedId,
         },
         {
-          ...text(`${CHEVRON.expanded} ${section.name}`, { weight: 'Bolder' }),
+          ...text(`${CHEVRON.expanded} ${clamp(section.name, MAX.sectionName)}`, {
+            weight: 'Bolder',
+          }),
           id: expandedId,
           isVisible: false,
         },
@@ -174,7 +200,9 @@ function featureTables(sections: Section[], expandable: boolean): unknown[] {
           {
             type: 'TableRow',
             cells: [
-              expandable ? sectionCell : cell(section.name, { weight: 'Bolder' }),
+              expandable
+                ? sectionCell
+                : cell(clamp(section.name, MAX.sectionName), { weight: 'Bolder' }),
               cell(
                 `${section.features.length} ${section.features.length === 1 ? 'feature' : 'features'}`,
                 {
@@ -200,7 +228,7 @@ function featureTables(sections: Section[], expandable: boolean): unknown[] {
         section.features.map((feature: Feature) => ({
           type: 'TableRow',
           cells: [
-            cell(`\u21b3 ${feature.name}`),
+            cell(`\u21b3 ${clamp(feature.name, MAX.featureName)}`),
             cell(feature.section, { subtle: true }),
             statusCell(featureStatus(feature)),
             cell(passRate(feature)),
@@ -239,15 +267,18 @@ function message(body: unknown[], runUrl: string) {
 
 export type Post = { label: string; message: ReturnType<typeof message>; bytes: number };
 
-/** The head of the run: outcome, counts and the service table. */
+/**
+ * The head of the run: outcome, counts and the service table. Degrades the same
+ * way the single card does, so a run with many failing services still posts.
+ */
 function rootPost(summary: Summary): Post {
-  const card = buildCard({ ...summary, features: [] }, 'full');
-  return { label: 'summary', message: card, bytes: JSON.stringify(card).length };
+  const { card, bytes } = buildCardWithinLimit({ ...summary, features: [] });
+  return { label: 'summary', message: card, bytes };
 }
 
 function sectionBody(section: Section, features: Feature[], part: string): unknown[] {
   return [
-    text(`${section.name}${part}`, { size: 'Medium', weight: 'Bolder' }),
+    text(`${clamp(section.name, MAX.sectionName)}${part}`, { size: 'Medium', weight: 'Bolder' }),
     text(
       `${featureStatus(section)} · ${passRate(section)} · ${formatDuration(section.durationMs)}`,
       { subtle: true, spacing: 'Small' }
@@ -259,8 +290,8 @@ function sectionBody(section: Section, features: Feature[], part: string): unkno
         ...features.map((feature) => ({
           type: 'TableRow',
           cells: [
-            cell(feature.name, { weight: 'Bolder' }),
-            cell(feature.section, { subtle: true }),
+            cell(clamp(feature.name, MAX.featureName), { weight: 'Bolder' }),
+            cell(clamp(feature.section, MAX.sectionName), { subtle: true }),
             statusCell(featureStatus(feature)),
             cell(passRate(feature)),
             cell(formatDuration(feature.durationMs)),
@@ -397,7 +428,7 @@ export function buildCard(summary: Summary, detail: Detail = 'full') {
         },
         { title: 'Pass rate', value: passRate(summary) },
         { title: 'Duration', value: formatDuration(summary.durationMs) },
-        ...(summary.baseUrl ? [fact('App', summary.baseUrl)] : []),
+        ...(summary.baseUrl ? [fact('App', clamp(summary.baseUrl, MAX.baseUrl))] : []),
         fact('Commit', summary.commit.slice(0, 8) || 'n/a'),
       ],
     },
@@ -440,9 +471,12 @@ export function buildCard(summary: Summary, detail: Detail = 'full') {
 
     for (const failure of summary.failures) {
       body.push(
-        text(`**${failure.title}**`, { spacing: 'Small' }),
-        text(failure.error, { size: 'Small', color: 'Attention' }),
-        text(`\`${failure.file}:${failure.line}\``, { size: 'Small', subtle: true })
+        text(`**${clamp(failure.title, MAX.failureTitle)}**`, { spacing: 'Small' }),
+        text(clamp(failure.error, MAX.failureError), { size: 'Small', color: 'Attention' }),
+        text(`\`${clamp(failure.file, MAX.filePath)}:${failure.line}\``, {
+          size: 'Small',
+          subtle: true,
+        })
       );
     }
   }

@@ -82,6 +82,23 @@ to a message it just created.
 behind the webhook then does the threading, because it is the only thing that
 sees the message id.
 
+### Payload limits
+
+Teams refuses a message over 25 KB, card JSON included. Three things keep every
+message under it:
+
+- Every variable string is clamped before it reaches a cell. Test titles,
+  service errors and scenario names have no natural bound, and one long one used
+  to push a card past 90 KB.
+- A section that still would not fit is split across numbered messages, measured
+  by real byte count as each feature is added.
+- The summary message drops detail a level at a time if the service table and
+  failures grow too large.
+
+The limit applies per message, not per request, so `thread` mode sends all cards
+in one larger request and the flow posts each separately. A typical run is
+around 12 KB in total, well inside the request budget.
+
 ### Making the flow reply
 
 Edit the flow in Power Automate. Today it posts one card. Change it to:

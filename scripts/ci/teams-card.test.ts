@@ -297,3 +297,65 @@ describe('buildThreadPayload', () => {
     expect(first).toContain('Services');
   });
 });
+
+// Card text comes from test titles and service errors, which have no bound.
+// Before clamping, one long string pushed a card to 92 KB and Teams would have
+// refused the whole post.
+const huge = (length: number, prefix: string) => prefix + 'x'.repeat(length);
+
+describe('payload limits', () => {
+  const pathological: Summary = {
+    passed: 0,
+    failed: 5,
+    flaky: 0,
+    skipped: 0,
+    durationMs: 1_000,
+    environment: 'staging',
+    baseUrl: huge(300, 'https://'),
+    browser: 'chromium',
+    commit: 'abcdef1234',
+    runUrl: '',
+    trigger: 'Scheduled',
+    failures: Array.from({ length: 5 }, (_, index) => ({
+      title: huge(4_000, `title-${index}`),
+      file: huge(500, 'path/'),
+      line: 1,
+      project: 'private',
+      error: huge(4_000, 'error'),
+    })),
+    totalFailures: 5,
+    services: Array.from({ length: 12 }, (_, index) => ({
+      key: `service-${index}`,
+      label: huge(200, 'service'),
+      version: huge(100, 'version'),
+      status: 'down' as const,
+      problem: huge(3_000, 'boom'),
+    })),
+    features: Array.from({ length: 200 }, (_, index) => ({
+      name: huge(30_000, `feature-${index}`),
+      section: 'data',
+      passed: 1,
+      failed: 0,
+      flaky: 0,
+      skipped: 0,
+      durationMs: 1_000,
+    })),
+  };
+
+  test('no single card exceeds the limit, however long the content', () => {
+    for (const post of buildPosts(pathological)) {
+      expect(post.bytes).toBeLessThanOrEqual(TEAMS_PAYLOAD_LIMIT);
+    }
+  });
+
+  test('the single card mode also stays under the limit', () => {
+    const { bytes } = buildCardWithinLimit(pathological);
+    expect(bytes).toBeLessThanOrEqual(TEAMS_PAYLOAD_LIMIT);
+  });
+
+  test('long text is clamped rather than dropped', () => {
+    const found: string[] = [];
+    walk(buildPosts(pathological)[0]?.message, found);
+    expect(found.some((item) => item.includes('…'))).toBe(true);
+  });
+});
