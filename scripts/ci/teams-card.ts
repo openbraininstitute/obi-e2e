@@ -325,6 +325,17 @@ export function buildPosts(summary: Summary): Post[] {
 }
 
 /**
+ * All the cards in one request, for a flow that posts the first and replies
+ * with the rest. Each entry is the bare Adaptive Card, which is what the
+ * "Post card in a chat or channel" action expects.
+ */
+export function buildThreadPayload(summary: Summary): { cards: unknown[] } {
+  return {
+    cards: buildPosts(summary).map((item) => item.message.attachments[0]?.content),
+  };
+}
+
+/**
  * The largest card that still fits Teams' payload limit. Detail is dropped a
  * level at a time rather than letting the post be rejected.
  */
@@ -481,6 +492,15 @@ async function post(): Promise<void> {
   }
 
   const summary = (await Bun.file(summaryPath).json()) as Summary;
+
+  // `thread` sends every card in one request. The flow behind the webhook posts
+  // the first and replies with the rest, which is the only way to get a thread.
+  if (process.env.TEAMS_LAYOUT === 'thread') {
+    const payload = buildThreadPayload(summary);
+    if (!(await send(webhook, payload))) process.exit(1);
+    console.log(`Posted ${payload.cards.length} cards in one request for the flow to thread.`);
+    return;
+  }
 
   // `split` posts the summary first, then one message per section. The webhook
   // cannot thread, so these arrive as separate channel messages.

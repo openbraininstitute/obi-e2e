@@ -1,7 +1,13 @@
 import { describe, expect, test } from 'bun:test';
 
 import { type Summary, buildSummary } from './summarize-results';
-import { buildCard, buildCardWithinLimit, buildPosts, TEAMS_PAYLOAD_LIMIT } from './teams-card';
+import {
+  buildCard,
+  buildCardWithinLimit,
+  buildPosts,
+  buildThreadPayload,
+  TEAMS_PAYLOAD_LIMIT,
+} from './teams-card';
 
 type Node = Record<string, unknown> & { type?: string };
 
@@ -274,5 +280,20 @@ describe('buildPosts', () => {
     for (const feature of summary.features) {
       expect(rendered.filter((item) => item === feature.name)).toHaveLength(1);
     }
+  });
+});
+
+describe('buildThreadPayload', () => {
+  test('sends bare adaptive cards, first one being the summary', () => {
+    const { cards } = buildThreadPayload(summaryWith(2, 2));
+
+    expect(cards).toHaveLength(3);
+    for (const card of cards) {
+      expect((card as { type?: string }).type).toBe('AdaptiveCard');
+    }
+
+    const first: string[] = [];
+    walk(cards[0], first);
+    expect(first).toContain('Services');
   });
 });

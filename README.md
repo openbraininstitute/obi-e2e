@@ -63,26 +63,40 @@ request comment and the Teams card:
 
 ### Posting one message or several
 
-`TEAMS_LAYOUT=split` posts the summary and services first, then one message per
-section, splitting a section across numbered messages when its table would
-exceed the payload limit.
+| `TEAMS_LAYOUT` | What happens                                             |
+| -------------- | -------------------------------------------------------- |
+| unset          | one message with everything (default)                    |
+| `split`        | one message for the summary, then one per section        |
+| `thread`       | one request carrying every card, for a flow that replies |
 
-These arrive as separate channel messages, not as replies in a thread. The
-webhook answers `202 Accepted` with an empty body and no message id, so nothing
-on our side can address the message it just created. Real threading needs the
-message id, which only the Power Automate flow behind the webhook can see:
+`split` and `thread` both build the same cards: the summary and services first,
+then one per section, split across numbered messages when a section's table
+would exceed the payload limit.
 
-1. Have the flow post the first card and keep the `messageId` it returns.
-2. Have it loop the remaining cards through **Reply with a message in a channel**.
+The difference is who posts them. With `split` this repo sends one request per
+card, and they land as separate channel messages. The webhook answers
+`202 Accepted` with an empty body and no message id, so nothing here can reply
+to a message it just created.
 
-That moves the threading into the flow and is a change on the Teams side, not
-here. The alternative is Microsoft Graph
+`thread` sends every card in one request as `{ "cards": [ ... ] }`. The flow
+behind the webhook then does the threading, because it is the only thing that
+sees the message id.
+
+### Making the flow reply
+
+Edit the flow in Power Automate. Today it posts one card. Change it to:
+
+1. **Post card in a chat or channel** — set the card to
+   `triggerBody()?['cards'][0]`. Keep this action's **Message ID** output.
+2. **Apply to each** — set the input to `skip(triggerBody()?['cards'], 1)`.
+3. Inside the loop, **Reply with a message in a channel** — use the Message ID
+   from step 1, and the current item as the card.
+
+Then set `TEAMS_LAYOUT=thread` here. Nothing else changes.
+
+The alternative is Microsoft Graph
 (`POST /teams/{id}/channels/{id}/messages/{id}/replies`), which threads properly
 but needs an app registration and the `ChannelMessage.Send` permission.
-
-Ordering is not guaranteed either, since the webhook returns before the message
-exists. Posts are sent one at a time with a short gap, and split messages are
-numbered, so the sequence stays readable even if it arrives out of order.
 
 ## Before the tests run
 
