@@ -1,0 +1,35 @@
+# Single cell electrophysiology
+
+The Single cell electrophysiology listing, under the experimental section of the Data page.
+
+```gherkin
+Feature: Single cell electrophysiology listing
+
+@private @readonly
+Scenario: See the Single cell electrophysiology table
+  Given I am logged in
+  And I am inside my project
+  When I open the Single cell electrophysiology listing
+  Then I see the table
+    And I see the "Preview" column
+    And I see the "Brain region" column
+    And I see the "Species" column
+    And I see the "E-type" column
+    And I see the "Name" column
+    And I see the "Contributors" column
+    And I see the "Registration date" column
+    And I see the "Lifecycle status" column
+
+@private @readonly
+Scenario: See the Single cell electrophysiology results
+  Given I am on the Single cell electrophysiology listing
+  Then I see how many results there are
+  And I see at least one result
+
+@private @readonly
+Scenario: Search narrows the Single cell electrophysiology listing
+  Given I am on the Single cell electrophysiology listing
+  When I search for something no entity matches
+  Then I see no results
+  And clearing the search brings them all back
+```

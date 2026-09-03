@@ -16,7 +16,7 @@ export function entityListing(page: Page) {
     advancedFilters: page.getByTestId('advanced-filters-pane'),
     /** The funnel beside a column header. Its name is "Filter <column>". */
     columnFilter: (column: string) => page.getByRole('button', { name: `Filter ${column}` }),
-    columnHeader: (name: string) => table.getByRole('columnheader', { name }),
+    columnHeader: (name: string | RegExp) => table.getByRole('columnheader', { name }),
     rows: table.getByRole('row'),
     /** Data cells only, so this ignores the grid's two header rows. */
     cells: table.getByRole('gridcell'),
