@@ -1,0 +1,4 @@
+# `bun test` runs the unit tests for the CI scripts only. The Playwright
+# scenarios are also `*.spec.ts`, but they need Playwright's own runner.
+[test]
+root = "scripts"
