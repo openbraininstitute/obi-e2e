@@ -25,6 +25,7 @@ Useful commands:
 
 ```bash
 bun run test              # full suite
+bun run auth              # sign in only, writes .e2e-runs/live/auth/
 bun run test:smoke        # only @smoke
 bun run test:ui           # interactive UI mode
 bun run report            # open the last HTML report
