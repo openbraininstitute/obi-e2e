@@ -1,6 +1,3 @@
-import { mkdir, writeFile } from 'node:fs/promises';
-import { dirname } from 'node:path';
-
 import type { BrowserContext, Page } from '@playwright/test';
 
 import { authStatePath, credentials, type Role, tokenPath } from './env';
@@ -98,11 +95,9 @@ export async function signIn(page: Page, context: BrowserContext, role: Role): P
   await clearRequiredActions(page);
   await page.waitForURL('**/app/**');
 
-  // Playwright spawns its workers with the node binary even under `bun run`, so
-  // the Bun global does not exist here. Bun APIs are only usable in the CI
-  // scripts, which run under bun directly.
-  const statePath = authStatePath(role);
-  await mkdir(dirname(statePath), { recursive: true });
-  await context.storageState({ path: statePath });
-  await writeFile(tokenPath(role), await readAccessToken(page, role), 'utf8');
+  // Bun.write creates the run directory on the way, so nothing has to mkdir
+  // first. This needs `bun --bun`, which every script in package.json uses;
+  // plain `bunx playwright` would run these workers under node instead.
+  await Bun.write(authStatePath(role), JSON.stringify(await context.storageState()));
+  await Bun.write(tokenPath(role), await readAccessToken(page, role));
 }

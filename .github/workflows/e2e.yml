@@ -103,7 +103,7 @@ jobs:
           key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
 
       - name: Install browsers
-        run: bunx playwright install --with-deps chromium
+        run: bun run browsers
 
       - name: Check required configuration
         run: |
@@ -125,10 +125,12 @@ jobs:
           # re-split by the shell.
           E2E_GREP: ${{ matrix.run.grep }}
         run: |
+          # bun run test is `bun --bun playwright test`, which runs the workers
+          # under Bun so Bun APIs are available in test code.
           if [[ -n "$E2E_GREP" ]]; then
-            bunx playwright test --grep "$E2E_GREP"
+            bun run test --grep "$E2E_GREP"
           else
-            bunx playwright test
+            bun run test
           fi
 
       - name: Summarize results

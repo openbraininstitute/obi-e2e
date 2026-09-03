@@ -7,6 +7,11 @@ scenarios with AI, then reviewed by a developer like any other code.
 Runtime: **Bun 1.4** and **Playwright 1.62**. Linting and formatting use
 [oxc](https://oxc.rs) (`oxlint` and `oxfmt`).
 
+Tests run under Bun, not Node. Every script uses `bun --bun playwright`, which
+Bun 1.4 supports and which makes Bun APIs such as `Bun.write` available inside
+test code. Plain `bunx playwright` would run the workers under Node instead, so
+prefer `bun run test` over calling Playwright directly.
+
 ## Quick start
 
 ```bash
