@@ -60,3 +60,6 @@ test('opens the Simulate workflows', { tag: ['@private'] }, async ({ page }) => 
 
 A scenario that should hold in more than one context carries more than one tag,
 or extracts its steps into a function that each tagged test calls.
+
+A test with no context tag never runs, and nothing warns you. See
+[docs/scenario-tags.md](../docs/scenario-tags.md) for the full rules.

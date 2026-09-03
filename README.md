@@ -45,7 +45,8 @@ bun run check            # format check + lint + typecheck
 | `scripts/ci/` | result summary and Teams card                                                        |
 
 Tests select their context by tag rather than by folder, so one scenario can run
-signed out and signed in. See `scenarios/README.md`.
+signed out and signed in. See `scenarios/README.md`, and `docs/scenario-tags.md`
+for what each tag means and how to choose one.
 
 ## Writing a test
 
