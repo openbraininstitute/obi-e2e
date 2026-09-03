@@ -48,6 +48,18 @@ Tests select their context by tag rather than by folder, so one scenario can run
 signed out and signed in. See `scenarios/README.md`, and `docs/scenario-tags.md`
 for what each tag means and how to choose one.
 
+## Reporting
+
+Every run produces the same two tables, in the GitHub job summary, the pull
+request comment and the Teams card:
+
+- **Endpoints** — each backend service with its version and health, and the
+  reason when one is down or skipped.
+- **Features** — each scenario folder with its status, pass rate and duration.
+
+`bun run summarize` rebuilds them from `test-results/results.json`.
+`bun run notify` does that and posts the Teams card.
+
 ## Before the tests run
 
 Every run first checks that the backend services are healthy and reports their
