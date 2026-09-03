@@ -1,0 +1,26 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "promise"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "warn",
+    "pedantic": "off"
+  },
+  "env": { "builtin": true, "node": true, "es2024": true },
+  "rules": {
+    "no-console": "off",
+    "typescript/consistent-type-imports": "error",
+    "typescript/no-explicit-any": "warn",
+    "unicorn/prefer-node-protocol": "error",
+    "promise/no-return-wrap": "error",
+    "eslint/no-await-in-loop": "off"
+  },
+  "ignorePatterns": [
+    "node_modules",
+    "test-results",
+    "playwright-report",
+    "blob-report",
+    ".e2e-runs"
+  ]
+}
