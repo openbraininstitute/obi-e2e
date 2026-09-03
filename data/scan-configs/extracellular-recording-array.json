@@ -1,0 +1,46 @@
+{
+  "name": "Extracellular recording array with a sixteen-electrode linear probe",
+  "activity": "build",
+  "workflow": {
+    "label": "Extracellular recording array",
+    "type": "extracellular-recording-array-campaign"
+  },
+  "schemaName": "CreateExtracellularRecordingArrayScanConfig",
+  "selection": {
+    "mode": "single",
+    "entities": ["nbS1-O1-E2PV-maxNsyn-HEX0-L2"]
+  },
+  "requires": {
+    "featureFlag": "extracellular_recording_array_campaign"
+  },
+  "cases": [
+    {
+      "name": "one sixteen-electrode linear probe",
+      "config": {
+        "info": {
+          "type": "Info",
+          "campaign_name": "E2E extracellular recording array",
+          "campaign_description": "One linear probe of sixteen electrodes over a small circuit."
+        },
+        "initialize": {
+          "type": "CreateExtracellularRecordingArrayScanConfig.Initialize",
+          "calculation_method": "LineSource"
+        },
+        "electrode_locations": {
+          "LinearProbe": {
+            "type": "LinearExtracellularLocations",
+            "n_electrodes": 16,
+            "spacing": 20,
+            "origin_x": 0,
+            "origin_y": 0,
+            "origin_z": 0
+          }
+        }
+      },
+      "expect": {
+        "coordinateCount": 1,
+        "submitLabel": "Generate build(s)"
+      }
+    }
+  ]
+}

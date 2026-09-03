@@ -1,0 +1,35 @@
+{
+  "name": "Electron microscopy circuit build from one MICrONS morphology",
+  "activity": "build",
+  "workflow": {
+    "label": "Electron microscopy circuit",
+    "type": "em-synapse-mapping-campaign"
+  },
+  "schemaName": "EMSynapseMappingScanConfig",
+  "selection": {
+    "mode": "multiple",
+    "prerequisite": "Portion 65 of the IARPA MICrONS dataset",
+    "entities": ["864691135476581440"],
+    "scope": "project"
+  },
+  "cases": [
+    {
+      "name": "maps synapses onto one morphology",
+      "config": {
+        "info": {
+          "type": "Info",
+          "campaign_name": "E2E electron microscopy circuit build",
+          "campaign_description": "Maps synapse locations from EM onto one spiny morphology."
+        },
+        "advanced_options": {
+          "type": "AdvancedEMSynapseMappingOptions",
+          "include_spiny_morphologies": true
+        }
+      },
+      "expect": {
+        "coordinateCount": 1,
+        "submitLabel": "Generate build(s)"
+      }
+    }
+  ]
+}

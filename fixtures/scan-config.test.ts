@@ -1,0 +1,75 @@
+import { expect, test } from 'bun:test';
+
+import {
+  loadScanConfigFixture,
+  parseScanConfigFixture,
+  scanConfigFixtureFiles,
+} from './scan-config';
+
+// A malformed fixture would otherwise fail halfway through a browser run, so
+// every file on disk is validated here in milliseconds instead.
+test('every scan-config fixture has a valid envelope', () => {
+  const files = scanConfigFixtureFiles();
+  expect(files.length).toBeGreaterThan(0);
+
+  for (const file of files) {
+    const fixture = loadScanConfigFixture(file);
+    expect(fixture.name).not.toBe('');
+    expect(fixture.cases.length).toBeGreaterThan(0);
+
+    for (const configuration of fixture.cases) {
+      expect(configuration.name).not.toBe('');
+      expect(configuration.expect.submitLabel).not.toBe('');
+    }
+  }
+});
+
+test('a fixture naming an unknown activity is rejected', () => {
+  expect(() => parseScanConfigFixture({ activity: 'imagine' }, 'bad.json')).toThrow(/activity/);
+});
+
+test('a single selection takes exactly one entity', () => {
+  const fixture = {
+    name: 'two entities, one slot',
+    activity: 'build',
+    workflow: { label: 'Synaptome', type: 'build-synaptome-campaign' },
+    schemaName: 'MEModelSynapticModelPlacementScanConfig',
+    selection: { mode: 'single', entities: ['a', 'b'] },
+    cases: [
+      { name: 'one', config: { info: {} }, expect: { coordinateCount: 1, submitLabel: 'Go' } },
+    ],
+  };
+
+  expect(() => parseScanConfigFixture(fixture, 'bad.json')).toThrow(/exactly one entity/);
+});
+
+test('a coordinate count below one is rejected', () => {
+  const fixture = {
+    name: 'no coordinates',
+    activity: 'build',
+    workflow: { label: 'Synaptome', type: 'build-synaptome-campaign' },
+    schemaName: 'MEModelSynapticModelPlacementScanConfig',
+    selection: { mode: 'single', entities: ['a'] },
+    cases: [
+      { name: 'none', config: { info: {} }, expect: { coordinateCount: 0, submitLabel: 'Go' } },
+    ],
+  };
+
+  expect(() => parseScanConfigFixture(fixture, 'bad.json')).toThrow(/coordinateCount/);
+});
+
+test('a fixture still using a single config is rejected with a pointer', () => {
+  const fixture = {
+    name: 'the old shape',
+    activity: 'build',
+    workflow: { label: 'Synaptome', type: 'build-synaptome-campaign' },
+    schemaName: 'MEModelSynapticModelPlacementScanConfig',
+    selection: { mode: 'single', entities: ['a'] },
+    config: { info: {} },
+    cases: [
+      { name: 'one', config: { info: {} }, expect: { coordinateCount: 1, submitLabel: 'Go' } },
+    ],
+  };
+
+  expect(() => parseScanConfigFixture(fixture, 'old.json')).toThrow(/config moved inside cases/);
+});

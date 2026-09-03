@@ -1,0 +1,173 @@
+{
+  "name": "Synaptome build with one excitatory synapse group",
+  "activity": "build",
+  "workflow": {
+    "label": "Synaptome",
+    "type": "build-synaptome-campaign"
+  },
+  "schemaName": "MEModelSynapticModelPlacementScanConfig",
+  "selection": {
+    "mode": "single",
+    "entities": ["MEM__jy180314_B_idA__dNAD_ltb_VPM_TC"]
+  },
+  "cases": [
+    {
+      "name": "one excitatory synapse group",
+      "config": {
+        "info": {
+          "type": "Info",
+          "campaign_name": "E2E synaptome build",
+          "campaign_description": "Places one excitatory synapse group on a single ME-model."
+        },
+        "distributions": {
+          "exc_conductance": {
+            "type": "FloatConstantDistribution",
+            "value": 0.4
+          },
+          "exc_delay": {
+            "type": "FloatConstantDistribution",
+            "value": 1.5
+          },
+          "rrp_vesicles": {
+            "type": "IntConstantDistribution",
+            "value": 5
+          }
+        },
+        "synaptic_models": {
+          "exc_tm": {
+            "type": "ExcitatoryTsodyksMarkramSynapticModel",
+            "conductance_distribution": {
+              "block_dict_name": "distributions",
+              "block_name": "exc_conductance"
+            },
+            "delay_distribution": {
+              "block_dict_name": "distributions",
+              "block_name": "exc_delay"
+            },
+            "n_rrp_vesicles_distribution": {
+              "block_dict_name": "distributions",
+              "block_name": "rrp_vesicles"
+            }
+          }
+        },
+        "morphology_locations": {
+          "basal_locations": {
+            "type": "RandomMorphologyLocations",
+            "number_of_locations": 100,
+            "random_seed": 42
+          }
+        },
+        "synapse_groups": {
+          "basal_exc_inputs": {
+            "type": "SynapticModelPlacer",
+            "synaptic_model": {
+              "block_dict_name": "synaptic_models",
+              "block_name": "exc_tm"
+            },
+            "placement_strategy": {
+              "block_dict_name": "morphology_locations",
+              "block_name": "basal_locations"
+            }
+          }
+        }
+      },
+      "expect": {
+        "coordinateCount": 1,
+        "submitLabel": "Generate build(s)",
+        "generated": {
+          "inputs": ["obi_one_coordinate.json"],
+          "outputs": []
+        },
+        "completed": {
+          "inputs": ["Task configuration", "obi_one_coordinate.json", "circuit_config.json"],
+          "outputs": ["Task logs", "E2E synaptome build"]
+        }
+      }
+    },
+    {
+      "name": "explicit morphology locations picked in the 3D viewer",
+      "config": {
+        "info": {
+          "type": "Info",
+          "campaign_name": "E2E synaptome explicit locations",
+          "campaign_description": "Places one excitatory synapse group on a location picked in the 3D viewer."
+        },
+        "distributions": {
+          "exc_conductance": {
+            "type": "FloatConstantDistribution",
+            "value": 0.4
+          },
+          "exc_delay": {
+            "type": "FloatConstantDistribution",
+            "value": 1.5
+          },
+          "rrp_vesicles": {
+            "type": "IntConstantDistribution",
+            "value": 5
+          }
+        },
+        "synaptic_models": {
+          "exc_tm": {
+            "type": "ExcitatoryTsodyksMarkramSynapticModel",
+            "conductance_distribution": {
+              "block_dict_name": "distributions",
+              "block_name": "exc_conductance"
+            },
+            "delay_distribution": {
+              "block_dict_name": "distributions",
+              "block_name": "exc_delay"
+            },
+            "n_rrp_vesicles_distribution": {
+              "block_dict_name": "distributions",
+              "block_name": "rrp_vesicles"
+            }
+          }
+        },
+        "morphology_locations": {
+          "picked_locations": {
+            "type": "ExplicitMorphologyLocations",
+            "locations": [
+              {
+                "offset": 0.25
+              }
+            ]
+          }
+        },
+        "synapse_groups": {
+          "picked_exc_inputs": {
+            "type": "SynapticModelPlacer",
+            "synaptic_model": {
+              "block_dict_name": "synaptic_models",
+              "block_name": "exc_tm"
+            },
+            "placement_strategy": {
+              "block_dict_name": "morphology_locations",
+              "block_name": "picked_locations"
+            }
+          }
+        }
+      },
+      "expect": {
+        "coordinateCount": 1,
+        "submitLabel": "Generate build(s)",
+        "generated": {
+          "inputs": ["obi_one_coordinate.json"],
+          "outputs": []
+        },
+        "completed": {
+          "inputs": ["Task configuration", "obi_one_coordinate.json", "circuit_config.json"],
+          "outputs": ["Task logs", "E2E synaptome explicit locations"]
+        },
+        "built": {
+          "name": "E2E synaptome explicit locations",
+          "properties": {
+            "Scale": "Single",
+            "Number of neurons": "1",
+            "Number of synapses": "1",
+            "Build category": "Computational model"
+          }
+        }
+      }
+    }
+  ]
+}

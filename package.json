@@ -16,7 +16,7 @@
     "browsers": "bunx playwright install --with-deps chromium",
     "summarize": "bun scripts/ci/summarize-results.ts test-results/results.json test-results",
     "notify": "bun run summarize && bun scripts/ci/teams-card.ts test-results/summary.json",
-    "test:unit": "bun test",
+    "test:unit": "bun test ./scripts ./fixtures",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "typecheck": "tsc --noEmit",
