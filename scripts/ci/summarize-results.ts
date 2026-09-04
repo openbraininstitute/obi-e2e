@@ -7,13 +7,21 @@
  * Usage: bun scripts/ci/summarize-results.ts <results.json> [outDir]
  */
 
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+
 import type { CreditReport } from '@fixtures/credit-report';
+import { baseURL, deploymentEnv, RUN_DIR } from '@fixtures/env';
 
 type Result = { status?: string; duration?: number; error?: { message?: string } };
 type TestCase = { status?: string; projectName?: string; results?: Result[] };
 type Spec = { title?: string; file?: string; line?: number; tests?: TestCase[] };
 type Suite = { title?: string; file?: string; specs?: Spec[]; suites?: Suite[] };
-type Report = { suites?: Suite[]; stats?: Record<string, number> };
+type Report = {
+  suites?: Suite[];
+  stats?: Record<string, number>;
+  config?: { metadata?: { environment?: string; baseUrl?: string; runId?: string } };
+};
 
 export type Failure = { title: string; file: string; line: number; project: string; error: string };
 
@@ -271,8 +279,8 @@ export function buildSummary(
     flaky: stats.flaky ?? 0,
     skipped: stats.skipped ?? 0,
     durationMs: Math.round(stats.duration ?? 0),
-    environment: env.E2E_ENVIRONMENT ?? 'unknown',
-    baseUrl: env.E2E_BASE_URL ?? '',
+    environment: report.config?.metadata?.environment ?? env.E2E_ENVIRONMENT ?? deploymentEnv(),
+    baseUrl: report.config?.metadata?.baseUrl ?? env.E2E_BASE_URL ?? baseURL,
     browser: env.PLAYWRIGHT_BROWSER ?? 'chromium',
     commit: env.GITHUB_SHA ?? '',
     runUrl:
@@ -419,6 +427,34 @@ export async function loadServices(outDir: string): Promise<ServiceSummary[]> {
   return parsed.services ?? [];
 }
 
+const RUNS_DIR = path.dirname(RUN_DIR);
+
+/** Stops when the report is older than the last run on this machine. */
+function refuseIfStale(report: Report): void {
+  const reported = report.config?.metadata?.runId;
+  if (!reported || !fs.existsSync(RUNS_DIR)) return;
+
+  const runs = fs
+    .readdirSync(RUNS_DIR)
+    .filter((name) => /^\d+-\d+$/.test(name))
+    .toSorted(
+      (left, right) =>
+        fs.statSync(path.join(RUNS_DIR, right)).mtimeMs -
+        fs.statSync(path.join(RUNS_DIR, left)).mtimeMs
+    );
+
+  const newest = runs[0];
+  if (!newest || newest === reported) return;
+
+  console.error(
+    `This report is from run ${reported}, but the last run on this machine was ${newest}.\n` +
+      'Nothing was summarised. A run started with `--reporter=line` writes no JSON report, ' +
+      'because the flag replaces the reporters the config sets instead of adding to them. ' +
+      'Run without it, or pass `--reporter=line,json,html`.'
+  );
+  process.exit(1);
+}
+
 async function main(): Promise<void> {
   const [inputPath, outDir = 'test-results'] = Bun.argv.slice(2);
   if (!inputPath) {
@@ -426,8 +462,11 @@ async function main(): Promise<void> {
     process.exit(2);
   }
 
+  const report = (await Bun.file(inputPath).json()) as Report;
+  refuseIfStale(report);
+
   const summary = buildSummary(
-    (await Bun.file(inputPath).json()) as Report,
+    report,
     await loadServices(outDir),
     process.env,
     await loadCredits(outDir)

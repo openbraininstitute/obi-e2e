@@ -7,6 +7,7 @@ import {
   isCI,
   resolveBrowser,
   resolveWorkers,
+  RUN_ID,
 } from './fixtures/env';
 import { excludedEnvironmentTag } from './fixtures/tags';
 
@@ -32,6 +33,8 @@ export default defineConfig({
   testIgnore: ['node_modules/**', 'test-results/**', 'playwright-report/**'],
   timeout: isCI ? 120_000 : 90_000,
   expect: { timeout: ASSERTION_TIMEOUT },
+
+  metadata: { environment: deploymentEnv(), baseUrl: baseURL, runId: RUN_ID },
 
   fullyParallel: true,
   forbidOnly: isCI,
