@@ -57,85 +57,141 @@ replies with the rest.
 
 ## Setting up a channel
 
+Follow these in order. Each step says exactly what to click.
+
 You need permission to create a workflow, and the channel must be **standard or
 shared**. Posting as a flow bot in a **private** channel is not supported yet.
 
+**One thing to know before you start.** Some fields take an _expression_ — a
+small piece of code, not text you type into the box. When a step below says
+"use the Expression tab", it means: click the field, wait for the little panel
+to open, click the tab named **Expression**, type the code there, then click
+**OK**. Typing the code straight into the field stores it as plain words and the
+flow does nothing.
+
 ### 1. Create the workflow
 
-In Teams: go to the channel → **⋯** → **Workflows** → **Build from scratch**.
+In Teams, go to the channel → **⋯** → **Workflows** → **Build from scratch**.
 
-The builder embedded in Teams is a trimmed-down designer, and depending on your
-tenant it may not let you add an **Apply to each** or write raw expressions. If
-you hit that, build the same flow at [make.powerautomate.com](https://make.powerautomate.com)
-→ **Create** → **Instant cloud flow**. The result is identical and the Teams
+If the builder inside Teams will not let you add an **Apply to each** or type an
+expression, build the same flow at [make.powerautomate.com](https://make.powerautomate.com)
+→ **Create** → **Instant cloud flow**. It is the same flow, and the Teams
 Workflows app lists it either way.
 
-### 2. Trigger — _When a Teams webhook request is received_
+### 2. Add the trigger
 
-Set **Who can trigger the flow?** to **Anyone**. Without it, CI cannot POST to
-the URL.
+Search for and pick **When a Teams webhook request is received**.
 
-The **HTTP POST URL** stays empty until the flow is saved, and the flow cannot
-be saved until it has at least one action — so it appears after step 3, not now.
+Set **Who can trigger the flow?** to **Anyone**. Without this, CI cannot send
+anything.
 
-This trigger has no **Request Body JSON Schema** box, unlike the generic HTTP
-trigger. That means `cards` never appears as a dynamic-content chip, which is
-why every reference to it below is written as an expression instead.
+The **HTTP POST URL** is empty for now. It appears after the first save, and a
+flow cannot be saved until it has at least one action — so it shows up at the
+end of step 3, not here.
 
-### 3. Action — _Post card in a chat or channel_
+This trigger has no box for a JSON schema. That is why every field below uses an
+expression instead of picking `cards` from a list.
 
-This posts the summary, and is the message everything else hangs off.
+### 3. Post the summary card
 
-- **Post as**: Flow bot
-- **Post in**: Channel
-- **Team** / **Channel**: the ones you want
-- **Adaptive Card**: switch the field to the **Expression** tab and enter
+Click **+ New step**. Search `post card`. Pick **Post card in a chat or
+channel**.
 
-  ```
-  string(triggerBody()?['cards'][0])
-  ```
+| Field         | Value             |
+| ------------- | ----------------- |
+| Post as       | Flow bot          |
+| Post in       | Channel           |
+| Team          | your team         |
+| Channel       | your channel      |
+| Adaptive Card | expression, below |
 
-  The field takes JSON as text. `string()` says so outright rather than relying
-  on the designer to serialise an object for you.
+For **Adaptive Card**, use the Expression tab:
 
-Save now. The trigger's HTTP POST URL appears once it succeeds — copy it.
+```
+string(triggerBody()?['cards'][0])
+```
 
-### 4. Action — _Apply to each_
+Click **Save**. The trigger's **HTTP POST URL** now exists — copy it.
 
-Add it after the post. Set its input, as an expression, to every card except the
-one already posted:
+### 4. Check that much works before going on
+
+Write a tiny test payload:
+
+```bash
+cat > /tmp/probe.json <<'JSON'
+{ "cards": [
+  { "type": "AdaptiveCard", "version": "1.5",
+    "body": [{ "type": "TextBlock", "text": "probe 1 — parent", "weight": "Bolder" }] },
+  { "type": "AdaptiveCard", "version": "1.5",
+    "body": [{ "type": "TextBlock", "text": "probe 2 — reply" }] }
+] }
+JSON
+```
+
+Send it:
+
+```bash
+curl -s -X POST -H 'content-type: application/json' --data @/tmp/probe.json '<HTTP POST URL>'
+```
+
+A message saying **probe 1 — parent** should appear in the channel.
+
+If nothing appears, stop here and fix it before adding more steps. See
+[when something goes wrong](#when-something-goes-wrong). Note that `202` only
+means the request arrived — it does not mean anything was posted.
+
+### 5. Loop over the remaining cards
+
+Click **+ New step**. Search `apply to each`. Pick **Apply to each**.
+
+For its input, use the Expression tab. This is every card except the first,
+which step 3 already posted:
 
 ```
 skip(triggerBody()?['cards'], 1)
 ```
 
-Open **Settings** on this action and leave **Concurrency Control off**. The loop
-is then sequential and the sections arrive in order; turn it on and they arrive
-shuffled.
+Do not leave whatever the designer filled in by itself. It often prefills
+something else, and the run then fails with _property 'attachments' doesn't
+exist_.
 
-### 5. Inside the loop — _Reply with an adaptive card in a channel_
+Then click **⋯** on the Apply to each box → **Settings** → make sure
+**Concurrency Control** is **off**. With it on, the sections arrive shuffled.
 
-- **Message ID**: pick **Message ID** from the dynamic content of step 3.
+### 6. Reply with each section
 
-  Choose it from the picker rather than typing an expression. The underlying
-  field name differs between connector versions, and the picker gets it right.
+Inside the Apply to each box, click **Add an action**. Search `reply`. Pick
+**Reply with an adaptive card in a channel**.
 
-- **Team** / **Channel**: the same ones as step 3.
-- **Adaptive Card**:
+| Field         | Value                                                  |
+| ------------- | ------------------------------------------------------ |
+| Team          | the same team as step 3                                |
+| Channel       | the same channel as step 3                             |
+| Message ID    | **Dynamic content** tab → **Message ID** (from step 3) |
+| Adaptive Card | expression, below                                      |
 
-  ```
-  string(items('Apply_to_each'))
-  ```
+For **Adaptive Card**, use the Expression tab:
 
-  If you renamed the loop, the name inside `items()` changes with it — it is the
-  action's name with spaces replaced by underscores.
+```
+string(items('Apply_to_each'))
+```
 
-Save.
+If you renamed the loop, the name inside `items()` changes with it: it is the
+action's name with spaces replaced by underscores.
 
-### 6. Point the suite at it
+Click **Save**.
 
-Set the webhook URL as the repository secret `MS_TEAMS_NEW_WEBHOOK_URI`, then
-add the layout to the notify step in `.github/workflows/e2e.yml`:
+### 7. Check the whole thing
+
+Send the probe from step 4 again. You should now see:
+
+- one message: **probe 1 — parent**
+- one reply underneath it: **probe 2 — reply**
+
+### 8. Point the suite at it
+
+Store the webhook URL as the repository secret `MS_TEAMS_NEW_WEBHOOK_URI`, then
+set the layout on the notify step in `.github/workflows/e2e.yml`:
 
 ```yaml
 - name: Post Teams card
@@ -146,34 +202,21 @@ add the layout to the notify step in `.github/workflows/e2e.yml`:
   run: bun scripts/ci/teams-card.ts test-results/summary.json
 ```
 
-Locally, put `TEAMS_WEBHOOK_URL` and `TEAMS_LAYOUT=thread` in `.env`.
+Locally, put both in `.env`:
 
-### 7. Prove it works
-
-Build a payload from a real run's summary:
-
-```bash
-bun -e "import{buildThreadPayload}from'./scripts/ci/teams-card';console.log(JSON.stringify(buildThreadPayload(await Bun.file('test-results/summary.json').json()),null,2))" > /tmp/thread-payload.json
+```
+TEAMS_WEBHOOK_URL=<HTTP POST URL>
+TEAMS_LAYOUT=thread
 ```
 
-Post it once:
+`TEAMS_LAYOUT=thread` matters. Without it the suite sends a different shape,
+one this flow cannot read, and nothing is posted.
+
+### 9. Post a real run
 
 ```bash
-curl -s -o /dev/null -w '%{http_code}\n' -X POST \
-  -H 'content-type: application/json' \
-  --data @/tmp/thread-payload.json '<HTTP POST URL>'
-```
-
-Then open the flow's **run history**. On the first run, expand the trigger and
-read its **Outputs**: confirm the body arrived as `{"cards":[…]}` and that the
-array holds one entry per card. This is the step that catches a trigger which
-wrapped or renamed the body, and it is worth doing once per tenant rather than
-assuming.
-
-The whole path, end to end:
-
-```bash
-bun run summarize && TEAMS_LAYOUT=thread bun scripts/ci/teams-card.ts test-results/summary.json
+bun run test          # or any subset, such as --project=public
+bun run notify
 ```
 
 ## Tagging people when a run cannot be paid for
@@ -229,16 +272,23 @@ the mention entities and shows the bare name as written.
 
 ## When something goes wrong
 
-| What you see                                      | Why                                                                                                                                                                                                                                                                                                |
-| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Save is greyed out in the designer                | a flow needs at least one action; add step 3 first                                                                                                                                                                                                                                                 |
-| The flow runs but the card is blank               | the Adaptive Card field got an object, not JSON text — wrap it in `string()`                                                                                                                                                                                                                       |
-| Only the summary posts, no replies                | the loop input is wrong; it must be `skip(triggerBody()?['cards'], 1)`                                                                                                                                                                                                                             |
-| Sections arrive out of order                      | Concurrency Control is on for the **Apply to each** — turn it off                                                                                                                                                                                                                                  |
-| `413` or a rejected request                       | the combined payload exceeded the endpoint's limit; see the limits above                                                                                                                                                                                                                           |
-| Nothing posts and CI says nothing                 | `TEAMS_WEBHOOK_URL` is unset — the script logs that and exits cleanly                                                                                                                                                                                                                              |
-| The script says it sent, but the channel is empty | The endpoint accepts before the flow runs, so a send is not a message. Read the flow's run history. Most often the layout and the flow disagree: a flow built for `{ "cards": [ … ] }` was handed the single-message shape because `TEAMS_LAYOUT` is unset. The script prints which shape it sent. |
-| Names show as `<at>Ada</at>` in the card          | posted through a legacy webhook rather than a flow                                                                                                                                                                                                                                                 |
+Read the flow's **run history** first: Power Automate → **My flows** → your flow
+→ the newest run at the bottom. A red step names its own problem, and the table
+below covers the ones that are easy to misread.
+
+| What you see                                                             | What it means                                                                                                                                 |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Save is greyed out in the designer                                       | A flow needs at least one action. Add step 3 first.                                                                                           |
+| `property 'attachments' doesn't exist, available properties are 'cards'` | The **Apply to each** input is whatever the designer prefilled. Replace it with `skip(triggerBody()?['cards'], 1)`.                           |
+| The command says it sent, but the channel is empty                       | Sending is not posting: the endpoint accepts the request before the flow runs, so `202` proves nothing. Read the run history.                 |
+| Nothing arrives, and the run history is empty                            | The requests are not reaching this flow. Wrong URL, or the URL belongs to a different flow. Check the flow is switched on, too.               |
+| The flow runs green but the card is blank                                | The expression was typed into the field instead of the **Expression** tab, so it was saved as words. Clear it and enter it again on that tab. |
+| Only the summary posts, no replies                                       | The loop input is wrong. It must be `skip(triggerBody()?['cards'], 1)`.                                                                       |
+| Sections arrive out of order                                             | Concurrency Control is on for the **Apply to each**. Turn it off.                                                                             |
+| Every card posts as its own message, none threaded                       | `TEAMS_LAYOUT` is unset, or the reply action is posting rather than replying.                                                                 |
+| A `413`, or a rejected request                                           | The combined payload exceeded the endpoint's limit. See the limits above.                                                                     |
+| Nothing posts and the command says nothing                               | `TEAMS_WEBHOOK_URL` is unset. The script logs that and exits cleanly.                                                                         |
+| Names show as `<at>Ada</at>`                                             | Posted through a legacy webhook rather than a flow.                                                                                           |
 
 ## The other two layouts
 
