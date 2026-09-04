@@ -85,8 +85,8 @@ sees the message id.
 
 ### Payload limits
 
-Teams refuses a message over 25 KB, card JSON included. Three things keep every
-message under it:
+Teams refuses a message over 28 KB, card JSON included. This repo builds to a
+25 KB ceiling, leaving room to spare. Three things keep every message under it:
 
 - Every variable string is clamped before it reaches a cell. Test titles,
   service errors and scenario names have no natural bound, and one long one used
@@ -97,24 +97,17 @@ message under it:
   failures grow too large.
 
 The limit applies per message, not per request, so `thread` mode sends all cards
-in one larger request and the flow posts each separately. A typical run is
-around 12 KB in total, well inside the request budget.
+in one larger request and the flow posts each separately. That combined request
+is not held to 28 KB by anything: measured against a run the size of this suite
+it came to roughly 32 KB, which the Power Automate endpoint accepts and a legacy
+connector webhook would not. See [docs/teams-reporting.md](docs/teams-reporting.md#limits-worth-knowing).
 
 ### Making the flow reply
 
-Edit the flow in Power Automate. Today it posts one card. Change it to:
-
-1. **Post card in a chat or channel** — set the card to
-   `triggerBody()?['cards'][0]`. Keep this action's **Message ID** output.
-2. **Apply to each** — set the input to `skip(triggerBody()?['cards'], 1)`.
-3. Inside the loop, **Reply with a message in a channel** — use the Message ID
-   from step 1, and the current item as the card.
-
-Then set `TEAMS_LAYOUT=thread` here. Nothing else changes.
-
-The alternative is Microsoft Graph
-(`POST /teams/{id}/channels/{id}/messages/{id}/replies`), which threads properly
-but needs an app registration and the `ChannelMessage.Send` permission.
+`thread` needs a Power Automate workflow behind the webhook: it posts the first
+card, keeps its message id, and replies with the rest. Setting one up on a new
+channel, testing it, and what to do when it misbehaves are all in
+[docs/teams-reporting.md](docs/teams-reporting.md).
 
 ## Before the tests run
 
