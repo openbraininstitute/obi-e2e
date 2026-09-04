@@ -1,0 +1,50 @@
+{
+  "name": "Ion channel simulation",
+  "activity": "simulate",
+  "env": ["staging", "production"],
+  "workflow": {
+    "label": "Ion channel",
+    "type": "ion-channel-model-simulation"
+  },
+  "schemaName": "IonChannelModelSimulationScanConfig",
+  "selection": {
+    "mode": "single",
+    "entities": ["Kv3.2"]
+  },
+  "cases": [
+    {
+      "name": "a three-level voltage clamp recorded at the soma",
+      "config": {
+        "info": {
+          "type": "Info",
+          "campaign_name": "E2E ion channel simulation",
+          "campaign_description": "One channel held at three voltages in turn, recorded at the soma."
+        },
+        "ion_channel_models": {
+          "channel": { "type": "IonChannelModelWithConductance", "conductance": 0.1 }
+        },
+        "stimuli": {
+          "voltage_clamp": {
+            "type": "SEClampSomaticStimulus",
+            "level1_duration": 50,
+            "level1_voltage": -80,
+            "level2_duration": 100,
+            "level2_voltage": 0,
+            "level3_duration": 50,
+            "level3_voltage": -80
+          }
+        },
+        "recordings": {
+          "soma_voltage": { "type": "SomaVoltageRecording", "dt": 0.1 }
+        },
+        "initialize": {
+          "type": "IonChannelModelSimulationScanConfig.Initialize",
+          "simulation_length": 200,
+          "temperature": 35,
+          "v_init": -80
+        }
+      },
+      "expect": { "coordinateCount": 1 }
+    }
+  ]
+}
