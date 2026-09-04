@@ -13,6 +13,8 @@ export function entityListing(page: Page) {
     search: page.getByTestId('data-grid-search'),
     filters: page.getByRole('button', { name: 'Filters' }),
     columns: page.getByRole('button', { name: 'Columns' }),
+    /** Circuits only: swaps the flat listing for the hierarchy and back. */
+    viewToggle: page.getByRole('button', { name: 'Toggle view' }),
     advancedFilters: page.getByTestId('advanced-filters-pane'),
     /**
      * The column chooser. It is an antd popover, which carries the tooltip
