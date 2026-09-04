@@ -20,14 +20,15 @@ export default defineConfig({
   // must not live inside it.
   outputDir: 'test-results/artifacts',
 
-  reporter: isCI
-    ? [
-        ['list'],
-        ['html', { open: 'never' }],
-        ['json', { outputFile: 'test-results/results.json' }],
-        ['github'],
-      ]
-    : [['list'], ['html', { open: 'on-failure' }]],
+  reporter: [
+    ['list'],
+    ['html', { open: isCI ? 'never' : 'on-failure' }],
+    // `bun run summarize` and `bun run notify` read this, so every run writes it
+    // and not only CI: a local run that cannot produce the card is a local run
+    // that cannot check the card before it reaches the channel.
+    ['json', { outputFile: 'test-results/results.json' }],
+    ...(isCI ? [['github'] as const] : []),
+  ],
 
   use: {
     baseURL,

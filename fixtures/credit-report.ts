@@ -46,6 +46,17 @@ export async function recordCredits(patch: Partial<CreditReport>): Promise<void>
   await Bun.write(REPORT_FILE, `${JSON.stringify(merged, null, 2)}\n`);
 }
 
+/**
+ * Forgets what the last run did.
+ *
+ * The file outlives a run — Playwright only wipes its own artefacts directory —
+ * so without this a run that never prepared a project reports the previous
+ * run's credits as its own. Wrong numbers on a card are worse than none.
+ */
+export function resetCreditReport(): void {
+  fs.rmSync(REPORT_FILE, { force: true });
+}
+
 export function readCreditReport(file = REPORT_FILE): CreditReport | null {
   if (!fs.existsSync(file)) return null;
   return JSON.parse(fs.readFileSync(file, 'utf8')) as CreditReport;

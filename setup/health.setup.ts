@@ -1,5 +1,6 @@
 import { checkAllServices, formatStatusTable } from '@api/health';
 import { services } from '@api/services';
+import { resetCreditReport } from '@fixtures/credit-report';
 import { expect, test as setup } from '@playwright/test';
 
 /**
@@ -7,6 +8,10 @@ import { expect, test as setup } from '@playwright/test';
  * failure here instead of a suite full of unexplained test failures.
  */
 setup('backend services are healthy', async () => {
+  // This project runs before every other one, so it is where a run drops what
+  // the last run left behind.
+  resetCreditReport();
+
   const statuses = await checkAllServices();
   const unhealthy = statuses.filter((status) => !status.healthy);
 
