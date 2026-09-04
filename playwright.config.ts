@@ -1,10 +1,32 @@
 import { defineConfig, devices } from '@playwright/test';
 
-import { authStatePath, baseURL, isCI, resolveBrowser, resolveWorkers } from './fixtures/env';
+import {
+  authStatePath,
+  baseURL,
+  deploymentEnv,
+  isCI,
+  resolveBrowser,
+  resolveWorkers,
+} from './fixtures/env';
+import { excludedEnvironmentTag } from './fixtures/tags';
 
 // Not a sleep: a web-first assertion resolves as soon as its condition holds
 // and only spends this budget when the condition never becomes true.
 const ASSERTION_TIMEOUT = 30_000;
+
+/**
+ * What a project must not pick up: the other deployment's tests, plus whatever
+ * else that project excludes.
+ *
+ * Every test runs against both deployments unless it says otherwise, and the
+ * exclusion is composed here rather than set once at the top of the config,
+ * because a project that declares its own `grepInvert` replaces the config's
+ * instead of adding to it — which silently drops the deployment filter.
+ */
+function excluding(...also: RegExp[]): RegExp {
+  const patterns = [excludedEnvironmentTag(deploymentEnv()), ...also];
+  return new RegExp(patterns.map((pattern) => pattern.source).join('|'));
+}
 
 export default defineConfig({
   testIgnore: ['node_modules/**', 'test-results/**', 'playwright-report/**'],
@@ -82,13 +104,14 @@ export default defineConfig({
       name: 'public',
       testDir: './scenarios',
       grep: /@public/,
+      grepInvert: excluding(),
       dependencies: ['health'],
     },
     {
       name: 'private',
       testDir: './scenarios',
       grep: /@private/,
-      grepInvert: /@spends/,
+      grepInvert: excluding(/@spends/),
       dependencies: ['workspace'],
       use: { storageState: authStatePath('primary') },
     },
@@ -98,6 +121,7 @@ export default defineConfig({
       name: 'spends',
       testDir: './scenarios',
       grep: /@spends/,
+      grepInvert: excluding(),
       dependencies: ['credits'],
       use: { storageState: authStatePath('primary') },
     },
@@ -106,6 +130,7 @@ export default defineConfig({
       name: 'onboarding',
       testDir: './scenarios',
       grep: /@onboarding/,
+      grepInvert: excluding(),
       dependencies: ['setup'],
       use: { storageState: authStatePath('onboarding') },
     },

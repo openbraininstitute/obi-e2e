@@ -233,8 +233,20 @@ password fields and offers only social providers, so the login form is submitted
 directly. Each sign-in saves browser storage state and an access token that API
 helpers use to arrange and clean up test data.
 
-On production only `@smoke` tests run, and they must not create or delete
-anything outside the QA lab and project.
+Every test runs against both staging and production. A test says nothing about
+deployments and runs on both, which is what almost all of them want.
+
+The exceptions carry a tag. `@staging` keeps a test off production — a feature
+that has not shipped there yet — and `@production` keeps one off staging. The
+config excludes the other deployment's tag, so a local run against production
+skips the same tests CI does.
+
+Workflows do not use those tags. A scan-config fixture's `env` list is the only
+thing that decides where its workflow runs, because which deployments offer a
+workflow is a fact about the release rather than about the test.
+
+`@smoke` no longer decides anything about deployments. It marks a short subset
+for a quick check, `bun run test:smoke`.
 
 ## When tests run
 

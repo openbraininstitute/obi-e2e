@@ -2,7 +2,7 @@ name: E2E
 
 on:
   schedule:
-    # 07:00 UTC daily — staging (full suite) and production (@smoke only).
+    # 07:00 UTC daily — the full suite against staging and production both.
     - cron: '0 7 * * *'
   push:
     branches: [main]
@@ -47,7 +47,7 @@ jobs:
           case "$EVENT" in
             schedule)
               runs=$(jq -cn '[{name:"staging",environment:"staging",grep:""},
-                              {name:"production-smoke",environment:"production",grep:"@smoke"}]') ;;
+                              {name:"production",environment:"production",grep:""}]') ;;
             repository_dispatch)
               runs=$(jq -cn --arg url "$PREVIEW_URL" \
                 '[{name:"pr-preview",environment:"preview",grep:"",base_url:$url}]') ;;
