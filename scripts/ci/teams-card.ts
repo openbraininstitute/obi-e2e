@@ -282,32 +282,39 @@ function outcomeChart(summary: Summary): unknown | null {
 }
 
 /**
- * What the run did with its budget, as one stacked bar.
+ * Where the budget went, as one stacked bar.
  *
- * Spent and left stack to exactly what the project was given, so the bar says
- * the thing the three numbers beside it only imply: how much of the budget a
- * run actually needs. Green is headroom — a bar with almost none of it left is
- * the picture of a run that nearly could not finish.
- *
- * Dropped, like the donut, on any host that cannot draw a chart.
+ * The three parts add up to exactly what the project was given, and each is a
+ * different thing that can happen to a credit: the run consumed it, it went
+ * back to the lab, or it did neither and is now gone with the project. All
+ * three are drawn even at zero, so the bar reads the same way every run and
+ * "nothing was stranded" is stated rather than inferred.
  */
 function creditChart(credits: CreditReport | undefined): unknown | null {
   if (!credits || credits.assigned === undefined || credits.remaining === undefined) return null;
 
   const spent = credits.spent ?? credits.assigned - credits.remaining;
-  const slices = [
-    { legend: 'Spent', value: spent, color: 'neutral' },
-    { legend: 'Left', value: credits.remaining, color: 'good' },
-  ].filter((slice) => slice.value > 0);
-
-  if (slices.length === 0) return null;
+  // A teardown that never finished returned nothing, and what it left in the
+  // project went with it. `reversed` covers a report written before the amount
+  // itself was recorded.
+  const returned = credits.returned ?? (credits.reversed === 'ok' ? credits.remaining : 0);
+  const stranded = Math.round((credits.remaining - returned) * 100) / 100;
 
   return {
     type: 'Chart.HorizontalBar.Stacked',
     title: `Credits · ${credits.assigned} assigned`,
     fallback: 'drop',
     spacing: 'Small',
-    data: [{ title: 'This run', data: slices }],
+    data: [
+      {
+        title: 'This run',
+        data: [
+          { legend: 'Spent', value: spent, color: 'neutral' },
+          { legend: 'Returned to the lab', value: returned, color: 'good' },
+          { legend: 'Stranded', value: stranded, color: 'attention' },
+        ],
+      },
+    ],
   };
 }
 
@@ -571,6 +578,9 @@ export function buildCard(summary: Summary, detail: Detail = 'full', mentions = 
         fact('Credits assigned', String(assigned)),
         fact('Credits spent', spent === undefined ? '—' : String(spent)),
         fact('Credits left', remaining === undefined ? '—' : String(remaining)),
+        ...(summary.credits?.returned === undefined
+          ? []
+          : [fact('Returned to the lab', String(summary.credits.returned))]),
       ],
     });
 
@@ -639,9 +649,22 @@ export function buildCard(summary: Summary, detail: Detail = 'full', mentions = 
             ...(alert && alert.entities.length > 0 ? { entities: alert.entities } : {}),
           },
           body,
-          actions: summary.runUrl
-            ? [{ type: 'Action.OpenUrl', title: 'Open run and report', url: summary.runUrl }]
-            : [],
+          actions: [
+            ...(summary.runUrl
+              ? [{ type: 'Action.OpenUrl', title: 'Open the run', url: summary.runUrl }]
+              : []),
+            // The HTML report is the thing someone actually wants: every test,
+            // its trace and its screenshots, openable on their own machine.
+            ...(summary.reportUrl
+              ? [
+                  {
+                    type: 'Action.OpenUrl',
+                    title: 'Download the full report',
+                    url: summary.reportUrl,
+                  },
+                ]
+              : []),
+          ],
         },
       },
     ],

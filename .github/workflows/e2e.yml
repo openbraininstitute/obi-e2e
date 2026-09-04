@@ -82,9 +82,6 @@ jobs:
       LAB_ID: >-
         ${{ matrix.run.environment == 'production' && secrets.LAB_ID_PRODUCTION
             || secrets.LAB_ID_STAGING }}
-      PROJECT_ID: >-
-        ${{ matrix.run.environment == 'production' && secrets.PROJECT_ID_PRODUCTION
-            || secrets.PROJECT_ID_STAGING }}
       PLAYWRIGHT_BROWSER: chromium
     steps:
       - uses: actions/checkout@v5
@@ -112,7 +109,6 @@ jobs:
           [[ -n "$E2E_TEST_USERNAME" ]] || missing+=(E2E_TEST_USERNAME)
           [[ -n "$E2E_TEST_PASSWORD" ]] || missing+=(E2E_TEST_PASSWORD)
           [[ -n "$LAB_ID" ]] || missing+=(LAB_ID)
-          [[ -n "$PROJECT_ID" ]] || missing+=(PROJECT_ID)
           if (( ${#missing[@]} )); then
             echo "Missing configuration: ${missing[*]}" >&2
             exit 1
@@ -141,7 +137,10 @@ jobs:
         if: always()
         run: cat test-results/summary.md >> "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/upload-artifact@v4
+      # Named, because the Teams card links straight to this download: the
+      # HTML report is what someone actually wants to open when a run is red.
+      - id: report
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: playwright-report-${{ matrix.run.name }}
@@ -150,10 +149,18 @@ jobs:
             test-results/
           retention-days: 14
 
+      - name: Rebuild the summary with the report link
+        if: always()
+        env:
+          E2E_REPORT_URL: ${{ steps.report.outputs.artifact-url }}
+        run: bun scripts/ci/summarize-results.ts test-results/results.json test-results
+
       - name: Post Teams card
         if: always() && github.event_name != 'pull_request'
         env:
           TEAMS_WEBHOOK_URL: ${{ secrets.MS_TEAMS_NEW_WEBHOOK_URI }}
+          TEAMS_LAYOUT: thread
+          E2E_REPORT_URL: ${{ steps.report.outputs.artifact-url }}
         run: bun scripts/ci/teams-card.ts test-results/summary.json
 
   report-to-pr:

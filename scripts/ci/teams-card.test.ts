@@ -111,6 +111,7 @@ describe('buildCard', () => {
       browser: 'chromium',
       commit: 'deadbeef',
       runUrl: '',
+      reportUrl: '',
       trigger: 'Manual',
       failures: [
         {
@@ -212,6 +213,7 @@ function summaryWith(sectionCount: number, featuresPerSection: number): Summary 
     browser: 'chromium',
     commit: 'abcdef1234',
     runUrl: '',
+    reportUrl: '',
     trigger: 'Scheduled',
     failures: [],
     totalFailures: 0,
@@ -316,6 +318,7 @@ describe('payload limits', () => {
     browser: 'chromium',
     commit: 'abcdef1234',
     runUrl: '',
+    reportUrl: '',
     trigger: 'Scheduled',
     failures: Array.from({ length: 5 }, (_, index) => ({
       title: huge(4_000, `title-${index}`),
@@ -503,31 +506,74 @@ describe('the credits bar', () => {
     return collect(card, (node) => node.type === 'Chart.HorizontalBar.Stacked')[0];
   }
 
-  test('stacks spent and left to what the run was given', () => {
+  function slices(card: unknown): unknown {
+    return (barIn(card)?.data as { data: unknown[] }[] | undefined)?.[0]?.data;
+  }
+
+  test('splits the budget into spent, returned and stranded', () => {
     const card = buildCard(
-      spentSummary({ required: 2000, assigned: 2000, spent: 812.5, remaining: 1187.5 })
+      spentSummary({
+        required: 2000,
+        assigned: 2000,
+        spent: 812.5,
+        remaining: 1187.5,
+        reversed: 'ok',
+        returned: 1187.5,
+      })
     );
 
-    const bar = barIn(card);
-    expect(bar?.title).toBe('Credits · 2000 assigned');
-    expect(bar?.data).toEqual([
-      {
-        title: 'This run',
-        data: [
-          { legend: 'Spent', value: 812.5, color: 'neutral' },
-          { legend: 'Left', value: 1187.5, color: 'good' },
-        ],
-      },
+    expect(barIn(card)?.title).toBe('Credits · 2000 assigned');
+    expect(slices(card)).toEqual([
+      { legend: 'Spent', value: 812.5, color: 'neutral' },
+      { legend: 'Returned to the lab', value: 1187.5, color: 'good' },
+      { legend: 'Stranded', value: 0, color: 'attention' },
+    ]);
+  });
+
+  // Credits that never made it back went nowhere: the project holding them is
+  // deleted straight afterwards, so this is the slice worth seeing.
+  test('shows what a failed transfer stranded', () => {
+    const card = buildCard(
+      spentSummary({
+        required: 2000,
+        assigned: 2000,
+        spent: 500,
+        remaining: 1500,
+        reversed: 'failed',
+        returned: 0,
+      })
+    );
+
+    expect(slices(card)).toEqual([
+      { legend: 'Spent', value: 500, color: 'neutral' },
+      { legend: 'Returned to the lab', value: 0, color: 'good' },
+      { legend: 'Stranded', value: 1500, color: 'attention' },
+    ]);
+  });
+
+  // A run that was killed before its teardown finished returned nothing, and
+  // the credits went with the project.
+  test('counts an unfinished teardown as stranded', () => {
+    const card = buildCard(spentSummary({ required: 2000, assigned: 2000, remaining: 900 }));
+    expect(slices(card)).toEqual([
+      { legend: 'Spent', value: 1100, color: 'neutral' },
+      { legend: 'Returned to the lab', value: 0, color: 'good' },
+      { legend: 'Stranded', value: 900, color: 'attention' },
+    ]);
+  });
+
+  test('trusts a successful transfer that recorded no amount', () => {
+    const card = buildCard(
+      spentSummary({ required: 2000, assigned: 2000, remaining: 900, reversed: 'ok' })
+    );
+    expect(slices(card)).toEqual([
+      { legend: 'Spent', value: 1100, color: 'neutral' },
+      { legend: 'Returned to the lab', value: 900, color: 'good' },
+      { legend: 'Stranded', value: 0, color: 'attention' },
     ]);
   });
 
   // Teardown records the remaining balance; the spend follows from it.
-  test('works out the spend when only the balance was recorded', () => {
-    const card = buildCard(spentSummary({ required: 2000, assigned: 2000, remaining: 1500 }));
-    const series = barIn(card)?.data as { data: unknown[] }[] | undefined;
-    expect(series?.[0]?.data[0]).toEqual({ legend: 'Spent', value: 500, color: 'neutral' });
-  });
-
   test('draws nothing before the teardown has read the balance', () => {
     expect(barIn(buildCard(spentSummary({ required: 2000, assigned: 2000 })))).toBeUndefined();
   });
@@ -540,7 +586,7 @@ describe('the credits bar', () => {
 
   test('tells a host that cannot draw it to drop it', () => {
     const card = buildCard(
-      spentSummary({ required: 2000, assigned: 2000, spent: 800, remaining: 1200 })
+      spentSummary({ required: 2000, assigned: 2000, spent: 800, remaining: 1200, returned: 1200 })
     );
     expect(barIn(card)?.fallback).toBe('drop');
   });

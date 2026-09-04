@@ -246,7 +246,7 @@ stays green, the cause is the schema, not the editor.
 
 Levels 1 and 2 create nothing. Levels 3 and 4 create a campaign and spend project
 credits, so they are staging only, never tagged `@smoke`, and write only inside
-the lab and project named by `LAB_ID` and `PROJECT_ID`.
+the lab named by `LAB_ID`, inside the project the run creates for itself.
 
 Credits are the real constraint on how often these run. One synaptome build costs
 about ten credits. A project at zero cannot generate a campaign at all, which is

@@ -137,7 +137,7 @@ export function workspacePath(): string {
   return path.join(RUN_DIR, 'workspace.json');
 }
 
-type RequiredVar = 'LAB_ID' | 'PROJECT_ID';
+type RequiredVar = 'LAB_ID';
 
 /**
  * Reads required environment variables.
@@ -163,23 +163,21 @@ export function requireEnv<T extends RequiredVar>(...keys: T[]): Record<T, strin
 /**
  * The only lab and project tests may write to.
  *
- * The lab is long-lived and named by the environment. The project is not: the
- * run creates one, spends inside it and deletes it, so that many runs can share
- * one lab without sharing state or racing each other's data. `PROJECT_ID`
- * overrides that for a local run against a project someone wants to keep.
+ * The lab is long-lived and named by the environment. The project never is: the
+ * run creates one, spends inside it and deletes it, so many runs can share one
+ * lab without sharing state or racing each other's data. There is deliberately
+ * no way to point a run at a project that already exists — a run that wrote
+ * into someone's project would leave data behind in it.
  */
 export function testWorkspace(): { labId: string; projectId: string } {
   const labId = requireEnv('LAB_ID').LAB_ID;
-
-  const pinned = process.env.PROJECT_ID;
-  if (pinned) return { labId, projectId: pinned };
 
   const file = workspacePath();
   if (!fs.existsSync(file)) {
     throw new Error(
       `This run has no project: ${file} was never written. The workspace setup ` +
-        'creates one, so run the whole suite rather than a spec on its own, or set ' +
-        'PROJECT_ID to a project to use instead.'
+        'creates one, so run through the suite rather than a spec on its own — ' +
+        '`bun run test <spec>` still sets it up first.'
     );
   }
 

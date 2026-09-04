@@ -16,8 +16,11 @@ Repository **variables**: `E2E_BASE_URL_STAGING`, `E2E_BASE_URL_PRODUCTION`.
 
 Repository **secrets** (same names as the Selenium repo, plus one):
 `OBI_USERNAME`, `OBI_PASSWORD`, `LAB_ID_STAGING`, `LAB_ID_PRODUCTION`,
-`PROJECT_ID_STAGING`, `PROJECT_ID_PRODUCTION`, `MS_TEAMS_NEW_WEBHOOK_URI`,
-and `CORE_WEB_APP_PR_TOKEN` (a token that may comment on `core-web-app` PRs).
+`MS_TEAMS_NEW_WEBHOOK_URI`, and `CORE_WEB_APP_PR_TOKEN` (a token that may
+comment on `core-web-app` PRs).
+
+There is no project secret: every run creates a project inside the lab, moves a
+budget into it, and deletes it at the end.
 
 Optional: `OBI_ONBOARDING_USERNAME` and `OBI_ONBOARDING_PASSWORD` for the second
 user that tests virtual lab creation. Leave them unset and those tests skip.

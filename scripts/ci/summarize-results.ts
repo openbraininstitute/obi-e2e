@@ -57,6 +57,12 @@ export type Summary = {
   browser: string;
   commit: string;
   runUrl: string;
+  /**
+   * Where the full Playwright HTML report can be downloaded. CI uploads it as
+   * an artefact and passes the link here; a local run has none, and the report
+   * is already on the machine that produced it.
+   */
+  reportUrl: string;
   trigger: string;
   failures: Failure[];
   totalFailures: number;
@@ -273,6 +279,7 @@ export function buildSummary(
       env.GITHUB_SERVER_URL && env.GITHUB_REPOSITORY && env.GITHUB_RUN_ID
         ? `${env.GITHUB_SERVER_URL}/${env.GITHUB_REPOSITORY}/actions/runs/${env.GITHUB_RUN_ID}`
         : '',
+    reportUrl: env.E2E_REPORT_URL ?? '',
     trigger: detectTrigger(env.GITHUB_EVENT_NAME),
     failures: failures.slice(0, 5),
     totalFailures: failures.length,
@@ -339,6 +346,10 @@ export function renderMarkdown(summary: Summary): string {
       `| --- | --- | --- |`,
       `| ${assigned} | ${spent ?? '—'} | ${remaining ?? '—'} |`
     );
+  }
+
+  if (summary.reportUrl) {
+    lines.push('', `[Download the full Playwright report](${summary.reportUrl})`);
   }
 
   if (summary.services.length > 0) {

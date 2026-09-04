@@ -23,6 +23,12 @@ export type CreditReport = {
   spent?: number;
   /** Whether the leftovers made it back to the lab. A failure here is survivable. */
   reversed?: 'ok' | 'failed' | 'nothing to return';
+  /**
+   * What actually reached the lab again. Zero when the transfer failed, which
+   * is the case worth seeing: those credits went nowhere, and the project they
+   * were in no longer exists.
+   */
+  returned?: number;
   /** Whether the project was removed. A failure here costs one of the lab's forty. */
   removed?: 'ok' | 'failed';
   /**

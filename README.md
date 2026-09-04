@@ -140,8 +140,9 @@ leaving a list of failing tests to imply one. Set `TEAMS_ALERT_MENTIONS` to
 the lab cannot pay. Mentions render only when the webhook is a Power Automate
 flow posting the card.
 
-`PROJECT_ID` overrides all of this and points the run at a project that already
-exists, which is what you want when debugging a single spec locally.
+There is no way to point a run at a project that already exists. A run that
+wrote into one would leave its data behind, which is the thing the per-run
+project exists to prevent.
 
 ## Imports and shared values
 
@@ -186,14 +187,13 @@ the strings: a typo in a tag means the test never runs and nothing warns you.
 
 An environment is one URL plus the test users.
 
-| Variable                                              | Meaning                                                   |
-| ----------------------------------------------------- | --------------------------------------------------------- |
-| `E2E_BASE_URL`                                        | the application under test                                |
-| `E2E_TEST_USERNAME` / `E2E_TEST_PASSWORD`             | the primary user                                          |
-| `LAB_ID`                                              | the primary user's virtual lab                            |
-| `PROJECT_ID`                                          | optional; a project to use instead of one the run creates |
-| `E2E_PROJECT_CREDITS`                                 | what to move into that project, default 2000              |
-| `E2E_ONBOARDING_USERNAME` / `E2E_ONBOARDING_PASSWORD` | the onboarding user, optional                             |
+| Variable                                              | Meaning                                      |
+| ----------------------------------------------------- | -------------------------------------------- |
+| `E2E_BASE_URL`                                        | the application under test                   |
+| `E2E_TEST_USERNAME` / `E2E_TEST_PASSWORD`             | the primary user                             |
+| `LAB_ID`                                              | the primary user's virtual lab               |
+| `E2E_PROJECT_CREDITS`                                 | what to move into that project, default 2000 |
+| `E2E_ONBOARDING_USERNAME` / `E2E_ONBOARDING_PASSWORD` | the onboarding user, optional                |
 
 There are two test users because a user may own only one virtual lab, and the
 suite is split by what each is responsible for.

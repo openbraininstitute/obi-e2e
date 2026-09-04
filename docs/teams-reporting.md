@@ -18,15 +18,23 @@ One run produces a series of Adaptive Cards:
 A section whose table would not fit one message is split across numbered parts,
 measured by real byte count rather than a guessed row count.
 
+The first card carries two buttons: **Open the run**, and **Download the full
+report** — the Playwright HTML report, which CI uploads as an artefact and links
+directly. That is the one to hand someone: every test, its trace and its
+screenshots, openable on their own machine. A local run has no link, because the
+report is already on the machine that produced it (`bun run report`).
+
 The first card also draws two charts:
 
 - a **donut** of the outcome — passed, failed, flaky and skipped, in the same
   colours the status pills use. All four are always drawn, including the ones at
   zero, so the legend reads the same from run to run and a run with no failures
   says so rather than leaving it to be inferred;
-- a **stacked bar** of the budget, where spent and left stack to exactly what
-  the project was given, so the width of the green says how much headroom the
-  run finished with.
+- a **stacked bar** of the budget. The three parts add up to exactly what the
+  project was given, and each is a different fate for a credit: **spent** by the
+  run, **returned to the lab** by the teardown, or **stranded** — neither, and
+  gone with the deleted project. All three are drawn even at zero, so a run that
+  stranded nothing says so.
 
 `Chart.Donut` and `Chart.HorizontalBar.Stacked` are Teams extensions rather than
 part of the Adaptive Cards schema, so both carry `fallback: "drop"`. A host that

@@ -58,9 +58,9 @@ teardown('give the project back', async () => {
         console.warn(`Could not return ${returnable} credits to the lab: ${String(cause)}`);
         return 'failed' as const;
       });
-    await recordCredits({ reversed });
+    await recordCredits({ reversed, returned: reversed === 'ok' ? returnable : 0 });
   } else {
-    await recordCredits({ reversed: 'nothing to return' });
+    await recordCredits({ reversed: 'nothing to return', returned: 0 });
   }
 
   const removed = await api
