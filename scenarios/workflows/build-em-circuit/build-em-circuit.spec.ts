@@ -6,7 +6,7 @@ import {
 } from '@fixtures/scan-config';
 import { scanConfigWords } from '@fixtures/scan-config-activities';
 import { ScanConfigDriver } from '@fixtures/scan-config-driver';
-import { PRIVATE } from '@fixtures/tags';
+import { PRIVATE_SPENDS } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { chooseEntities, openWorkflowsHub, startWorkflow } from '@fixtures/workflows';
 import { scanConfigEditor, scanConfigResults } from '@locators/scan-config';
@@ -29,7 +29,7 @@ test.describe('Electron microscopy circuit build', () => {
   // One test per configuration, so they run in parallel and a failure names the
   // configuration that broke.
   for (const configuration of fixture.cases) {
-    test(`builds: ${configuration.name}`, { tag: PRIVATE }, async ({ page, workspace }) => {
+    test(`builds: ${configuration.name}`, { tag: PRIVATE_SPENDS }, async ({ page, workspace }) => {
       const editor = scanConfigEditor(page);
       const results = scanConfigResults(page);
 

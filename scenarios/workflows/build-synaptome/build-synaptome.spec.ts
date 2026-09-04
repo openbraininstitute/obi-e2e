@@ -7,7 +7,7 @@ import {
 } from '@fixtures/scan-config';
 import { scanConfigWords } from '@fixtures/scan-config-activities';
 import { addLocationsFromViewer, ScanConfigDriver } from '@fixtures/scan-config-driver';
-import { PRIVATE } from '@fixtures/tags';
+import { PRIVATE_SPENDS } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { chooseEntities, openWorkflowsHub, startWorkflow } from '@fixtures/workflows';
 import { scanConfigEditor, scanConfigResults } from '@locators/scan-config';
@@ -48,7 +48,7 @@ test.describe('Synaptome build', () => {
     await openEditor(page, workspace);
   });
 
-  test('will not launch an incomplete configuration', { tag: PRIVATE }, async ({ page }) => {
+  test('will not launch an incomplete configuration', { tag: PRIVATE_SPENDS }, async ({ page }) => {
     // The schema demands a campaign name and at least one synapse group, so an
     // editor that has only been given an ME-model cannot be launched.
     await expect(scanConfigEditor(page).submit).toBeDisabled();
@@ -56,7 +56,7 @@ test.describe('Synaptome build', () => {
 
   test(
     'refuses to generate a campaign with no credits',
-    { tag: PRIVATE },
+    { tag: PRIVATE_SPENDS },
     async ({ page, workspace }) => {
       const editor = scanConfigEditor(page);
 
@@ -85,7 +85,7 @@ test.describe('Synaptome build', () => {
   // One test per configuration, so they run in parallel and a failure names the
   // configuration that broke.
   for (const configuration of fixture.cases) {
-    test(`builds: ${configuration.name}`, { tag: PRIVATE }, async ({ page }) => {
+    test(`builds: ${configuration.name}`, { tag: PRIVATE_SPENDS }, async ({ page }) => {
       const editor = scanConfigEditor(page);
       const results = scanConfigResults(page);
 
@@ -144,7 +144,7 @@ test.describe('Synaptome build, picking locations on the morphology', () => {
     await expect(morphologyLocations(page).panel).toBeVisible();
   });
 
-  test('adds a location for each click on a neurite', { tag: PRIVATE }, async ({ page }) => {
+  test('adds a location for each click on a neurite', { tag: PRIVATE_SPENDS }, async ({ page }) => {
     const locations = morphologyLocations(page);
 
     await expect(locations.rows).toHaveCount(0);
@@ -158,7 +158,7 @@ test.describe('Synaptome build, picking locations on the morphology', () => {
     await expect(locations.offset(0)).toBeEnabled();
   });
 
-  test('keeps the offset within its section', { tag: PRIVATE }, async ({ page }) => {
+  test('keeps the offset within its section', { tag: PRIVATE_SPENDS }, async ({ page }) => {
     const locations = morphologyLocations(page);
     await addLocationsFromViewer(page, 1);
 
@@ -178,7 +178,7 @@ test.describe('Synaptome build, picking locations on the morphology', () => {
     await expect(locations.offset(0)).toHaveValue('0.00');
   });
 
-  test('removes a location, and keeps the last one', { tag: PRIVATE }, async ({ page }) => {
+  test('removes a location, and keeps the last one', { tag: PRIVATE_SPENDS }, async ({ page }) => {
     const locations = morphologyLocations(page);
     await addLocationsFromViewer(page, 2);
 
@@ -196,21 +196,25 @@ test.describe('The morphology viewer', () => {
     await expect(morphologyViewer(page).scene).toBeVisible();
   });
 
-  test('draws the morphology as a dendrogram and back', { tag: PRIVATE }, async ({ page }) => {
-    const viewer = morphologyViewer(page);
+  test(
+    'draws the morphology as a dendrogram and back',
+    { tag: PRIVATE_SPENDS },
+    async ({ page }) => {
+      const viewer = morphologyViewer(page);
 
-    await expect(viewer.mode.visualization).toHaveAttribute('aria-pressed', 'true');
-    await expect(viewer.mode.dendrogram).toHaveAttribute('aria-pressed', 'false');
+      await expect(viewer.mode.visualization).toHaveAttribute('aria-pressed', 'true');
+      await expect(viewer.mode.dendrogram).toHaveAttribute('aria-pressed', 'false');
 
-    await viewer.mode.dendrogram.click();
-    await expect(viewer.mode.dendrogram).toHaveAttribute('aria-pressed', 'true');
-    await expect(viewer.mode.visualization).toHaveAttribute('aria-pressed', 'false');
+      await viewer.mode.dendrogram.click();
+      await expect(viewer.mode.dendrogram).toHaveAttribute('aria-pressed', 'true');
+      await expect(viewer.mode.visualization).toHaveAttribute('aria-pressed', 'false');
 
-    await viewer.mode.visualization.click();
-    await expect(viewer.mode.visualization).toHaveAttribute('aria-pressed', 'true');
-  });
+      await viewer.mode.visualization.click();
+      await expect(viewer.mode.visualization).toHaveAttribute('aria-pressed', 'true');
+    }
+  );
 
-  test('turns the axons on and off', { tag: PRIVATE }, async ({ page }) => {
+  test('turns the axons on and off', { tag: PRIVATE_SPENDS }, async ({ page }) => {
     const viewer = morphologyViewer(page);
 
     await viewer.settings.click();
@@ -226,7 +230,7 @@ test.describe('The morphology viewer', () => {
     await expect(viewer.toggle.axons).not.toBeChecked();
   });
 
-  test('puts a zoom slider on the scene when asked', { tag: PRIVATE }, async ({ page }) => {
+  test('puts a zoom slider on the scene when asked', { tag: PRIVATE_SPENDS }, async ({ page }) => {
     const viewer = morphologyViewer(page);
 
     // The scene opens without one: the pointer already zooms.
@@ -243,7 +247,7 @@ test.describe('The morphology viewer', () => {
     await expect(viewer.zoomSlider).toHaveCount(0);
   });
 
-  test('keeps the scale bar and the neuron opacity', { tag: PRIVATE }, async ({ page }) => {
+  test('keeps the scale bar and the neuron opacity', { tag: PRIVATE_SPENDS }, async ({ page }) => {
     const viewer = morphologyViewer(page);
 
     await viewer.settings.click();

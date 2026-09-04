@@ -6,7 +6,7 @@ import {
 } from '@fixtures/scan-config';
 import { scanConfigWords } from '@fixtures/scan-config-activities';
 import { ScanConfigDriver } from '@fixtures/scan-config-driver';
-import { PRIVATE } from '@fixtures/tags';
+import { PRIVATE_SPENDS } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { chooseEntities, openWorkflowsHub, startWorkflow } from '@fixtures/workflows';
 import { scanConfigEditor, scanConfigResults } from '@locators/scan-config';
@@ -37,7 +37,7 @@ test.describe('Ion channel simulation', () => {
     await expect(page).toHaveURL(new RegExp(`/configure/${fixture.workflow.type}/`));
   });
 
-  test('will not launch an incomplete configuration', { tag: PRIVATE }, async ({ page }) => {
+  test('will not launch an incomplete configuration', { tag: PRIVATE_SPENDS }, async ({ page }) => {
     // The schema demands a campaign name, so an editor that has only been given
     // an entity cannot be launched.
     await expect(scanConfigEditor(page).submit).toBeDisabled();
@@ -46,7 +46,7 @@ test.describe('Ion channel simulation', () => {
   // One test per configuration, so they run in parallel and a failure names the
   // configuration that broke.
   for (const configuration of fixture.cases) {
-    test(`simulates: ${configuration.name}`, { tag: PRIVATE }, async ({ page }) => {
+    test(`simulates: ${configuration.name}`, { tag: PRIVATE_SPENDS }, async ({ page }) => {
       const editor = scanConfigEditor(page);
       const results = scanConfigResults(page);
 

@@ -67,6 +67,14 @@ export default defineConfig({
       testDir: './setup',
       testMatch: /workspace\.teardown\.ts/,
     },
+    {
+      // Stands in front of the tests that spend, so a lab that cannot pay
+      // stops those and leaves everything that only reads to run.
+      name: 'credits',
+      testDir: './setup',
+      testMatch: /credits\.setup\.ts/,
+      dependencies: ['workspace'],
+    },
     // Every project reads the same scenario folders and selects its tests by
     // tag, so one scenario can run signed out and signed in without duplication.
     {
@@ -79,7 +87,17 @@ export default defineConfig({
       name: 'private',
       testDir: './scenarios',
       grep: /@private/,
+      grepInvert: /@spends/,
       dependencies: ['workspace'],
+      use: { storageState: authStatePath('primary') },
+    },
+    {
+      // The tests that launch something. Same user, but they need a funded
+      // project, so they wait for the credits check.
+      name: 'spends',
+      testDir: './scenarios',
+      grep: /@spends/,
+      dependencies: ['credits'],
       use: { storageState: authStatePath('primary') },
     },
     {

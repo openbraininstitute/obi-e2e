@@ -22,9 +22,12 @@ import { expect, test as setup } from '@playwright/test';
  *
  * Money moves with it. A project starts empty and cannot pay for a simulation,
  * so the run transfers a budget in before the suite starts and returns what is
- * left at the end. A transfer that fails stops the private suite here: the
- * alternative is every workflow test failing further in, for a reason that
- * would look like a product bug.
+ * left at the end.
+ *
+ * A lab too poor to pay does not stop this step. Most of the suite only reads,
+ * and reading costs nothing, so the project is still taken and those tests
+ * still run. It is the credits check that stands in front of the tests which
+ * spend, and it fails there instead.
  */
 setup('prepare a project for this run', async () => {
   setup.skip(
@@ -40,13 +43,14 @@ setup('prepare a project for this run', async () => {
   await recordCredits({ labBalance, required });
   console.log(`Virtual lab holds ${labBalance} credits; this run needs ${required}.`);
 
-  if (labBalance < required) {
-    const problem =
-      `The virtual lab holds ${labBalance} credits and this run needs ${required}. ` +
-      'Nothing can be launched until someone tops the lab up, so the private suite ' +
-      'is not attempted. The public and onboarding suites are unaffected.';
-    await recordCredits({ problem });
-    expect(labBalance, problem).toBeGreaterThanOrEqual(required);
+  const affordable = labBalance >= required;
+  if (!affordable) {
+    await recordCredits({
+      problem:
+        `The virtual lab holds ${labBalance} credits and this run needs ${required}. ` +
+        'Nothing can be launched until someone tops the lab up, so the tests that ' +
+        'spend are not attempted. Everything that only reads still runs.',
+    });
   }
 
   // A lab that is already full cannot be told apart from a broken create call
@@ -71,6 +75,11 @@ setup('prepare a project for this run', async () => {
   // the teardown something to clean up.
   await Bun.write(workspacePath(), `${JSON.stringify({ labId, projectId }, null, 2)}\n`);
   await recordCredits({ projectId });
+
+  if (!affordable) {
+    console.log(`Project ${projectId} created without credits; only reading tests will run.`);
+    return;
+  }
 
   try {
     await api.assignBudget(labId, projectId, credits(required));

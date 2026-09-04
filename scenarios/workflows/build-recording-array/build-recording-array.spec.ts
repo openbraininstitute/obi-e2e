@@ -7,7 +7,7 @@ import {
 } from '@fixtures/scan-config';
 import { scanConfigWords } from '@fixtures/scan-config-activities';
 import { ScanConfigDriver } from '@fixtures/scan-config-driver';
-import { PRIVATE } from '@fixtures/tags';
+import { PRIVATE_SPENDS } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { chooseEntities, openWorkflowsHub, startWorkflow } from '@fixtures/workflows';
 import { scanConfigEditor, scanConfigResults } from '@locators/scan-config';
@@ -32,7 +32,7 @@ test.describe('Extracellular recording array build', () => {
   for (const configuration of fixture.cases) {
     test(
       `builds: ${configuration.name}`,
-      { tag: PRIVATE },
+      { tag: PRIVATE_SPENDS },
       async ({ page, context, workspace, baseURL }) => {
         const editor = scanConfigEditor(page);
         const results = scanConfigResults(page);
