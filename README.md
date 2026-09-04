@@ -144,6 +144,25 @@ There is no way to point a run at a project that already exists. A run that
 wrote into one would leave its data behind, which is the thing the per-run
 project exists to prevent.
 
+## What a run logs
+
+Setup and teardown write structured records with pino: which lab and project a
+run took, the commit under test, when it started, and what it could afford
+before it spent anything.
+
+`E2E_LOG_FORMAT` picks the shape. `text` is indented and colourised for a
+terminal; `json` is one record per line, which is what CI archives and what a
+log collector expects. It defaults to `json` in CI and `text` everywhere else.
+`E2E_LOG_LEVEL` sets the threshold, `info` by default.
+
+```
+{"level":"info","time":"2026-09-04T11:01:36.029Z","worker":48184,
+ "run":"1788519696016-48184","startedAt":"2026-09-04T11:01:36.016Z",
+ "commit":"901cb78…","lab":"5b1d0f7a…","project":"86aab5cb…",
+ "credits":{"labBalanceBefore":6800,"required":2000,"assigned":2000},
+ "msg":"run prepared"}
+```
+
 ## Imports and shared values
 
 Modules are imported by alias, not by counting `../` segments:

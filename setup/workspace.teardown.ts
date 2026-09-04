@@ -2,7 +2,8 @@ import * as fs from 'node:fs';
 
 import { VirtualLabApi } from '@api/virtual-lab';
 import { credits, readCreditReport, recordCredits } from '@fixtures/credit-report';
-import { hasCredentials, tokenPath, workspacePath } from '@fixtures/env';
+import { hasCredentials, RUN_ID, tokenPath, workspacePath } from '@fixtures/env';
+import { log } from '@fixtures/logger';
 import { expect, test as teardown } from '@playwright/test';
 
 /**
@@ -20,7 +21,7 @@ teardown('give the project back', async () => {
 
   const file = workspacePath();
   if (!fs.existsSync(file)) {
-    console.log('No project was prepared for this run, so there is nothing to give back.');
+    log.info({ run: RUN_ID }, 'no project was prepared, so there is nothing to give back');
     return;
   }
 
@@ -41,9 +42,9 @@ teardown('give the project back', async () => {
   if (remaining !== undefined) {
     const spent = assigned === undefined ? undefined : credits(assigned - remaining);
     await recordCredits({ remaining, ...(spent === undefined ? {} : { spent }) });
-    console.log(
-      `Project ${projectId} has ${remaining} credits left` +
-        (spent === undefined ? '.' : `, so this run spent ${spent}.`)
+    log.info(
+      { run: RUN_ID, project: projectId, credits: { remaining, spent: spent ?? null } },
+      'read the project balance'
     );
   }
 
@@ -55,7 +56,10 @@ teardown('give the project back', async () => {
       .catch((cause: unknown) => {
         // Survivable: the credits stay with a project that is about to go, which
         // is a number in a ledger rather than a broken run.
-        console.warn(`Could not return ${returnable} credits to the lab: ${String(cause)}`);
+        log.warn(
+          { run: RUN_ID, project: projectId, amount: returnable, reason: String(cause) },
+          'could not return credits to the lab'
+        );
         return 'failed' as const;
       });
     await recordCredits({ reversed, returned: reversed === 'ok' ? returnable : 0 });
@@ -67,7 +71,10 @@ teardown('give the project back', async () => {
     .deleteProject(labId, projectId)
     .then(() => 'ok' as const)
     .catch((cause: unknown) => {
-      console.error(`Could not delete project ${projectId}: ${String(cause)}`);
+      log.error(
+        { run: RUN_ID, project: projectId, reason: String(cause) },
+        'could not delete the project'
+      );
       return 'failed' as const;
     });
   await recordCredits({ removed });

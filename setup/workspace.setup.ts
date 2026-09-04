@@ -3,13 +3,16 @@ import * as fs from 'node:fs';
 import { PROJECT_LIMIT, VirtualLabApi } from '@api/virtual-lab';
 import { credits, recordCredits } from '@fixtures/credit-report';
 import {
+  commit,
   hasCredentials,
   PROJECT_CREDITS,
   requireEnv,
   RUN_ID,
+  RUN_STARTED_AT,
   tokenPath,
   workspacePath,
 } from '@fixtures/env';
+import { log } from '@fixtures/logger';
 import { expect, test as setup } from '@playwright/test';
 
 /**
@@ -41,7 +44,6 @@ setup('prepare a project for this run', async () => {
 
   const labBalance = await api.labBalance(labId);
   await recordCredits({ labBalance, required });
-  console.log(`Virtual lab holds ${labBalance} credits; this run needs ${required}.`);
 
   const affordable = labBalance >= required;
   if (!affordable) {
@@ -62,6 +64,10 @@ setup('prepare a project for this run', async () => {
       'so this run cannot take one. Some are probably left over from runs that did not ' +
       'finish their teardown.';
     await recordCredits({ problem });
+    log.error(
+      { run: RUN_ID, lab: labId, projects: projects.length, limit: PROJECT_LIMIT },
+      'virtual lab is full'
+    );
     expect(projects.length, problem).toBeLessThan(PROJECT_LIMIT);
   }
 
@@ -76,8 +82,28 @@ setup('prepare a project for this run', async () => {
   await Bun.write(workspacePath(), `${JSON.stringify({ labId, projectId }, null, 2)}\n`);
   await recordCredits({ projectId });
 
+  /**
+   * Everything a later reader needs to place this run: which lab and project it
+   * touched, which code it ran, when it started, and what it could afford
+   * before it spent anything. One record, because these are only useful
+   * together — a project id without the run that made it names nothing.
+   */
+  const announce = (assigned: number | null): void => {
+    const fields = {
+      run: RUN_ID,
+      startedAt: RUN_STARTED_AT,
+      commit: commit(),
+      lab: labId,
+      project: projectId,
+      credits: { labBalanceBefore: labBalance, required, assigned },
+    };
+
+    if (assigned === null) log.warn(fields, 'run prepared without credits');
+    else log.info(fields, 'run prepared');
+  };
+
   if (!affordable) {
-    console.log(`Project ${projectId} created without credits; only reading tests will run.`);
+    announce(null);
     return;
   }
 
@@ -95,5 +121,5 @@ setup('prepare a project for this run', async () => {
   }
 
   await recordCredits({ assigned: required });
-  console.log(`Project ${projectId} created with ${required} credits.`);
+  announce(required);
 });

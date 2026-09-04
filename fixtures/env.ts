@@ -62,6 +62,24 @@ export const RUN_ID = process.env.E2E_RUN_ID ?? `${Date.now()}-${process.pid}`;
 // different id. Pinning it here makes every worker share one run directory.
 process.env.E2E_RUN_ID = RUN_ID;
 
+/** When the run began, pinned across workers the same way the id is. */
+export const RUN_STARTED_AT = process.env.E2E_RUN_STARTED_AT ?? new Date().toISOString();
+process.env.E2E_RUN_STARTED_AT = RUN_STARTED_AT;
+
+/**
+ * The commit under test.
+ *
+ * CI already knows it. Locally it is worth asking git, because a record that
+ * outlives the working tree needs to say which code produced it.
+ */
+export function commit(): string {
+  const fromCI = process.env.GITHUB_SHA;
+  if (fromCI) return fromCI;
+
+  const result = Bun.spawnSync(['git', 'rev-parse', 'HEAD']);
+  return result.success ? result.stdout.toString().trim() : 'unknown';
+}
+
 export const RUN_DIR = path.resolve(process.cwd(), '.e2e-runs', RUN_ID);
 
 /**
