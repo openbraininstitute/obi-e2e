@@ -1,0 +1,102 @@
+{
+  "name": "Single neuron simulation",
+  "activity": "simulate",
+  "env": ["staging", "production"],
+  "workflow": {
+    "label": "Single neuron",
+    "type": "me-model-circuit-simulation",
+    "confirmsCost": false
+  },
+  "schemaName": "MEModelSimulationScanConfig",
+  "selection": {
+    "mode": "single",
+    "entities": ["MEM__jy180314_B_idA__dNAD_ltb_VPM_TC"]
+  },
+  "cases": [
+    {
+      "name": "a constant current clamp recorded at the soma",
+      "config": {
+        "info": {
+          "type": "Info",
+          "campaign_name": "E2E single neuron simulation",
+          "campaign_description": "One constant current clamp, recorded at the soma."
+        },
+        "timestamps": {
+          "regular": {
+            "type": "RegularTimestamps",
+            "start_time": 0,
+            "interval": 1000,
+            "number_of_repetitions": 1
+          }
+        },
+        "stimuli": {
+          "current_clamp": {
+            "type": "ConstantCurrentClampSomaticStimulus",
+            "timestamps": {
+              "block_dict_name": "timestamps",
+              "block_name": "regular"
+            },
+            "duration": 800,
+            "amplitude": 0.5
+          }
+        },
+        "recordings": {
+          "soma_voltage": {
+            "type": "SomaVoltageRecording",
+            "dt": 0.1
+          }
+        },
+        "initialize": {
+          "type": "MEModelSimulationScanConfig.Initialize",
+          "simulation_length": 1000,
+          "v_init": -80
+        }
+      },
+      "expect": {
+        "coordinateCount": 1
+      }
+    },
+    {
+      "name": "two amplitudes, giving a grid of two coordinates",
+      "config": {
+        "info": {
+          "type": "Info",
+          "campaign_name": "E2E single neuron amplitude sweep",
+          "campaign_description": "The same clamp at two amplitudes, one coordinate each."
+        },
+        "timestamps": {
+          "regular": {
+            "type": "RegularTimestamps",
+            "start_time": 0,
+            "interval": 1000,
+            "number_of_repetitions": 1
+          }
+        },
+        "stimuli": {
+          "current_clamp": {
+            "type": "ConstantCurrentClampSomaticStimulus",
+            "timestamps": {
+              "block_dict_name": "timestamps",
+              "block_name": "regular"
+            },
+            "duration": 800,
+            "amplitude": [0.2, 0.5]
+          }
+        },
+        "recordings": {
+          "soma_voltage": {
+            "type": "SomaVoltageRecording",
+            "dt": 0.1
+          }
+        },
+        "initialize": {
+          "type": "MEModelSimulationScanConfig.Initialize",
+          "simulation_length": 1000
+        }
+      },
+      "expect": {
+        "coordinateCount": 2
+      }
+    }
+  ]
+}

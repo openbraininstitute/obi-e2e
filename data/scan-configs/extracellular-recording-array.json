@@ -1,6 +1,7 @@
 {
   "name": "Extracellular recording array with a sixteen-electrode linear probe",
   "activity": "build",
+  "env": ["staging", "production"],
   "workflow": {
     "label": "Extracellular recording array",
     "type": "extracellular-recording-array-campaign"
@@ -38,8 +39,7 @@
         }
       },
       "expect": {
-        "coordinateCount": 1,
-        "submitLabel": "Generate build(s)"
+        "coordinateCount": 1
       }
     }
   ]

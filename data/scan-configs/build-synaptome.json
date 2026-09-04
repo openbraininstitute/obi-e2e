@@ -1,6 +1,7 @@
 {
   "name": "Synaptome build with one excitatory synapse group",
   "activity": "build",
+  "env": ["staging", "production"],
   "workflow": {
     "label": "Synaptome",
     "type": "build-synaptome-campaign"
@@ -73,7 +74,6 @@
       },
       "expect": {
         "coordinateCount": 1,
-        "submitLabel": "Generate build(s)",
         "generated": {
           "inputs": ["obi_one_coordinate.json"],
           "outputs": []
@@ -149,7 +149,6 @@
       },
       "expect": {
         "coordinateCount": 1,
-        "submitLabel": "Generate build(s)",
         "generated": {
           "inputs": ["obi_one_coordinate.json"],
           "outputs": []

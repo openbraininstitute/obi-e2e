@@ -1,0 +1,79 @@
+{
+  "name": "Synaptome simulation",
+  "activity": "simulate",
+  "env": ["staging", "production"],
+  "workflow": {
+    "label": "Synaptome",
+    "type": "single-neuron-circuit-simulation"
+  },
+  "schemaName": "MEModelWithSynapsesCircuitSimulationScanConfig",
+  "selection": {
+    "mode": "single",
+    "entities": ["nbS1-O1__202247__cADpyr__L5_TPC_A"]
+  },
+  "cases": [
+    {
+      "name": "synaptic input drawn from a Poisson interval",
+      "config": {
+        "info": {
+          "type": "Info",
+          "campaign_name": "E2E synaptome simulation",
+          "campaign_description": "Spikes drawn from an exponential interval, plus a somatic clamp."
+        },
+        "timestamps": {
+          "regular": {
+            "type": "RegularTimestamps",
+            "start_time": 0,
+            "interval": 500,
+            "number_of_repetitions": 1
+          }
+        },
+        "distributions": {
+          "poisson_interval": {
+            "type": "ExponentialDistribution",
+            "scale": 20,
+            "shift": 0,
+            "random_seed": 42
+          }
+        },
+        "stimuli": {
+          "spike_input": {
+            "type": "InterSpikeIntervalDistributionSpikeStimulus",
+            "timestamps": {
+              "block_dict_name": "timestamps",
+              "block_name": "regular"
+            },
+            "distribution": {
+              "block_dict_name": "distributions",
+              "block_name": "poisson_interval"
+            },
+            "duration": 500,
+            "resample_each_repetition": true
+          },
+          "current_clamp": {
+            "type": "ConstantCurrentClampSomaticStimulus",
+            "timestamps": {
+              "block_dict_name": "timestamps",
+              "block_name": "regular"
+            },
+            "duration": 500,
+            "amplitude": 0.5
+          }
+        },
+        "recordings": {
+          "soma_voltage": {
+            "type": "SomaVoltageRecording",
+            "dt": 0.1
+          }
+        },
+        "initialize": {
+          "type": "MEModelWithSynapsesCircuitSimulationScanConfig.Initialize",
+          "simulation_length": 500
+        }
+      },
+      "expect": {
+        "coordinateCount": 1
+      }
+    }
+  ]
+}

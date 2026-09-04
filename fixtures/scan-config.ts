@@ -1,6 +1,8 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
+import { DEPLOYMENT_ENVS, type DeploymentEnv, deploymentEnv } from './env';
+
 /**
  * A scan-configuration fixture is one case for the form behind every
  * `/workflows/{activity}/configure/{type}` route.
@@ -17,12 +19,25 @@ import * as path from 'node:path';
 export type ScanConfigFixture = {
   name: string;
   activity: ScanConfigActivity;
+  /**
+   * The deployments that offer this workflow. Which ones do is a fact about the
+   * release, not something a test can read off the page: a card that is absent
+   * and one that has not rendered yet look the same, so a run elsewhere skips on
+   * what the fixture declares rather than on what a probe guessed.
+   */
+  env: DeploymentEnv[];
   /** How the workflow is reached from the workflows hub. */
   workflow: {
     /** Visible name of the type card, for example `Synaptome`. Used in messages. */
     label: string;
     /** Kebab-case campaign type: both the card's test id and the configure URL. */
     type: string;
+    /**
+     * Whether launching asks what it will cost first. True for most workflows;
+     * an ME-model campaign has no cost estimator behind it, so it launches
+     * straight away. Defaults to true.
+     */
+    confirmsCost?: boolean;
   };
   /** obi-one schema component name, used to resolve titles from `openapi.json`. */
   schemaName: string;
@@ -50,8 +65,6 @@ export type ScanConfigCase = {
   expect: {
     /** Size of the campaign grid: one coordinate per combination of swept values. */
     coordinateCount: number;
-    /** Exact text on the button that launches the campaign. */
-    submitLabel: string;
     /** The files a coordinate carries the moment its campaign is generated. */
     generated?: ScanConfigFiles;
     /** The files it carries once the run has finished. */
@@ -101,6 +114,19 @@ export type ScanConfigActivity = (typeof SCAN_CONFIG_ACTIVITIES)[number];
 
 export const SCAN_CONFIG_DIR = path.resolve(import.meta.dirname, '..', 'data', 'scan-configs');
 
+/** Whether the run is pointed at a deployment this fixture is offered on. */
+export function runsOnThisDeployment(fixture: ScanConfigFixture): boolean {
+  return fixture.env.includes(deploymentEnv());
+}
+
+/** Why the fixture does not run here, in the words a skip should use. */
+export function notDeployedHere(fixture: ScanConfigFixture): string {
+  return (
+    `"${fixture.workflow.label}" is not offered on ${deploymentEnv()}: ` +
+    `the fixture declares ${fixture.env.join(', ')}.`
+  );
+}
+
 /** Every fixture file on disk, so one unit test can validate the whole folder. */
 export function scanConfigFixtureFiles(): string[] {
   return fs
@@ -141,6 +167,18 @@ export function parseScanConfigFixture(value: unknown, source: string): ScanConf
     fail(`activity must be one of ${SCAN_CONFIG_ACTIVITIES.join(', ')}, got "${activity}"`);
   }
 
+  const envs = root.env;
+  if (!Array.isArray(envs) || envs.length === 0) {
+    fail(`env must list at least one of ${DEPLOYMENT_ENVS.join(', ')}`);
+  }
+  for (const [index, name] of (envs as unknown[]).entries()) {
+    if (!DEPLOYMENT_ENVS.includes(name as DeploymentEnv)) {
+      fail(
+        `env[${index}] must be one of ${DEPLOYMENT_ENVS.join(', ')}, got ${JSON.stringify(name)}`
+      );
+    }
+  }
+
   const workflow = object(root.workflow, 'workflow');
   const selection = object(root.selection, 'selection');
   const mode = text(selection.mode, 'selection.mode');
@@ -175,9 +213,11 @@ export function parseScanConfigFixture(value: unknown, source: string): ScanConf
   return {
     name: text(root.name, 'name'),
     activity: activity as ScanConfigActivity,
+    env: envs as DeploymentEnv[],
     workflow: {
       label: text(workflow.label, 'workflow.label'),
       type: text(workflow.type, 'workflow.type'),
+      confirmsCost: workflow.confirmsCost !== false,
     },
     schemaName: text(root.schemaName, 'schemaName'),
     selection: {
@@ -223,7 +263,6 @@ function parseCase(
     config,
     expect: {
       coordinateCount: coordinateCount as number,
-      submitLabel: text(expected.submitLabel, `${at}.expect.submitLabel`),
       ...(expected.generated === undefined
         ? {}
         : { generated: parseFiles(expected.generated, `${at}.expect.generated`, fail) }),
