@@ -6,8 +6,10 @@
   "type": "module",
   "scripts": {
     "test": "bun --bun playwright test",
+    "test:local": "E2E_BASE_URL=http://localhost:3001 bun --bun playwright test",
     "auth": "E2E_RUN_ID=live bun --bun playwright test --project=setup",
-    "test:smoke": "bun --bun playwright test --grep @smoke",
+    "preflight": "bun scripts/ci/preflight.ts",
+    "reclaim": "bun scripts/ci/reclaim.ts",
     "test:ui": "bun --bun playwright test --ui",
     "test:headed": "bun --bun playwright test --headed",
     "test:debug": "bun --bun playwright test --debug",
