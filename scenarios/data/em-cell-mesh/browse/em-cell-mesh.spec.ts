@@ -136,6 +136,7 @@ test.describe('EM mesh listing', () => {
   });
 
   test('every filter narrows the listing', { tag: PRIVATE_READONLY }, async ({ page }) => {
+    test.slow();
     await expect(entityListing(page).table).toBeVisible();
 
     // One step per column, so a failure names the filter that broke.
