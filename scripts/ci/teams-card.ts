@@ -648,6 +648,23 @@ export function buildCard(summary: Summary, detail: Detail = 'full', mentions = 
   };
 }
 
+/**
+ * What was sent, and the fact that sending is not posting.
+ *
+ * A Power Automate endpoint answers as soon as it has the request, before the
+ * flow behind it has done anything, so a send that succeeded is not a message
+ * in the channel. Naming the shape matters too: a flow written for one layout
+ * quietly posts nothing when it is handed the other, and the payload is the
+ * only way to tell the two apart from here.
+ */
+function report(what: string, shape: string): void {
+  console.log(`${what}\n  shape: ${shape}`);
+  console.log(
+    '  The endpoint accepted the request. If a flow is behind it, that is not yet a\n' +
+      "  message: check the flow's run history if nothing appears in the channel."
+  );
+}
+
 async function send(webhook: string, body: unknown): Promise<boolean> {
   const response = await fetch(webhook, {
     method: 'POST',
@@ -679,7 +696,10 @@ async function post(): Promise<void> {
   if (process.env.TEAMS_LAYOUT === 'thread') {
     const payload = buildThreadPayload(summary);
     if (!(await send(webhook, payload))) process.exit(1);
-    console.log(`Posted ${payload.cards.length} cards in one request for the flow to thread.`);
+    report(
+      `Sent ${payload.cards.length} cards in one request for the flow to thread.`,
+      '{ "cards": [ … ] }'
+    );
     return;
   }
 
@@ -692,13 +712,17 @@ async function post(): Promise<void> {
       if (!(await send(webhook, item.message))) {
         process.exit(1);
       }
-      console.log(`Posted ${index + 1}/${posts.length}: ${item.label} (${item.bytes} bytes).`);
+      console.log(`Sent ${index + 1}/${posts.length}: ${item.label} (${item.bytes} bytes).`);
 
       // The webhook answers 202 before the message is created, so ordering is
       // not guaranteed. A short gap makes it far more likely to hold.
       if (index < posts.length - 1) await Bun.sleep(1200);
     }
 
+    report(
+      `Sent ${posts.length} messages, one per card.`,
+      '{ "type": "message", "attachments": [ … ] } each'
+    );
     return;
   }
 
@@ -711,7 +735,11 @@ async function post(): Promise<void> {
   }
 
   if (!(await send(webhook, card))) process.exit(1);
-  console.log(`Posted Teams card (${detail}, ${bytes} bytes).`);
+  report(
+    `Sent one message (${detail}, ${bytes} bytes). Set TEAMS_LAYOUT=thread for a ` +
+      'summary with the sections threaded under it.',
+    '{ "type": "message", "attachments": [ … ] }'
+  );
 }
 
 // Only post when run as a script. Importing this file for `buildCard` must not
