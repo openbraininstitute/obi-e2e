@@ -18,6 +18,20 @@ One run produces a series of Adaptive Cards:
 A section whose table would not fit one message is split across numbered parts,
 measured by real byte count rather than a guessed row count.
 
+The first card also draws two charts:
+
+- a **donut** of the outcome — passed, failed, flaky and skipped, in the same
+  colours the status pills use, with any status the run never produced left out;
+- a **stacked bar** of the budget, where spent and left stack to exactly what
+  the project was given, so the width of the green says how much headroom the
+  run finished with.
+
+`Chart.Donut` and `Chart.HorizontalBar.Stacked` are Teams extensions rather than
+part of the Adaptive Cards schema, so both carry `fallback: "drop"`. A host that
+cannot draw them — Teams mobile, Outlook, an older client — leaves them out
+instead of rendering a hole, and the same numbers sit in the fact lists beside
+them either way.
+
 ## Choosing a layout
 
 `TEAMS_LAYOUT` decides how those cards reach the channel.
@@ -207,6 +221,9 @@ the mention entities and shows the bare name as written.
 
 - **Four requests per second.** `split` sleeps between posts for this reason.
   `thread` sends one request and lets the flow pace the replies.
+- **Charts need a desktop client.** Teams mobile reliably renders Adaptive Cards
+  up to v1.2, so the two charts drop there. Nothing else about the card changes,
+  because every figure they draw is also written out beside them.
 
 ## When something goes wrong
 

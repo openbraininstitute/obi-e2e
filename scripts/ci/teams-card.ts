@@ -6,6 +6,8 @@
  * Usage: TEAMS_WEBHOOK_URL=... bun scripts/ci/teams-card.ts test-results/summary.json
  */
 
+import type { CreditReport } from '@fixtures/credit-report';
+
 import {
   collectSections,
   creditNotice,
@@ -245,6 +247,67 @@ function featureTables(sections: Section[], expandable: boolean): unknown[] {
 }
 
 /**
+ * The run's outcome as a donut, on the summary card only.
+ *
+ * `Chart.Donut` is a Teams extension rather than part of the Adaptive Cards
+ * schema, so a host that cannot draw it — Teams mobile, Outlook, an older
+ * client — is told to drop the element outright. The same counts sit in the
+ * FactSet above it, so nothing is lost, and dropping beats rendering a hole.
+ *
+ * Zero slices are left out: a legend entry for a status the run never produced
+ * is noise, and an all-zero run has no chart to draw at all.
+ */
+function outcomeChart(summary: Summary): unknown | null {
+  const slices = [
+    { legend: 'Passed', value: summary.passed, color: 'good' },
+    { legend: 'Failed', value: summary.failed, color: 'attention' },
+    { legend: 'Flaky', value: summary.flaky, color: 'warning' },
+    { legend: 'Skipped', value: summary.skipped, color: 'neutral' },
+  ].filter((slice) => slice.value > 0);
+
+  if (slices.length === 0) return null;
+
+  return {
+    type: 'Chart.Donut',
+    title: 'Tests',
+    // Standard Adaptive Cards fallback, understood even where the chart is not.
+    fallback: 'drop',
+    spacing: 'Medium',
+    data: slices,
+  };
+}
+
+/**
+ * What the run did with its budget, as one stacked bar.
+ *
+ * Spent and left stack to exactly what the project was given, so the bar says
+ * the thing the three numbers beside it only imply: how much of the budget a
+ * run actually needs. Green is headroom — a bar with almost none of it left is
+ * the picture of a run that nearly could not finish.
+ *
+ * Dropped, like the donut, on any host that cannot draw a chart.
+ */
+function creditChart(credits: CreditReport | undefined): unknown | null {
+  if (!credits || credits.assigned === undefined || credits.remaining === undefined) return null;
+
+  const spent = credits.spent ?? credits.assigned - credits.remaining;
+  const slices = [
+    { legend: 'Spent', value: spent, color: 'neutral' },
+    { legend: 'Left', value: credits.remaining, color: 'good' },
+  ].filter((slice) => slice.value > 0);
+
+  if (slices.length === 0) return null;
+
+  return {
+    type: 'Chart.HorizontalBar.Stacked',
+    title: `Credits · ${credits.assigned} assigned`,
+    fallback: 'drop',
+    spacing: 'Small',
+    data: [{ title: 'This run', data: slices }],
+  };
+}
+
+/**
  * People to pull into the channel when the run could not be paid for.
  *
  * Nobody watches a card that says a run failed for want of credits; a mention
@@ -479,6 +542,9 @@ export function buildCard(summary: Summary, detail: Detail = 'full', mentions = 
     },
   ];
 
+  const chart = outcomeChart(summary);
+  if (chart) body.push(chart);
+
   if (notice) {
     body.push({
       type: 'Container',
@@ -503,6 +569,9 @@ export function buildCard(summary: Summary, detail: Detail = 'full', mentions = 
         fact('Credits left', remaining === undefined ? '—' : String(remaining)),
       ],
     });
+
+    const bar = creditChart(summary.credits);
+    if (bar) body.push(bar);
   }
 
   if (services.length > 0) {

@@ -428,3 +428,114 @@ describe('credits on the card', () => {
     expect(text).toContain('800');
   });
 });
+
+describe('the outcome donut', () => {
+  function chartIn(card: unknown): Record<string, unknown> | undefined {
+    return collect(card, (node) => node.type === 'Chart.Donut')[0];
+  }
+
+  test('charts each status the run actually produced', () => {
+    const card = buildCard({
+      ...buildSummary({ suites: [], stats: {} }),
+      passed: 12,
+      failed: 3,
+      flaky: 1,
+      skipped: 40,
+    });
+
+    expect(chartIn(card)?.data).toEqual([
+      { legend: 'Passed', value: 12, color: 'good' },
+      { legend: 'Failed', value: 3, color: 'attention' },
+      { legend: 'Flaky', value: 1, color: 'warning' },
+      { legend: 'Skipped', value: 40, color: 'neutral' },
+    ]);
+  });
+
+  // A legend entry for a status that never happened is noise.
+  test('leaves out the statuses with nothing in them', () => {
+    const card = buildCard({ ...buildSummary({ suites: [], stats: {} }), passed: 9 });
+    expect(chartIn(card)?.data).toEqual([{ legend: 'Passed', value: 9, color: 'good' }]);
+  });
+
+  test('draws nothing when the run produced no tests at all', () => {
+    expect(chartIn(buildCard(buildSummary({ suites: [], stats: {} })))).toBeUndefined();
+  });
+
+  // Teams mobile and Outlook cannot draw it, and the counts are in the FactSet
+  // beside it, so an unsupported host drops the element rather than showing a hole.
+  test('tells a host that cannot draw it to drop it', () => {
+    const card = buildCard({ ...buildSummary({ suites: [], stats: {} }), passed: 1 });
+    expect(chartIn(card)?.fallback).toBe('drop');
+  });
+
+  // Section cards carry a feature table; the chart belongs to the summary alone.
+  test('appears on the summary card only', () => {
+    const summary = {
+      ...buildSummary({ suites: [], stats: {} }),
+      passed: 4,
+      features: [
+        {
+          name: 'Morphology listing',
+          section: 'Data',
+          passed: 4,
+          failed: 0,
+          flaky: 0,
+          skipped: 0,
+          durationMs: 10,
+        },
+      ],
+    };
+
+    const posts = buildPosts(summary);
+    expect(chartIn(posts[0]?.message)).toBeDefined();
+    for (const item of posts.slice(1)) expect(chartIn(item.message)).toBeUndefined();
+  });
+});
+
+describe('the credits bar', () => {
+  function barIn(card: unknown): Record<string, unknown> | undefined {
+    return collect(card, (node) => node.type === 'Chart.HorizontalBar.Stacked')[0];
+  }
+
+  test('stacks spent and left to what the run was given', () => {
+    const card = buildCard(
+      spentSummary({ required: 2000, assigned: 2000, spent: 812.5, remaining: 1187.5 })
+    );
+
+    const bar = barIn(card);
+    expect(bar?.title).toBe('Credits · 2000 assigned');
+    expect(bar?.data).toEqual([
+      {
+        title: 'This run',
+        data: [
+          { legend: 'Spent', value: 812.5, color: 'neutral' },
+          { legend: 'Left', value: 1187.5, color: 'good' },
+        ],
+      },
+    ]);
+  });
+
+  // Teardown records the remaining balance; the spend follows from it.
+  test('works out the spend when only the balance was recorded', () => {
+    const card = buildCard(spentSummary({ required: 2000, assigned: 2000, remaining: 1500 }));
+    const series = barIn(card)?.data as { data: unknown[] }[] | undefined;
+    expect(series?.[0]?.data[0]).toEqual({ legend: 'Spent', value: 500, color: 'neutral' });
+  });
+
+  test('draws nothing before the teardown has read the balance', () => {
+    expect(barIn(buildCard(spentSummary({ required: 2000, assigned: 2000 })))).toBeUndefined();
+  });
+
+  test('draws nothing when the lab could not pay in the first place', () => {
+    expect(
+      barIn(buildCard(spentSummary({ required: 2000, problem: 'no credits' })))
+    ).toBeUndefined();
+  });
+
+  test('tells a host that cannot draw it to drop it', () => {
+    const card = buildCard(
+      spentSummary({ required: 2000, assigned: 2000, spent: 800, remaining: 1200 })
+    );
+    expect(barIn(card)?.fallback).toBe('drop');
+  });
+});
