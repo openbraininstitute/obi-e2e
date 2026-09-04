@@ -35,7 +35,7 @@ behind a feature flag, or postdate the build under test. A test says so and skip
 rather than failing, because a red suite should mean the application is broken.
 
 ```ts
-const unavailable = await startWorkflow(page, fixture.activity, fixture.workflow.type);
+const unavailable = await startWorkflow(page, fixture.activity, fixture.workflow);
 test.skip(unavailable !== null, unavailable ?? '');
 ```
 
@@ -81,7 +81,6 @@ being written twice.
 | `@staging`    | added to any of the above                    | staging only; kept off production                        |
 | `@production` | added to any of the above                    | production only; kept off staging                        |
 | `@readonly`   | added to any of the above                    | creates nothing                                          |
-| `@smoke`      | added to any of the above                    | the short subset behind `bun run test:smoke`             |
 
 Every test runs against staging and production both. `@staging` and
 `@production` are for the few that cannot; leaving both off is right nearly
@@ -101,11 +100,11 @@ test('opens the Simulate workflows', { tag: PRIVATE_READONLY }, async ({ page })
 });
 ```
 
-| Constant                                                     | Tags                         |
-| ------------------------------------------------------------ | ---------------------------- |
-| `PUBLIC`, `PRIVATE`, `ONBOARDING`                            | the context on its own       |
-| `PUBLIC_READONLY`, `PRIVATE_READONLY`, `ONBOARDING_READONLY` | context plus `@readonly`     |
-| `PUBLIC_SMOKE`, `PRIVATE_SMOKE`                              | also runs against production |
+| Constant                                                     | Tags                      |
+| ------------------------------------------------------------ | ------------------------- |
+| `PUBLIC`, `PRIVATE`, `ONBOARDING`                            | the context on its own    |
+| `PUBLIC_READONLY`, `PRIVATE_READONLY`, `ONBOARDING_READONLY` | context plus `@readonly`  |
+| `PRIVATE_SPENDS`                                             | `@private` plus `@spends` |
 
 A scenario that should hold in more than one context carries more than one tag,
 or extracts its steps into a function that each tagged test calls.

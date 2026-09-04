@@ -90,7 +90,6 @@ A test may carry two context tags. It then runs twice, once per user.
 | `@staging`    | run this on staging **only** — keep it off production         |
 | `@production` | run this on production **only** — keep it off staging         |
 | `@readonly`   | this test creates nothing and deletes nothing                 |
-| `@smoke`      | part of the short subset behind `bun run test:smoke`          |
 
 **Every test runs on both deployments unless it says otherwise.** That is the
 default and almost every test wants it. `@staging` and `@production` are for the
@@ -104,10 +103,6 @@ run. Use `PRIVATE_SPENDS` from `@fixtures/tags` rather than writing it by hand.
 
 `@readonly` is a promise you write down for the next reader; filter on it by
 hand with `--grep @readonly`.
-
-`@smoke` used to mean "also run against production", back when production ran
-almost nothing. It no longer decides anything about deployments — whether a test
-is fast has nothing to do with which deployment offers the feature it covers.
 
 ### Workflows do not use the deployment tags
 
@@ -124,14 +119,21 @@ See [scan-config-testing-plan.md](scan-config-testing-plan.md).
 ### No tool knows these words
 
 Playwright reserves no tag names. It takes any string starting with `@`, adds it
-to the test title, and lets `--grep` match it. `@smoke` and `@banana` behave the
-same way. All the meaning comes from two files we wrote:
+to the test title, and lets `--grep` match it. `@readonly` and `@banana` behave
+the same way. All the meaning comes from two files we wrote:
 [playwright.config.ts](../playwright.config.ts) and
 [.github/workflows/e2e.yml](../.github/workflows/e2e.yml).
 
-`@smoke` is still worth keeping for what the word actually means: a _smoke test_
-is standard vocabulary for a thin, fast check that a build is alive. `@public`,
-`@private` and `@onboarding` are ours, named after our two test users.
+There is no tag for a short subset. A quick check is a path, not a label: name
+the scenario you want and Playwright runs it, and nothing goes stale the way a
+list of blessed tests does.
+
+```bash
+bun run test scenarios/site
+```
+
+`@public`, `@private` and `@onboarding` are ours, named after our two test
+users.
 
 ## So what does `{ tag: ['@private', '@readonly'] }` mean?
 
@@ -159,7 +161,7 @@ bun run test --grep @private
 ```
 
 ```bash
-bun run test:smoke
+bun run test --grep @readonly
 ```
 
 ```bash
