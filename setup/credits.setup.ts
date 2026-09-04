@@ -18,5 +18,5 @@ setup('the project can pay for this run', async () => {
     report?.problem ??
     `The project was never funded, so nothing can be launched. It needs ${PROJECT_CREDITS} credits.`;
 
-  expect(report?.assigned, problem).toBeGreaterThanOrEqual(PROJECT_CREDITS);
+  expect(report?.assigned ?? 0, problem).toBeGreaterThanOrEqual(PROJECT_CREDITS);
 });
