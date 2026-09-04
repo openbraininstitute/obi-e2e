@@ -1,7 +1,10 @@
 import { checkFilter } from '@fixtures/check-filter';
+import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
+import { toggleCount } from '@fixtures/listing-columns';
 import { routes } from '@fixtures/routes';
 import { PRIVATE_READONLY } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
+import { WIDE_VIEWPORT } from '@fixtures/viewport';
 import { entityListing } from '@locators/listing';
 
 // Scenario: scenarios/data/circuit/scenario.md
@@ -50,7 +53,6 @@ const HIDDEN_COLUMNS: string[] = [
   'Contributors',
 ];
 
-// The chooser adds its own "Select all" alongside one toggle per column.
 const FILTERS = [
   'Name',
   'Brain region',
@@ -66,19 +68,13 @@ const FILTERS = [
   'Experiment date',
 ];
 
-const TOGGLE_COUNT = SHOWN_COLUMNS.length + HIDDEN_COLUMNS.length + 1;
-
-function startsWith(column: string): RegExp {
-  return new RegExp(`^${column.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')}`);
-}
-
-// The grid only renders the columns that fit, so a narrow window leaves the
-// right-hand ones out of the page entirely. Widen it so the whole table exists.
-test.use({ viewport: { width: 2560, height: 1080 } });
+test.use(WIDE_VIEWPORT);
 
 test.describe('Circuit listing', () => {
   test.beforeEach(async ({ page, workspace }) => {
-    await page.goto(routes.dataEntity(workspace.labId, workspace.projectId, 'circuit'));
+    await page.goto(
+      routes.dataEntity(workspace.labId, workspace.projectId, entitySlug(Type.Circuit))
+    );
     await expect(entityListing(page).table).toBeVisible();
   });
 
@@ -86,7 +82,7 @@ test.describe('Circuit listing', () => {
     const listing = entityListing(page);
 
     for (const column of COLUMNS) {
-      await expect(listing.columnHeader(startsWith(column))).toBeVisible();
+      await expect(listing.columnHeader(column)).toBeVisible();
     }
   });
 
@@ -104,7 +100,7 @@ test.describe('Circuit listing', () => {
     }
 
     // Anything added to this table fails here rather than passing unnoticed.
-    await expect(listing.columnToggles).toHaveCount(TOGGLE_COUNT);
+    await expect(listing.columnToggles).toHaveCount(toggleCount(SHOWN_COLUMNS, HIDDEN_COLUMNS));
   });
 
   test('adds a hidden column to the table', { tag: PRIVATE_READONLY }, async ({ page }) => {
@@ -127,7 +123,7 @@ test.describe('Circuit listing', () => {
       // as the grid rebuilds and check() reads the state back too early.
       await toggle.click();
       await expect(toggle).toBeChecked();
-      await expect(listing.columnHeader(startsWith(column))).toBeVisible();
+      await expect(listing.columnHeader(column)).toBeVisible();
 
       await toggle.click();
       await expect(toggle).not.toBeChecked();

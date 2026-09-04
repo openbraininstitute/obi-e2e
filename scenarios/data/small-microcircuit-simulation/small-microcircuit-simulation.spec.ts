@@ -1,7 +1,10 @@
 import { checkFilter } from '@fixtures/check-filter';
+import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
+import { toggleCount } from '@fixtures/listing-columns';
 import { routes } from '@fixtures/routes';
 import { PRIVATE_READONLY } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
+import { WIDE_VIEWPORT } from '@fixtures/viewport';
 import { entityListing } from '@locators/listing';
 
 // Scenario: scenarios/data/small-microcircuit-simulation/scenario.md
@@ -31,23 +34,18 @@ const SHOWN_COLUMNS = [
 
 const HIDDEN_COLUMNS: string[] = [];
 
-// The chooser adds its own "Select all" alongside one toggle per column.
 const FILTERS = ['Name', 'Circuit', 'Created by', 'Registration date', 'Lifecycle status'];
 
-const TOGGLE_COUNT = SHOWN_COLUMNS.length + HIDDEN_COLUMNS.length + 1;
-
-function startsWith(column: string): RegExp {
-  return new RegExp(`^${column.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')}`);
-}
-
-// The grid only renders the columns that fit, so a narrow window leaves the
-// right-hand ones out of the page entirely. Widen it so the whole table exists.
-test.use({ viewport: { width: 2560, height: 1080 } });
+test.use(WIDE_VIEWPORT);
 
 test.describe('Small microcircuit listing', () => {
   test.beforeEach(async ({ page, workspace }) => {
     await page.goto(
-      routes.dataEntity(workspace.labId, workspace.projectId, 'small-microcircuit-simulation')
+      routes.dataEntity(
+        workspace.labId,
+        workspace.projectId,
+        entitySlug(Type.SmallMicrocircuitSimulation)
+      )
     );
     await expect(entityListing(page).table).toBeVisible();
   });
@@ -56,7 +54,7 @@ test.describe('Small microcircuit listing', () => {
     const listing = entityListing(page);
 
     for (const column of COLUMNS) {
-      await expect(listing.columnHeader(startsWith(column))).toBeVisible();
+      await expect(listing.columnHeader(column)).toBeVisible();
     }
   });
 
@@ -74,7 +72,7 @@ test.describe('Small microcircuit listing', () => {
     }
 
     // Anything added to this table fails here rather than passing unnoticed.
-    await expect(listing.columnToggles).toHaveCount(TOGGLE_COUNT);
+    await expect(listing.columnToggles).toHaveCount(toggleCount(SHOWN_COLUMNS, HIDDEN_COLUMNS));
   });
 
   test('shows results', { tag: PRIVATE_READONLY }, async ({ page }) => {

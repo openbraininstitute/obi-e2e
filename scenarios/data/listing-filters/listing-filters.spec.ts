@@ -1,3 +1,4 @@
+import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
 import { routes } from '@fixtures/routes';
 import { PRIVATE_READONLY } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
@@ -13,7 +14,9 @@ import { entityListing } from '@locators/listing';
  */
 test.describe('Filtering a listing', () => {
   test.beforeEach(async ({ page, workspace }) => {
-    await page.goto(routes.dataEntity(workspace.labId, workspace.projectId, 'cell-morphology'));
+    await page.goto(
+      routes.dataEntity(workspace.labId, workspace.projectId, entitySlug(Type.CellMorphology))
+    );
     await expect(entityListing(page).cells.first()).toBeVisible();
   });
 
