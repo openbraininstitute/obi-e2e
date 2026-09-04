@@ -1,5 +1,10 @@
 import { pretendNoCredits } from '@fixtures/credits';
-import { loadScanConfigFixture } from '@fixtures/scan-config';
+import {
+  loadScanConfigFixture,
+  notDeployedHere,
+  runsOnThisDeployment,
+} from '@fixtures/scan-config';
+import { scanConfigWords } from '@fixtures/scan-config-activities';
 import { addLocationsFromViewer, ScanConfigDriver } from '@fixtures/scan-config-driver';
 import { PRIVATE } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
@@ -15,8 +20,13 @@ const RUN_TIMEOUT = 300_000;
 
 // Scenario: scenarios/workflows/build-synaptome/scenario.md
 const fixture = loadScanConfigFixture('build-synaptome.json');
+const words = scanConfigWords[fixture.activity];
 /** The plainest configuration, used where a test needs any valid one. */
 const simpleCase = firstCase(fixture);
+
+// A workflow exists only on the deployments its fixture names, so a run pointed
+// elsewhere skips the file rather than probing the hub and guessing.
+test.skip(!runsOnThisDeployment(fixture), notDeployedHere(fixture));
 
 test.describe.configure({ timeout: RUN_TIMEOUT + 120_000 });
 
@@ -37,8 +47,7 @@ async function expectFiles(panel: Locator, names: string[]): Promise<void> {
 async function openEditor(page: Page, workspace: { labId: string; projectId: string }) {
   await openWorkflowsHub(page, workspace);
 
-  const unavailable = await startWorkflow(page, fixture.activity, fixture.workflow.type);
-  test.skip(unavailable !== null, unavailable ?? '');
+  await startWorkflow(page, fixture.activity, fixture.workflow.type);
 
   const missing = await chooseEntities(page, fixture.selection);
   test.skip(missing !== null, missing ?? '');
@@ -73,15 +82,15 @@ test.describe('Synaptome build', () => {
       await new ScanConfigDriver(page).apply(simpleCase);
 
       // The configuration is complete, so nothing about the form says no.
-      await expect(editor.submit).toHaveText(simpleCase.expect.submitLabel);
+      await expect(editor.submit).toHaveText(words.generate);
       await expect(editor.submit).toBeEnabled();
       await editor.submit.click();
 
       // The project cannot pay for the run, so it is stopped before anything is
       // created: no campaign, and the button still offers this one.
       await expect(lowCredits(page).notice).toBeVisible();
-      await expect(editor.tab('results')).toBeDisabled();
-      await expect(editor.submit).toHaveText(simpleCase.expect.submitLabel);
+      await expect(editor.tab(words.resultsTab)).toBeDisabled();
+      await expect(editor.submit).toHaveText(words.generate);
     }
   );
 
@@ -94,16 +103,16 @@ test.describe('Synaptome build', () => {
 
       await new ScanConfigDriver(page).apply(configuration);
 
-      await expect(editor.submit).toHaveText(configuration.expect.submitLabel);
+      await expect(editor.submit).toHaveText(words.generate);
       await expect(editor.submit).toBeEnabled();
       await editor.submit.click();
 
       // A campaign was created: the results tab, disabled until one exists,
       // opens, and the button now offers a new campaign rather than relaunching
       // this one.
-      await expect(editor.tab('results')).toBeEnabled();
-      await expect(editor.submit).toHaveText('New build campaign');
-      await editor.tab('results').click();
+      await expect(editor.tab(words.resultsTab)).toBeEnabled();
+      await expect(editor.submit).toHaveText(words.newCampaign);
+      await editor.tab(words.resultsTab).click();
 
       // One coordinate per combination of swept values.
       await expect(results.coordinates).toHaveCount(configuration.expect.coordinateCount);
@@ -119,12 +128,14 @@ test.describe('Synaptome build', () => {
         await expectFiles(results.outputs, generated.outputs);
       }
 
-      await expect(results.launch).toHaveText(/Launch builds/);
+      await expect(results.launch).toContainText(words.launch);
       await results.launch.click();
 
-      // Running a build spends credits, so the application asks first.
-      await expect(results.costConfirm).toBeVisible();
-      await results.costConfirm.click();
+      // Spending credits is confirmed first, where the workflow can price it.
+      if (fixture.workflow.confirmsCost) {
+        await expect(results.costConfirm).toBeVisible();
+        await results.costConfirm.click();
+      }
 
       // The launch system takes a couple of minutes: the coordinate goes
       // pending, then running, then done.

@@ -1,5 +1,10 @@
 import { enableFeature } from '@fixtures/feature-flags';
-import { loadScanConfigFixture } from '@fixtures/scan-config';
+import {
+  loadScanConfigFixture,
+  notDeployedHere,
+  runsOnThisDeployment,
+} from '@fixtures/scan-config';
+import { scanConfigWords } from '@fixtures/scan-config-activities';
 import { ScanConfigDriver } from '@fixtures/scan-config-driver';
 import { PRIVATE } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
@@ -12,6 +17,11 @@ const RUN_TIMEOUT = 300_000;
 
 // Scenario: scenarios/workflows/build-recording-array/scenario.md
 const fixture = loadScanConfigFixture('extracellular-recording-array.json');
+const words = scanConfigWords[fixture.activity];
+
+// A workflow exists only on the deployments its fixture names, so a run pointed
+// elsewhere skips the file rather than probing the hub and guessing.
+test.skip(!runsOnThisDeployment(fixture), notDeployedHere(fixture));
 
 test.describe.configure({ timeout: RUN_TIMEOUT + 120_000 });
 
@@ -34,8 +44,7 @@ test.describe('Extracellular recording array build', () => {
 
         await openWorkflowsHub(page, workspace);
 
-        const unavailable = await startWorkflow(page, fixture.activity, fixture.workflow.type);
-        test.skip(unavailable !== null, unavailable ?? '');
+        await startWorkflow(page, fixture.activity, fixture.workflow.type);
 
         const missing = await chooseEntities(page, fixture.selection);
         test.skip(missing !== null, missing ?? '');
@@ -44,16 +53,16 @@ test.describe('Extracellular recording array build', () => {
 
         await new ScanConfigDriver(page).apply(configuration);
 
-        await expect(editor.submit).toHaveText(configuration.expect.submitLabel);
+        await expect(editor.submit).toHaveText(words.generate);
         await expect(editor.submit).toBeEnabled();
         await editor.submit.click();
 
         // A campaign was created: the results tab, disabled until one exists,
         // opens with one coordinate per grid point and the configuration obi-one
         // was given.
-        await expect(editor.tab('results')).toBeEnabled();
-        await expect(editor.submit).toHaveText('New build campaign');
-        await editor.tab('results').click();
+        await expect(editor.tab(words.resultsTab)).toBeEnabled();
+        await expect(editor.submit).toHaveText(words.newCampaign);
+        await editor.tab(words.resultsTab).click();
 
         await expect(results.coordinates).toHaveCount(configuration.expect.coordinateCount);
         await expect(results.inputs.locator('[data-file-name]')).not.toHaveCount(0);

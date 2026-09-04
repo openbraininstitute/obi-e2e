@@ -10,12 +10,12 @@ import { expect, test } from '@fixtures/test';
 import { chooseEntities, openWorkflowsHub, startWorkflow } from '@fixtures/workflows';
 import { scanConfigEditor, scanConfigResults } from '@locators/scan-config';
 
-// A build runs on the launch system, which takes a couple of minutes. The
-// default test timeout is far shorter, so these tests set their own.
+// A simulation runs on the launch system, which takes minutes. The default test
+// timeout is far shorter, so these tests set their own.
 const RUN_TIMEOUT = 300_000;
 
-// Scenario: scenarios/workflows/build-em-circuit/scenario.md
-const fixture = loadScanConfigFixture('em-synapse-mapping.json');
+// Scenario: scenarios/workflows/simulate-single-neuron/scenario.md
+const fixture = loadScanConfigFixture('simulate-single-neuron.json');
 const words = scanConfigWords[fixture.activity];
 
 // A workflow exists only on the deployments its fixture names, so a run pointed
@@ -24,24 +24,30 @@ test.skip(!runsOnThisDeployment(fixture), notDeployedHere(fixture));
 
 test.describe.configure({ timeout: RUN_TIMEOUT + 120_000 });
 
-test.describe('Electron microscopy circuit build', () => {
+test.describe('Single neuron simulation', () => {
+  test.beforeEach(async ({ page, workspace }) => {
+    await openWorkflowsHub(page, workspace);
+
+    await startWorkflow(page, fixture.activity, fixture.workflow.type);
+
+    const missing = await chooseEntities(page, fixture.selection);
+    test.skip(missing !== null, missing ?? '');
+
+    await expect(page).toHaveURL(new RegExp(`/configure/${fixture.workflow.type}/`));
+  });
+
+  test('will not launch an incomplete configuration', { tag: PRIVATE }, async ({ page }) => {
+    // The schema demands a campaign name, so an editor that has only been given
+    // an entity cannot be launched.
+    await expect(scanConfigEditor(page).submit).toBeDisabled();
+  });
+
   // One test per configuration, so they run in parallel and a failure names the
   // configuration that broke.
   for (const configuration of fixture.cases) {
-    test(`builds: ${configuration.name}`, { tag: PRIVATE }, async ({ page, workspace }) => {
+    test(`simulates: ${configuration.name}`, { tag: PRIVATE }, async ({ page }) => {
       const editor = scanConfigEditor(page);
       const results = scanConfigResults(page);
-
-      await openWorkflowsHub(page, workspace);
-
-      await startWorkflow(page, fixture.activity, fixture.workflow.type);
-
-      // The morphologies come from an electron microscopy dense reconstruction
-      // dataset, which a project without that data does not have.
-      const missing = await chooseEntities(page, fixture.selection);
-      test.skip(missing !== null, missing ?? '');
-
-      await expect(page).toHaveURL(new RegExp(`/configure/${fixture.workflow.type}/`));
 
       await new ScanConfigDriver(page).apply(configuration);
 
@@ -49,19 +55,27 @@ test.describe('Electron microscopy circuit build', () => {
       await expect(editor.submit).toBeEnabled();
       await editor.submit.click();
 
-      // A campaign was created: the results tab, disabled until one exists,
-      // opens with one coordinate per grid point and the configuration obi-one
-      // was given.
+      // A campaign was created: its results tab, disabled until one exists,
+      // opens, and the button now offers a new campaign.
       await expect(editor.tab(words.resultsTab)).toBeEnabled();
       await expect(editor.submit).toHaveText(words.newCampaign);
       await editor.tab(words.resultsTab).click();
 
+      // One coordinate per combination of swept values: a stimulus given two
+      // amplitudes is two simulations.
       await expect(results.coordinates).toHaveCount(configuration.expect.coordinateCount);
-      await expect(results.inputs.locator('[data-file-name]')).not.toHaveCount(0);
 
       const status = results.coordinates.first().getByTestId('scan-config-status');
       await expect(status).toHaveText(/^created$/i);
 
+      const generated = configuration.expect.generated;
+      if (generated) {
+        await expect(results.inputs.locator('[data-file-name]')).toHaveCount(
+          generated.inputs.length
+        );
+      }
+
+      await expect(results.launch).toContainText(words.launch);
       await results.launch.click();
 
       // Spending credits is confirmed first, where the workflow can price it.
@@ -71,14 +85,11 @@ test.describe('Electron microscopy circuit build', () => {
       }
 
       await expect(status).not.toHaveText(/^created$/i);
-
-      // The launch system takes a couple of minutes: the coordinate goes
-      // pending, then running, then done.
       await expect(status).toHaveText(/^done$/i, { timeout: RUN_TIMEOUT });
 
-      // This workflow has never been run through end to end, so there is no
-      // list of files to hold it to yet. Fill in `expect.completed` in its
-      // fixture from a real run, as the synaptome build does.
+      // This workflow has not been run through end to end yet, so there is no
+      // list of files to hold it to. Fill in `expect.completed` in its fixture
+      // from a real run, as the synaptome build does.
       await expect(results.outputs.locator('[data-file-name]')).not.toHaveCount(0);
     });
   }

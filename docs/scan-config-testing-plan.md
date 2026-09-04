@@ -1,6 +1,6 @@
 # Testing the scan-configuration editor from fixture files
 
-Status: build workflows implemented. Simulate, extract and process still to do.
+Status: build and simulate workflows implemented. Extract and process still to do.
 
 ## What the editor is
 
@@ -15,7 +15,11 @@ and every field's control is chosen by a custom OpenAPI extension, `ui_element`.
 There are 23 `ui_element` kinds today and the dispatcher handles 20 of them.
 
 A user submits with a button labelled per activity, for example
-`Generate build(s)`. The application then posts the same configuration object
+`Generate build(s)` or `Generate simulation(s)`. Each activity also names its
+results tab differently — `results`, `simulations`, `extractions`,
+`skeletonizations` — so none of that wording is hard-coded in a test:
+`fixtures/scan-config-activities.ts` mirrors it from the application's own
+`messages` and `ScanConfigTabs`. The application then posts the same configuration object
 twice: once to `/declared/scan_config/grid-scan-coordinate-count` to size the
 grid, and once to the generation endpoint, which returns a campaign id.
 
@@ -90,6 +94,7 @@ in parallel and a failure names the configuration that broke.
 {
   "name": "Synaptome build with one excitatory synapse group",
   "activity": "build",
+  "env": ["staging", "production"],
   "workflow": { "label": "Synaptome", "type": "build-synaptome-campaign" },
   "schemaName": "MEModelSynapticModelPlacementScanConfig",
   "selection": { "mode": "single", "entities": ["MEM__jy180314_B_idA__dNAD_ltb_VPM_TC"] },
@@ -116,9 +121,21 @@ Two rules keep this maintainable. The `initialize` model field is set by the
 browse step, so the fixture names the entity under `selection` rather than
 pinning an id it does not own. Fixtures never contain credentials.
 
+`env` lists the deployments that offer the workflow. A run is pointed at one
+deployment — `E2E_BASE_URL`, or `E2E_ENV` where the host does not say — and a
+fixture that does not name it skips the whole spec. Which deployments have a
+workflow is a fact about the release, and looking for its card cannot establish
+it: a card that is absent and one that has not rendered yet look the same. So it
+is declared here, and everything past the skip is an assertion — a workflow the
+fixture says a deployment has must be there.
+
 `selection.scope` picks the tab above the table, `public` by default. Entities a
 project derives for itself, such as the morphologies behind an electron
 microscopy circuit, live under `project`.
+
+`workflow.confirmsCost` says whether launching asks what it will cost first. It
+does for most workflows; an ME-model campaign has no cost estimator behind it and
+launches straight away, which the application says in so many words.
 
 `requires.featureFlag` names an experimental feature the workflow needs. The test
 writes the application's own `feature-flags` cookie, so the page renders with the
