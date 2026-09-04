@@ -1,3 +1,4 @@
+import { chooseSpecies, showAllSpecies } from '@fixtures/choose-species';
 import { routes } from '@fixtures/routes';
 import { PRIVATE_READONLY } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
@@ -8,36 +9,6 @@ import { entityListing } from '@locators/listing';
 
 // Scenario: scenarios/data/species-and-regions/scenario.md
 test.use(WIDE_VIEWPORT);
-
-type Page = Parameters<typeof atlas>[0];
-
-async function chooseSpecies(page: Page, name: string) {
-  const controls = atlas(page);
-
-  // The page re-renders while it loads and can swallow the click that opens the
-  // list, so retry opening and choosing together.
-  await expect(async () => {
-    if (
-      !(await controls
-        .speciesOption(name)
-        .isVisible()
-        .catch(() => false))
-    ) {
-      await controls.speciesSelector.click();
-    }
-    await controls.speciesOption(name).click({ timeout: 3_000 });
-  }).toPass({ timeout: 45_000 });
-
-  await expect(controls.speciesSelector).toContainText(name);
-}
-
-/**
- * The species and region choice is remembered for the user, so it survives a
- * reload and carries into the next test. Every test starts by putting it back.
- */
-async function showAllSpecies(page: Page) {
-  await chooseSpecies(page, 'All');
-}
 
 test.describe('Species and brain regions', () => {
   test.describe('on the Data page', () => {
