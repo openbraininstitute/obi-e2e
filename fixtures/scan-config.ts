@@ -115,6 +115,11 @@ type SelectionBase = {
 };
 
 export type ScanConfigSelection =
+  /**
+   * No browse step at all: the workflow opens its editor straight away and the
+   * entity is picked inside it, from a field's own catalogue.
+   */
+  | { mode: 'none' }
   /** One entity, chosen from a table and confirmed with `Use model`. */
   | (SelectionBase & { mode: 'single'; entities: [string] })
   /** Several entities, confirmed with `Use selection`. */
@@ -200,8 +205,8 @@ export function parseScanConfigFixture(value: unknown, source: string): ScanConf
   const workflow = object(root.workflow, 'workflow');
   const selection = object(root.selection, 'selection');
   const mode = text(selection.mode, 'selection.mode');
-  if (mode !== 'single' && mode !== 'multiple') {
-    fail(`selection.mode must be "single" or "multiple", got "${mode}"`);
+  if (mode !== 'single' && mode !== 'multiple' && mode !== 'none') {
+    fail(`selection.mode must be "none", "single" or "multiple", got "${mode}"`);
   }
 
   const scope = selection.scope;
@@ -209,13 +214,19 @@ export function parseScanConfigFixture(value: unknown, source: string): ScanConf
     fail(`selection.scope must be "public" or "project", got "${String(scope)}"`);
   }
 
-  const entities = selection.entities;
-  if (!Array.isArray(entities) || entities.length === 0) {
-    fail('selection.entities must list at least one entity name');
-  }
-  (entities as unknown[]).forEach((entity, index) => text(entity, `selection.entities[${index}]`));
-  if (mode === 'single' && (entities as unknown[]).length !== 1) {
-    fail('selection.mode "single" takes exactly one entity');
+  // A workflow with no browse step names no entities here: the editor's own
+  // field picks one.
+  const entities = mode === 'none' ? [] : selection.entities;
+  if (mode !== 'none') {
+    if (!Array.isArray(entities) || entities.length === 0) {
+      fail('selection.entities must list at least one entity name');
+    }
+    (entities as unknown[]).forEach((entity, index) =>
+      text(entity, `selection.entities[${index}]`)
+    );
+    if (mode === 'single' && (entities as unknown[]).length !== 1) {
+      fail('selection.mode "single" takes exactly one entity');
+    }
   }
 
   const cases = root.cases;
@@ -240,7 +251,7 @@ export function parseScanConfigFixture(value: unknown, source: string): ScanConf
     schemaName: text(root.schemaName, 'schemaName'),
     selection: {
       mode,
-      entities: entities as string[],
+      ...(mode === 'none' ? {} : { entities: entities as string[] }),
       ...(scope === undefined ? {} : { scope: scope as ScanConfigScope }),
       ...(selection.prerequisite === undefined
         ? {}

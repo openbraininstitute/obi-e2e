@@ -8,8 +8,7 @@
   },
   "schemaName": "IonChannelModelSimulationScanConfig",
   "selection": {
-    "mode": "single",
-    "entities": ["Kv3.2"]
+    "mode": "none"
   },
   "cases": [
     {
@@ -21,7 +20,13 @@
           "campaign_description": "One channel held at three voltages in turn, recorded at the soma."
         },
         "ion_channel_models": {
-          "channel": { "type": "IonChannelModelWithConductance", "conductance": 0.1 }
+          "channel": {
+            "type": "IonChannelModelWithConductance",
+            "conductance": 0.1,
+            "ion_channel_model": {
+              "name": "Kv3.2"
+            }
+          }
         },
         "stimuli": {
           "voltage_clamp": {
@@ -35,7 +40,10 @@
           }
         },
         "recordings": {
-          "soma_voltage": { "type": "SomaVoltageRecording", "dt": 0.1 }
+          "soma_voltage": {
+            "type": "SomaVoltageRecording",
+            "dt": 0.1
+          }
         },
         "initialize": {
           "type": "IonChannelModelSimulationScanConfig.Initialize",
@@ -44,7 +52,21 @@
           "v_init": -80
         }
       },
-      "expect": { "coordinateCount": 1 }
+      "expect": {
+        "coordinateCount": 1,
+        "generated": {
+          "inputs": ["node_sets.json", "obi_one_coordinate.json", "simulation_config.json"],
+          "outputs": []
+        },
+        "completed": {
+          "inputs": ["node_sets.json", "obi_one_coordinate.json", "simulation_config.json"],
+          "outputs": ["Recording 0.h5", "spikes.h5"],
+          "views": {
+            "Recording 0.h5": ["Time (ms)", "Voltage (mV)"],
+            "spikes.h5": ["PopulationAll", "spikes"]
+          }
+        }
+      }
     }
   ]
 }

@@ -105,6 +105,22 @@ export function scanConfigResults(page: Page) {
   };
 }
 
+/**
+ * A field that picks an entity opens the same browse table in a modal, rather
+ * than a dropdown, because choosing a model is choosing from a catalogue.
+ */
+export function scanConfigModelPicker(page: Page) {
+  return {
+    open: page.getByTestId('scan-config-select-model'),
+    /**
+     * The catalogue replaces the editor's middle column rather than opening a
+     * dialog, so it is scoped by its own id and not by role.
+     */
+    panel: page.getByTestId('scan-config-model-picker'),
+    confirm: page.getByTestId('scan-config-confirm-model'),
+  };
+}
+
 /** One field inside a block. A property key is only unique within its block. */
 export function scanConfigField(block: Locator, key: string): Locator {
   return block.getByTestId(`scan-config-field-${key}`);

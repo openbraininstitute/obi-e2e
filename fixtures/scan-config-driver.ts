@@ -2,6 +2,7 @@ import {
   scanConfigControl,
   scanConfigEditor,
   scanConfigField,
+  scanConfigModelPicker,
   scanConfigSweep,
   scanConfigSweepValues,
   UI_ELEMENT_ATTRIBUTE,
@@ -140,8 +141,11 @@ export class ScanConfigDriver {
 
       case ScanConfigUiElement.Reference:
       case ScanConfigUiElement.EntityPropertyDropdown:
-      case ScanConfigUiElement.ModelSelectorSingle:
         await this.setSelection(field, value, at);
+        return;
+
+      case ScanConfigUiElement.ModelSelectorSingle:
+        await this.pickModel(field, value, at);
         return;
 
       case ScanConfigUiElement.MorphologyLocationSelection:
@@ -235,6 +239,43 @@ export class ScanConfigDriver {
 
     await scanConfigControl(field).click();
     await this.editor.option(option).click();
+  }
+
+  /**
+   * Picks an entity from the catalogue, which this field opens in a modal
+   * rather than a dropdown. The table inside it is the shared entity listing,
+   * so the entity is searched for by the name the fixture gives.
+   */
+  private async pickModel(field: Locator, value: unknown, at: string): Promise<void> {
+    if (!isRecord(value) || typeof value.name !== 'string') {
+      throw new Error(`${at}: needs a { "name": … } naming the entity to pick`);
+    }
+
+    const picker = scanConfigModelPicker(this.page);
+    await field.getByTestId('scan-config-select-model').click();
+
+    // The catalogue replaces the editor's middle column rather than opening a
+    // dialog, and the editor's own table stays in the document, so everything
+    // here is scoped to the picker.
+    const catalogue = picker.panel;
+    await expect(catalogue).toBeVisible();
+
+    // Searching narrows the catalogue to the one entity, which is what makes
+    // ticking it unambiguous below.
+    await catalogue.getByTestId('data-grid-search').fill(value.name);
+    await expect(
+      catalogue.getByRole('row').filter({ hasText: value.name }).first(),
+      `No "${value.name}" to pick for ${at}.`
+    ).toBeVisible();
+
+    // The grid pins its selection column, so a row's tick is not inside the row
+    // holding its name. With one result left there are two ticks on the panel —
+    // the header's select-all and the row's — and the row's is the last.
+    await catalogue.getByRole('checkbox').last().check();
+
+    await expect(picker.confirm).toBeEnabled();
+    await picker.confirm.click();
+    await expect(picker.open).toHaveCount(0);
   }
 
   /** An antd select: a wrapper that opens a list the control owns. */

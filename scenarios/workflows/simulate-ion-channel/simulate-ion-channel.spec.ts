@@ -34,7 +34,8 @@ test.describe('Ion channel simulation', () => {
     const missing = await chooseEntities(page, fixture.selection);
     test.skip(missing !== null, missing ?? '');
 
-    await expect(page).toHaveURL(new RegExp(`/configure/${fixture.workflow.type}/`));
+    // This workflow has nothing to browse for, so the card opens the editor.
+    await expect(page).toHaveURL(new RegExp(`/configure/${fixture.workflow.type}`));
   });
 
   test('will not launch an incomplete configuration', { tag: PRIVATE_SPENDS }, async ({ page }) => {

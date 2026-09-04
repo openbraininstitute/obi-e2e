@@ -88,9 +88,13 @@ export async function startWorkflow(page: Page, activity: string, type: string):
       'flag needs that flag set before the page loads.'
   ).not.toHaveAttribute('aria-disabled', 'true');
 
+  // Most workflows collect their entities first; one that has nothing to
+  // collect opens its editor straight away, so either destination is a start.
   await expect(async () => {
     await card.click();
-    await expect(page).toHaveURL(new RegExp(`/workflows/${activity}/new/`), { timeout: 5_000 });
+    await expect(page).toHaveURL(new RegExp(`/workflows/${activity}/(new|configure)/`), {
+      timeout: 5_000,
+    });
   }).toPass();
 }
 
@@ -106,6 +110,9 @@ export async function chooseEntities(
 ): Promise<WorkflowUnavailable> {
   const browse = workflowBrowse(page);
   const listing = entityListing(page);
+
+  // A workflow with no browse step is already in its editor.
+  if (selection.mode === 'none') return null;
 
   // The tab is chosen before the prerequisite, because it reloads the tables
   // beneath it.
