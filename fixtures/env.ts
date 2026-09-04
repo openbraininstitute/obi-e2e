@@ -1,25 +1,89 @@
+/**
+ * Everything the run reads from its environment.
+ *
+ * The .env files are read here because Playwright runs its config through Bun
+ * in node mode, and Bun loads no file there. Strongest first:
+ * the real environment, .env.<deployment>.local, .env.local,
+ * .env.<deployment>, .env.
+ */
+
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
+
+function parseEnvFile(file: string): Map<string, string> {
+  const values = new Map<string, string>();
+  if (!fs.existsSync(file)) return values;
+
+  for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
+    if (line.trimStart().startsWith('#')) continue;
+
+    const match = /^\s*(?:export\s+)?([\w.-]+)\s*=\s*(.*)$/.exec(line);
+    const key = match?.[1];
+    const rawValue = match?.[2];
+    if (key === undefined || rawValue === undefined) continue;
+
+    const quoted = /^(['"])([\s\S]*)\1\s*$/.exec(rawValue.trim());
+    values.set(key, quoted ? (quoted[2] ?? '') : (rawValue.split('#')[0] ?? '').trim());
+  }
+
+  return values;
+}
+
+function envOfUrl(url: string | undefined): 'staging' | 'production' | undefined {
+  if (!url) return undefined;
+
+  try {
+    const host = new URL(url).hostname;
+    return host === 'openbraininstitute.org' || host === 'www.openbraininstitute.org'
+      ? 'production'
+      : 'staging';
+  } catch {
+    return undefined;
+  }
+}
+
+function loadEnvFiles(): void {
+  const read = (name: string) => parseEnvFile(path.resolve(process.cwd(), name));
+  const shared = read('.env');
+
+  const declared = process.env.E2E_ENV ?? shared.get('E2E_ENV');
+  const deployment =
+    declared === 'staging' || declared === 'production'
+      ? declared
+      : (envOfUrl(process.env.E2E_BASE_URL ?? shared.get('E2E_BASE_URL')) ?? 'staging');
+
+  const layers = [
+    read(`.env.${deployment}.local`),
+    read('.env.local'),
+    read(`.env.${deployment}`),
+    shared,
+  ];
+
+  const other = deployment === 'staging' ? 'production' : 'staging';
+  const fromAFile = [...layers, read(`.env.${other}.local`), read(`.env.${other}`)];
+
+  for (const [index, layer] of layers.entries()) {
+    for (const [key, value] of layer) {
+      if (layers.slice(0, index).some((higher) => higher.has(key))) continue;
+
+      const current = process.env[key];
+      const wasRead = fromAFile.some((file) => file.get(key) === current);
+      if (current === undefined || current === '' || wasRead) process.env[key] = value;
+    }
+  }
+}
+
+loadEnvFiles();
 
 export const isCI = Boolean(process.env.CI);
 
-export const baseURL = process.env.E2E_BASE_URL ?? 'https://staging.openbraininstitute.org';
+export const baseURL = process.env.E2E_BASE_URL || 'https://staging.openbraininstitute.org';
 
-/** The deployments the suite knows how to run against. */
 export const DEPLOYMENT_ENVS = ['staging', 'production'] as const;
 export type DeploymentEnv = (typeof DEPLOYMENT_ENVS)[number];
 
-/**
- * Which deployment this run is pointed at.
- *
- * Everything that differs between deployments hangs off this: which workflows
- * exist, and which host serves the backend. It is derived from the one URL a
- * run is already given rather than configured a second time, so the two cannot
- * disagree. `E2E_ENV` names it outright for a host this cannot read, such as a
- * preview build of the production release.
- *
- * @throws Error when `E2E_ENV` names a deployment that does not exist.
- */
+/** Which deployment this run tests: staging or production. */
 export function deploymentEnv(): DeploymentEnv {
   const declared = process.env.E2E_ENV;
   if (declared) {
@@ -29,49 +93,34 @@ export function deploymentEnv(): DeploymentEnv {
     return declared as DeploymentEnv;
   }
 
-  // Production is the only host without a prefix. Staging, a preview build and
-  // a local application are all the same thing to a test: not production.
   const host = new URL(baseURL).hostname;
   return host === 'openbraininstitute.org' || host === 'www.openbraininstitute.org'
     ? 'production'
     : 'staging';
 }
 
-/**
- * Where the backend services answer, which is not where the application does.
- * Production serves them from its own host; staging keeps them on a cell.
- */
+/** Base URL of the backend API for this deployment. */
 export function cellApiUrl(): string {
   return deploymentEnv() === 'production'
     ? 'https://www.openbraininstitute.org/api'
     : 'https://staging.cell-a.openbraininstitute.org/api';
 }
 
-/** The virtual lab manager sits on a different host from the application. */
+/** Base URL of the virtual lab manager. */
 export function virtualLabApiUrl(): string {
-  const url = process.env.VIRTUAL_LAB_API_URL;
-  if (!url) {
-    throw new Error('VIRTUAL_LAB_API_URL is not set. See .env.example for the staging value.');
-  }
+  const url = process.env.VIRTUAL_LAB_API_URL ?? `${cellApiUrl()}/virtual-lab-manager`;
   return url.replace(/\/$/, '');
 }
 
+/** Id for this run. Every worker reads the same one from the environment. */
 export const RUN_ID = process.env.E2E_RUN_ID ?? `${Date.now()}-${process.pid}`;
 
-// Worker processes re-evaluate this module and would otherwise each generate a
-// different id. Pinning it here makes every worker share one run directory.
 process.env.E2E_RUN_ID = RUN_ID;
 
-/** When the run began, pinned across workers the same way the id is. */
 export const RUN_STARTED_AT = process.env.E2E_RUN_STARTED_AT ?? new Date().toISOString();
 process.env.E2E_RUN_STARTED_AT = RUN_STARTED_AT;
 
-/**
- * The commit under test.
- *
- * CI already knows it. Locally it is worth asking git, because a record that
- * outlives the working tree needs to say which code produced it.
- */
+/** The commit under test. */
 export function commit(): string {
   const fromCI = process.env.GITHUB_SHA;
   if (fromCI) return fromCI;
@@ -80,18 +129,9 @@ export function commit(): string {
   return result.success ? result.stdout.toString().trim() : 'unknown';
 }
 
+/** Where this run keeps its sign-ins and its workspace file. */
 export const RUN_DIR = path.resolve(process.cwd(), '.e2e-runs', RUN_ID);
 
-/**
- * The suite is split by what each user is responsible for.
- *
- * `primary` owns one established virtual lab and covers the work inside it:
- * workflows, data, notebooks. It never creates or deletes a lab.
- *
- * `onboarding` starts owning nothing and covers everything before that point:
- * creating a lab, creating projects, and inviting members. It deletes what it
- * creates, because a user may own only one lab.
- */
 export const ROLES = ['primary', 'onboarding'] as const;
 export type Role = (typeof ROLES)[number];
 
@@ -108,7 +148,6 @@ export function tokenPath(role: Role): string {
   return path.join(RUN_DIR, 'auth', `${role}.token`);
 }
 
-/** Whether a role's credentials are configured. `onboarding` is optional. */
 export function hasCredentials(role: Role): boolean {
   return CREDENTIAL_VARS[role].every((name) => Boolean(process.env[name]));
 }
@@ -129,11 +168,7 @@ export function credentials(role: Role): { username: string; password: string } 
   };
 }
 
-/**
- * What the run hands the project it creates, and so the most the whole suite
- * may spend. A first guess until a few full runs say what a run really costs;
- * `E2E_PROJECT_CREDITS` is how that number is corrected without a code change.
- */
+/** Credits the run moves into its project. */
 export const PROJECT_CREDITS = readCredits();
 
 function readCredits(): number {
@@ -147,22 +182,13 @@ function readCredits(): number {
   return parsed;
 }
 
-/**
- * Where the run records the project it made for itself. Written by the
- * workspace setup and read by every worker, the same way the auth state is.
- */
 export function workspacePath(): string {
   return path.join(RUN_DIR, 'workspace.json');
 }
 
 type RequiredVar = 'LAB_ID';
 
-/**
- * Reads required environment variables.
- *
- * @throws Error naming every missing variable at once, so a misconfigured run
- * reports all of them instead of one per rerun.
- */
+/** Reads variables that must be set, or fails naming the missing ones. */
 export function requireEnv<T extends RequiredVar>(...keys: T[]): Record<T, string> {
   const missing = keys.filter((key) => !process.env[key]);
   if (missing.length > 0) {
@@ -178,15 +204,7 @@ export function requireEnv<T extends RequiredVar>(...keys: T[]): Record<T, strin
   >;
 }
 
-/**
- * The only lab and project tests may write to.
- *
- * The lab is long-lived and named by the environment. The project never is: the
- * run creates one, spends inside it and deletes it, so many runs can share one
- * lab without sharing state or racing each other's data. There is deliberately
- * no way to point a run at a project that already exists — a run that wrote
- * into someone's project would leave data behind in it.
- */
+/** The lab and the project this run works in. */
 export function testWorkspace(): { labId: string; projectId: string } {
   const labId = requireEnv('LAB_ID').LAB_ID;
 
@@ -205,14 +223,43 @@ export function testWorkspace(): { labId: string; projectId: string } {
   return { labId, projectId: workspace.projectId };
 }
 
+const MEMORY_PER_WORKER_GB = 1.5;
+
+const MAX_WORKERS = 8;
+
+const MAX_WORKERS_AGAINST_A_LOCAL_SERVER = 4;
+
+function servedLocally(): boolean {
+  const host = URL.canParse(baseURL) ? new URL(baseURL).hostname : '';
+  return host === 'localhost' || host === '127.0.0.1' || host === '[::1]';
+}
+
+/** Workers a machine can run: one per core, 1.5 GB each, and a ceiling. */
+export function workersFor(machine: {
+  cpus: number;
+  memoryGB: number;
+  servedLocally?: boolean;
+}): number {
+  const byMemory = Math.floor(machine.memoryGB / MEMORY_PER_WORKER_GB);
+  const ceiling = machine.servedLocally ? MAX_WORKERS_AGAINST_A_LOCAL_SERVER : MAX_WORKERS;
+  return Math.max(1, Math.min(machine.cpus, byMemory, ceiling));
+}
+
+/** Workers for this run. PLAYWRIGHT_WORKERS wins when it is set. */
 export function resolveWorkers(): number {
   const explicit = Number.parseInt(process.env.PLAYWRIGHT_WORKERS ?? '', 10);
   if (Number.isInteger(explicit) && explicit > 0) return explicit;
-  return isCI ? 2 : 3;
+
+  return workersFor({
+    cpus: os.availableParallelism?.() ?? os.cpus().length,
+    memoryGB: os.totalmem() / 1024 ** 3,
+    servedLocally: servedLocally(),
+  });
 }
 
 type Devices = Record<string, object>;
 
+/** The browser to run, from PLAYWRIGHT_BROWSER. */
 export function resolveBrowser(devices: Devices) {
   const channel = process.env.PLAYWRIGHT_BROWSER_CHANNEL;
 

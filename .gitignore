@@ -9,10 +9,9 @@ playwright/.cache/
 .e2e-runs/
 .auth/
 
-# local secrets (never commit)
-.env
-.env.*
-!.env.example
+# secrets only: .env, .env.staging and .env.production are committed
+.env*.local
+.env.backup
 
 # editors / os
 .DS_Store
