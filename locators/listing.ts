@@ -11,11 +11,12 @@ function startsWith(name: string): RegExp {
  */
 export function entityListing(page: Page) {
   const table = page.getByTestId('data-table-container');
+  const toolbar = page.getByTestId('data-grid-toolbar');
 
   return {
     table,
-    toolbar: page.getByTestId('data-grid-toolbar'),
-    search: page.getByTestId('data-grid-search'),
+    toolbar,
+    search: toolbar.getByRole('textbox', { name: 'Search' }),
     filters: page.getByRole('button', { name: 'Filters' }),
     columns: page.getByRole('button', { name: 'Columns' }),
     /** Circuits only: swaps the flat listing for the hierarchy and back. */
@@ -44,12 +45,12 @@ export function entityListing(page: Page) {
     cells: table.getByRole('gridcell'),
     resultCount: page.getByText(/[\d,]+ results/),
 
-    pagination: page.getByTestId('data-grid-pagination'),
-    pageSize: page.getByTestId('data-grid-page-size'),
-    /** A page number in the pager. Anchored, so 2 does not also match 12. */
+    pagination: page.getByRole('list').filter({ has: page.getByTitle('Next Page') }),
+    pageSize: page.getByRole('combobox').filter({ hasText: '/ page' }),
     pageLink: (number: number) =>
       page
-        .getByTestId('data-grid-pagination')
+        .getByRole('list')
+        .filter({ has: page.getByTitle('Next Page') })
         .getByRole('listitem')
         .filter({ hasText: new RegExp(`^${number}$`) }),
   };

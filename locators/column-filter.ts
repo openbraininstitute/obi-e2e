@@ -12,7 +12,7 @@ import type { Locator, Page } from '@playwright/test';
  * has settled, and be ready to open it twice.
  */
 export function columnFilter(page: Page) {
-  const panel = page.getByTestId('column-filter-panel');
+  const panel = page.getByRole('dialog');
 
   return {
     panel,
@@ -20,20 +20,18 @@ export function columnFilter(page: Page) {
     trigger: (column: string) =>
       page.getByRole('button', { name: `Filter ${column}`, exact: true }),
 
-    operator: panel.getByTestId('column-filter-operator'),
-    value: panel.getByTestId('column-filter-value'),
-    min: panel.getByTestId('column-filter-min'),
-    max: panel.getByTestId('column-filter-max'),
+    operator: panel.getByRole('combobox'),
+    value: panel.getByPlaceholder('Enter text to match'),
+    min: panel.getByPlaceholder('Min'),
+    max: panel.getByPlaceholder('Max'),
 
-    search: panel.getByTestId('column-filter-search'),
-    options: panel.getByTestId('column-filter-option'),
-    optionCounts: panel.getByTestId('column-filter-option-count'),
-    noOptions: panel.getByTestId('column-filter-no-options'),
-    selectAll: panel.getByTestId('column-filter-select-all'),
-    clear: panel.getByTestId('column-filter-clear'),
+    search: panel.getByPlaceholder('Search…'),
+    options: panel.locator('label'),
+    selectAll: panel.getByRole('button', { name: 'Select all' }),
+    clear: panel.getByRole('button', { name: 'Clear' }),
 
-    apply: panel.getByTestId('column-filter-apply'),
-    reset: panel.getByTestId('column-filter-reset'),
+    apply: panel.getByRole('button', { name: 'Apply' }),
+    reset: panel.getByRole('button', { name: 'Reset' }),
   };
 }
 
@@ -41,9 +39,8 @@ export function columnFilter(page: Page) {
 export type FilterKind = 'facet' | 'range' | 'value' | 'choice';
 
 export async function filterKind(panel: Locator): Promise<FilterKind> {
-  // Order matters: a facet filter also renders a search box.
-  if ((await panel.getByTestId('column-filter-search').count()) > 0) return 'facet';
-  if ((await panel.getByTestId('column-filter-min').count()) > 0) return 'range';
-  if ((await panel.getByTestId('column-filter-value').count()) > 0) return 'value';
+  if ((await panel.getByPlaceholder('Search…').count()) > 0) return 'facet';
+  if ((await panel.getByPlaceholder('Min').count()) > 0) return 'range';
+  if ((await panel.getByPlaceholder('Enter text to match').count()) > 0) return 'value';
   return 'choice';
 }

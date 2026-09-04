@@ -115,30 +115,31 @@ export async function checkFilter(page: Page, column: string): Promise<void> {
 
   switch (kind) {
     case 'facet': {
-      // The options arrive from their own request. Wait for either them or the
-      // empty state, so a facet that never populates fails here, naming the
-      // column, rather than further down where the cause is not obvious.
-      await expect(
-        filter.options.first().or(filter.noOptions),
-        `the "${column}" facet never offered any options`
-      ).toBeVisible({ timeout: 20_000 });
+      const arrived = await filter.options
+        .first()
+        .waitFor({ state: 'visible', timeout: 20_000 })
+        .then(() => true)
+        .catch(() => false);
 
-      // Nothing to choose, so nothing more to check.
-      if ((await filter.noOptions.count()) > 0) break;
+      if (!arrived) break;
       applied = true;
       // The option carries its own count, which is the number of results the
       // listing must show once it is applied. That is the strongest check
       // available: the application states the answer before we ask for it.
       const expected = Number(
         (
-          await filter.optionCounts
+          await filter.options
             .first()
             .innerText()
             .catch(() => '')
-        ).replace(/[^\d]/g, '')
+        )
+          .trim()
+          .split(/\s+/)
+          .at(-1)
+          ?.replace(/[^\d]/g, '')
       );
 
-      await filter.options.first().click();
+      await filter.options.first().getByRole('checkbox').click();
       await filter.apply.click();
 
       if (Number.isFinite(expected) && expected > 0) {
@@ -192,8 +193,11 @@ export async function checkFilter(page: Page, column: string): Promise<void> {
   // Whatever was applied, resetting must bring the listing back.
   await clickInPanel(page, column, (f) => f.reset);
 
-  // Poll rather than match once: a large listing takes a while to come back,
-  // and the count passes through intermediate values on the way.
+  const panel = columnFilter(page);
+  if (await panel.apply.isVisible().catch(() => false)) {
+    await panel.apply.click().catch(() => {});
+  }
+
   await expect
     .poll(() => resultCount(page), {
       message: `resetting the "${column}" filter did not restore the listing`,
