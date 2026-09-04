@@ -1,3 +1,4 @@
+import { checkCompletedOutput } from '@fixtures/check-campaign-output';
 import { enableFeature } from '@fixtures/feature-flags';
 import {
   loadScanConfigFixture,
@@ -82,10 +83,7 @@ test.describe('Extracellular recording array build', () => {
         // pending, then running, then done.
         await expect(status).toHaveText(/^done$/i, { timeout: RUN_TIMEOUT });
 
-        // This workflow has never been run through end to end, so there is no
-        // list of files to hold it to yet. Fill in `expect.completed` in its
-        // fixture from a real run, as the synaptome build does.
-        await expect(results.outputs.locator('[data-file-name]')).not.toHaveCount(0);
+        await checkCompletedOutput(page, configuration);
       }
     );
   }

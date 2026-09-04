@@ -53,7 +53,19 @@
         }
       },
       "expect": {
-        "coordinateCount": 1
+        "coordinateCount": 1,
+        "generated": {
+          "inputs": ["node_sets.json", "obi_one_coordinate.json", "simulation_config.json"],
+          "outputs": []
+        },
+        "completed": {
+          "inputs": ["node_sets.json", "obi_one_coordinate.json", "simulation_config.json"],
+          "outputs": ["Recording 0.h5", "spikes.h5"],
+          "views": {
+            "Recording 0.h5": ["Time (ms)", "Voltage (mV)"],
+            "spikes.h5": ["PopulationAll", "spikes"]
+          }
+        }
       }
     },
     {

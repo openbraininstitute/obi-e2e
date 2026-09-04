@@ -96,6 +96,12 @@ export type ScanConfigScope = 'public' | 'project';
 export type ScanConfigFiles = {
   inputs: string[];
   outputs: string[];
+  /**
+   * What opening one of those files shows, by the text a user reads in the pane
+   * beside it. A recording draws a voltage trace, a spike file a raster, so
+   * this is what says the run produced a result and not just a file.
+   */
+  views?: Record<string, string[]>;
 };
 
 type SelectionBase = {
@@ -294,9 +300,24 @@ function parseFiles(value: unknown, at: string, fail: (message: string) => never
   }
 
   const record = value as Record<string, unknown>;
+  const views = record.views;
+  if (views !== undefined && (!views || typeof views !== 'object' || Array.isArray(views))) {
+    fail(`${at}.views must map a file name to the text its pane shows`);
+  }
+
   return {
     inputs: parseFileNames(record.inputs, `${at}.inputs`, fail),
     outputs: parseFileNames(record.outputs, `${at}.outputs`, fail),
+    ...(views === undefined
+      ? {}
+      : {
+          views: Object.fromEntries(
+            Object.entries(views as Record<string, unknown>).map(([file, shown]) => [
+              file,
+              parseFileNames(shown, `${at}.views["${file}"]`, fail),
+            ])
+          ),
+        }),
   };
 }
 

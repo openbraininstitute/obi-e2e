@@ -1,3 +1,4 @@
+import { checkCompletedOutput, checkGeneratedFiles } from '@fixtures/check-campaign-output';
 import {
   loadScanConfigFixture,
   notDeployedHere,
@@ -68,12 +69,9 @@ test.describe('Single neuron simulation', () => {
       const status = results.coordinates.first().getByTestId('scan-config-status');
       await expect(status).toHaveText(/^created$/i);
 
-      const generated = configuration.expect.generated;
-      if (generated) {
-        await expect(results.inputs.locator('[data-file-name]')).toHaveCount(
-          generated.inputs.length
-        );
-      }
+      // Before the run, the coordinate carries the configuration the simulator
+      // was given and has produced nothing.
+      await checkGeneratedFiles(page, configuration);
 
       await expect(results.launch).toContainText(words.launch);
       await results.launch.click();
@@ -87,10 +85,7 @@ test.describe('Single neuron simulation', () => {
       await expect(status).not.toHaveText(/^created$/i);
       await expect(status).toHaveText(/^done$/i, { timeout: RUN_TIMEOUT });
 
-      // This workflow has not been run through end to end yet, so there is no
-      // list of files to hold it to. Fill in `expect.completed` in its fixture
-      // from a real run, as the synaptome build does.
-      await expect(results.outputs.locator('[data-file-name]')).not.toHaveCount(0);
+      await checkCompletedOutput(page, configuration);
     });
   }
 });

@@ -72,7 +72,31 @@
         }
       },
       "expect": {
-        "coordinateCount": 1
+        "coordinateCount": 1,
+        "generated": {
+          "inputs": [
+            "circuit_config.json",
+            "Stimulus 0_spikes.h5",
+            "node_sets.json",
+            "obi_one_coordinate.json",
+            "simulation_config.json"
+          ],
+          "outputs": []
+        },
+        "completed": {
+          "inputs": [
+            "circuit_config.json",
+            "Stimulus 0_spikes.h5",
+            "node_sets.json",
+            "obi_one_coordinate.json",
+            "simulation_config.json"
+          ],
+          "outputs": ["Recording 0.h5", "spikes.h5"],
+          "views": {
+            "Recording 0.h5": ["Time (ms)", "Voltage (mV)"],
+            "spikes.h5": ["PopulationS1nonbarrel_neurons", "spikes"]
+          }
+        }
       }
     }
   ]

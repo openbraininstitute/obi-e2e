@@ -1,3 +1,4 @@
+import { checkCompletedOutput, checkGeneratedFiles } from '@fixtures/check-campaign-output';
 import { pretendNoCredits } from '@fixtures/credits';
 import {
   loadScanConfigFixture,
@@ -12,7 +13,7 @@ import { chooseEntities, openWorkflowsHub, startWorkflow } from '@fixtures/workf
 import { scanConfigEditor, scanConfigResults } from '@locators/scan-config';
 import { morphologyLocations, morphologyViewer } from '@locators/viewer';
 import { lowCredits } from '@locators/workflows';
-import type { Locator, Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
 // A build runs on the launch system, which takes a couple of minutes. The
 // default test timeout is far shorter, so these tests set their own.
@@ -29,19 +30,6 @@ const simpleCase = firstCase(fixture);
 test.skip(!runsOnThisDeployment(fixture), notDeployedHere(fixture));
 
 test.describe.configure({ timeout: RUN_TIMEOUT + 120_000 });
-
-/**
- * Asserts a panel holds exactly these files, in any order. Exactly, so a file
- * the application starts or stops producing fails here rather than passing
- * unnoticed.
- */
-async function expectFiles(panel: Locator, names: string[]): Promise<void> {
-  await expect(panel.locator('[data-file-name]')).toHaveCount(names.length);
-
-  for (const name of names) {
-    await expect(panel.locator(`[data-file-name="${name}"]`)).toBeVisible();
-  }
-}
 
 /** Opens the editor on a chosen ME-model, or says why it could not. */
 async function openEditor(page: Page, workspace: { labId: string; projectId: string }) {
@@ -122,11 +110,7 @@ test.describe('Synaptome build', () => {
 
       // Before the run, the coordinate carries only the configuration obi-one
       // was given, and has produced nothing.
-      const generated = configuration.expect.generated;
-      if (generated) {
-        await expectFiles(results.inputs, generated.inputs);
-        await expectFiles(results.outputs, generated.outputs);
-      }
+      await checkGeneratedFiles(page, configuration);
 
       await expect(results.launch).toContainText(words.launch);
       await results.launch.click();
@@ -142,36 +126,7 @@ test.describe('Synaptome build', () => {
       await expect(status).not.toHaveText(/^created$/i);
       await expect(status).toHaveText(/^done$/i, { timeout: RUN_TIMEOUT });
 
-      const completed = configuration.expect.completed;
-      if (completed) {
-        await expectFiles(results.inputs, completed.inputs);
-        await expectFiles(results.outputs, completed.outputs);
-      }
-
-      // The two outputs are different kinds of thing and the pane beside them
-      // shows each differently: the logs are a stream, the synaptome is an
-      // entity that was registered.
-      await results.file('Task logs').click();
-      await expect(results.logs).toContainText('Task execution completed.');
-      await expect(results.preview.entity.card).toHaveCount(0);
-
-      const built = configuration.expect.built;
-      if (built) {
-        await results.file(built.name).click();
-
-        await expect(results.preview.entity.card).toBeVisible();
-        await expect(results.preview.entity.name).toHaveText(built.name);
-        // It is a registered entity, so it can be downloaded and opened in full.
-        await expect(results.preview.entity.viewDetails).toBeVisible();
-        await expect(results.preview.entity.download).toBeVisible();
-
-        // What the build actually produced, read off its preview.
-        for (const [label, shown] of Object.entries(built.properties)) {
-          await expect(results.preview.entity.properties.filter({ hasText: label })).toContainText(
-            shown
-          );
-        }
-      }
+      await checkCompletedOutput(page, configuration);
     });
   }
 });

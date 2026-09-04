@@ -84,6 +84,9 @@ export function scanConfigResults(page: Page) {
     /** One input or output file, by the name the panel shows. */
     file: (name: string): Locator => page.locator(`[data-file-name="${name}"]`),
 
+    /** The pane showing whichever file is open. */
+    fileView: page.getByTestId('scan-config-file-view'),
+
     /** The task's log stream, shown for the log file. */
     logs: page.getByTestId('scan-config-logs'),
 
