@@ -229,15 +229,16 @@ the mention entities and shows the bare name as written.
 
 ## When something goes wrong
 
-| What you see                             | Why                                                                          |
-| ---------------------------------------- | ---------------------------------------------------------------------------- |
-| Save is greyed out in the designer       | a flow needs at least one action; add step 3 first                           |
-| The flow runs but the card is blank      | the Adaptive Card field got an object, not JSON text — wrap it in `string()` |
-| Only the summary posts, no replies       | the loop input is wrong; it must be `skip(triggerBody()?['cards'], 1)`       |
-| Sections arrive out of order             | Concurrency Control is on for the **Apply to each** — turn it off            |
-| `413` or a rejected request              | the combined payload exceeded the endpoint's limit; see the limits above     |
-| Nothing posts and CI says nothing        | `TEAMS_WEBHOOK_URL` is unset — the script logs that and exits cleanly        |
-| Names show as `<at>Ada</at>` in the card | posted through a legacy webhook rather than a flow                           |
+| What you see                                      | Why                                                                                                                                                                                                                                                                                                |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Save is greyed out in the designer                | a flow needs at least one action; add step 3 first                                                                                                                                                                                                                                                 |
+| The flow runs but the card is blank               | the Adaptive Card field got an object, not JSON text — wrap it in `string()`                                                                                                                                                                                                                       |
+| Only the summary posts, no replies                | the loop input is wrong; it must be `skip(triggerBody()?['cards'], 1)`                                                                                                                                                                                                                             |
+| Sections arrive out of order                      | Concurrency Control is on for the **Apply to each** — turn it off                                                                                                                                                                                                                                  |
+| `413` or a rejected request                       | the combined payload exceeded the endpoint's limit; see the limits above                                                                                                                                                                                                                           |
+| Nothing posts and CI says nothing                 | `TEAMS_WEBHOOK_URL` is unset — the script logs that and exits cleanly                                                                                                                                                                                                                              |
+| The script says it sent, but the channel is empty | The endpoint accepts before the flow runs, so a send is not a message. Read the flow's run history. Most often the layout and the flow disagree: a flow built for `{ "cards": [ … ] }` was handed the single-message shape because `TEAMS_LAYOUT` is unset. The script prints which shape it sent. |
+| Names show as `<at>Ada</at>` in the card          | posted through a legacy webhook rather than a flow                                                                                                                                                                                                                                                 |
 
 ## The other two layouts
 
