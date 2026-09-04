@@ -1,8 +1,7 @@
 #!/usr/bin/env bun
+
 /**
- * Turns Playwright's JSON report into two artefacts used by CI:
- *   - a Markdown summary of failures (for the PR comment / job summary)
- *   - a compact JSON stat block (for the Teams card)
+ * Turns Playwright's results.json into summary.md and summary.json.
  *
  * Usage: bun scripts/ci/summarize-results.ts <results.json> [outDir]
  */
@@ -43,7 +42,6 @@ export type Feature = {
   durationMs: number;
 };
 
-/** A product section with the features under it. */
 export type Section = {
   name: string;
   passed: number;
@@ -65,24 +63,17 @@ export type Summary = {
   browser: string;
   commit: string;
   runUrl: string;
-  /**
-   * Where the full Playwright HTML report can be downloaded. CI uploads it as
-   * an artefact and passes the link here; a local run has none, and the report
-   * is already on the machine that produced it.
-   */
   reportUrl: string;
   trigger: string;
   failures: Failure[];
   totalFailures: number;
   services: ServiceSummary[];
   features: Feature[];
-  /** What the run did with credits, when it got far enough to do anything. */
   credits?: CreditReport;
 };
 
 const FAILED = new Set(['failed', 'timedOut', 'interrupted']);
 
-// Playwright colours its error messages. The Teams card and the PR comment are plain text.
 // oxlint-disable-next-line no-control-regex -- matching the ANSI escape prefix is the point
 const ANSI = /\u001B\[[0-9;]*m/g;
 
@@ -116,7 +107,6 @@ export function detectTrigger(eventName = process.env.GITHUB_EVENT_NAME): string
 
 type Counts = { passed: number; failed: number; flaky: number; skipped: number };
 
-/** Worst outcome wins, so a section shows red when any feature under it is red. */
 export function featureStatus(counts: Counts): 'passed' | 'failed' | 'flaky' | 'skipped' {
   if (counts.failed > 0) return 'failed';
   if (counts.flaky > 0) return 'flaky';
@@ -124,17 +114,12 @@ export function featureStatus(counts: Counts): 'passed' | 'failed' | 'flaky' | '
   return 'passed';
 }
 
-/**
- * Share that passed, ignoring skips. Takes either a feature or the whole
- * summary, since both carry the same three counts.
- */
 export function passRate(counts: { passed: number; failed: number; flaky: number }): string {
   const total = counts.passed + counts.failed + counts.flaky;
   if (total === 0) return '—';
   return `${Math.round((counts.passed / total) * 100)}%`;
 }
 
-/** Rolls features up into their section, keeping the features underneath. */
 export function collectSections(features: Feature[]): Section[] {
   const sections = new Map<string, Section>();
 
@@ -228,6 +213,7 @@ function countTest(testCase: TestCase, feature: Feature): void {
   }
 }
 
+/** One row per scenario folder, with its test counts. */
 export function collectFeatures(suites: Suite[] = [], parents: string[] = []): Feature[] {
   const features = new Map<string, Feature>();
 
@@ -297,19 +283,9 @@ export function buildSummary(
   };
 }
 
-/**
- * Below this a project is treated as empty rather than nearly empty: a run that
- * ends with less than a credit could not have paid for another thing.
- */
 const EXHAUSTED = 1;
 
-/**
- * What the money says about this run, or `null` when it has nothing to add.
- *
- * Two failures look identical in a list of failing tests and are not the same
- * problem at all: an application that is broken, and an application nobody
- * could afford to run. This is what tells them apart.
- */
+/** The credit line for the summary, when there is something to say. */
 export function creditNotice(credits: CreditReport | undefined, failed: number): string | null {
   if (!credits) return null;
   if (credits.problem) return credits.problem;
@@ -378,8 +354,6 @@ export function renderMarkdown(summary: Summary): string {
   if (summary.features.length > 0) {
     lines.push('', `### Features`);
 
-    // `<details>` collapses in the job summary and the pull request comment,
-    // which is the closest markdown gets to the expandable card rows.
     for (const section of collectSections(summary.features)) {
       lines.push(
         '',

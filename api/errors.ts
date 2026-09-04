@@ -1,13 +1,13 @@
+/** Errors an HTTP call can fail with. */
+
 import { TaggedError } from 'better-result';
 
-/** The request never reached the service, or the connection failed. */
 export class NetworkError extends TaggedError('NetworkError')<{
   url: string;
   message: string;
   cause: unknown;
 }> {}
 
-/** The service answered, but not with success. */
 export class HttpError extends TaggedError('HttpError')<{
   url: string;
   status: number;
@@ -15,7 +15,6 @@ export class HttpError extends TaggedError('HttpError')<{
   message: string;
 }> {}
 
-/** The response was not the JSON the caller expected. */
 export class ParseError extends TaggedError('ParseError')<{
   url: string;
   message: string;
@@ -24,7 +23,7 @@ export class ParseError extends TaggedError('ParseError')<{
 
 export type RequestError = NetworkError | HttpError | ParseError;
 
-/** One line, safe to put in a failure message. */
+/** Turns an error into one short line for a test message. */
 export function describe(error: RequestError): string {
   return error.match({
     NetworkError: (e) => `unreachable (${e.message})`,

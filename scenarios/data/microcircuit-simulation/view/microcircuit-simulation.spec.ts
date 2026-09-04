@@ -6,16 +6,10 @@ import { WIDE_VIEWPORT } from '@fixtures/viewport';
 import { dataView } from '@locators/data-view';
 import { entityListing } from '@locators/listing';
 
-// Scenario: scenarios/data/microcircuit-simulation/view/scenario.md
 const SLUG = 'microcircuit-simulation';
 
-/** Every property the panel shows for this type, named as the application names it. */
 const PROPERTIES = ['circuit_name', 'legacy_activity_status', 'creation_date', 'lifecycle_status'];
 
-// The page carries nothing of its own yet, so reaching it is all there is
-// to check. A section added later belongs in the list above.
-
-/** Every part of the full page. A part that disappears fails here. */
 const SECTIONS: string[] = [];
 
 test.use(WIDE_VIEWPORT);
@@ -25,8 +19,6 @@ test.describe('Microcircuit details', () => {
     const listing = entityListing(page);
 
     await page.goto(routes.dataEntity(workspace.labId, workspace.projectId, SLUG));
-    // The species choice is remembered for the user, so one left behind by an
-    // earlier test would empty this listing and leave no row to open.
     await showAllSpecies(page);
     await expect(listing.cells.first()).toBeVisible();
 
@@ -45,7 +37,6 @@ test.describe('Microcircuit details', () => {
   });
 
   test('opens the full page', { tag: PRIVATE_READONLY }, async ({ page }) => {
-    // The page draws its own viewers, which take a while under load.
     test.slow();
     const view = dataView(page);
 
@@ -53,8 +44,6 @@ test.describe('Microcircuit details', () => {
     await expect(page).toHaveURL(new RegExp(`/data/view/${SLUG}/[0-9a-f-]+/`));
 
     for (const name of SECTIONS) {
-      // First match: a few of these name a control the page repeats rather
-      // than a section it shows once.
       await expect(view.section(name).first()).toBeVisible();
     }
   });

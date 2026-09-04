@@ -1,11 +1,9 @@
+/** Signs a user in through Keycloak. */
+
 import type { BrowserContext, Page } from '@playwright/test';
 
 import { authStatePath, credentials, type Role, tokenPath } from './env';
 
-// The Keycloak theme hides `#kc-form-wrapper` and offers only social providers,
-// so the username and password fields render with a zero-size box. Playwright
-// refuses to type into them, and submitting the form directly is the only way
-// in for a credentials-based test account.
 const LOGIN_FORM = '#kc-form-login';
 const SUBMIT_BUTTON = '#kc-login';
 
@@ -27,8 +25,6 @@ async function submitCredentials(page: Page, role: Role): Promise<void> {
       usernameInput.value = user;
       passwordInput.value = secret;
 
-      // requestSubmit runs validation and sends the submit button's name and
-      // value, which a plain form.submit() would drop.
       const submitter = form.querySelector<HTMLInputElement>(submitSelector);
       if (submitter && typeof form.requestSubmit === 'function') {
         form.requestSubmit(submitter);
@@ -40,11 +36,6 @@ async function submitCredentials(page: Page, role: Role): Promise<void> {
   );
 }
 
-/**
- * Keycloak re-renders the login page with an error rather than redirecting when
- * credentials are rejected. Without this the run would instead time out waiting
- * for a redirect that is never coming.
- */
 async function failOnRejectedCredentials(page: Page, role: Role): Promise<void> {
   const error = page.locator('#input-error, .kcInputErrorMessageClass, .alert-error');
   if ((await error.count()) === 0) return;
@@ -55,7 +46,6 @@ async function failOnRejectedCredentials(page: Page, role: Role): Promise<void> 
   );
 }
 
-/** Clears required actions such as accepting terms before the app redirect. */
 async function clearRequiredActions(page: Page): Promise<void> {
   while (page.url().includes('/login-actions/')) {
     const current = page.url();
@@ -66,7 +56,6 @@ async function clearRequiredActions(page: Page): Promise<void> {
   }
 }
 
-/** Reads the Keycloak access token that API helpers use to arrange test data. */
 async function readAccessToken(page: Page, role: Role): Promise<string> {
   const response = await page.request.get('/api/auth/session');
   const session = (await response.json()) as { accessToken?: string };
@@ -80,10 +69,7 @@ async function readAccessToken(page: Page, role: Role): Promise<string> {
   return session.accessToken;
 }
 
-/**
- * Signs a role in and writes its storage state and access token to the run
- * directory. Runs once per role per run; every spec reuses the result.
- */
+/** Signs the user in, then saves its session and access token for the run. */
 export async function signIn(page: Page, context: BrowserContext, role: Role): Promise<void> {
   await page.goto('/app/log-in', { waitUntil: 'domcontentloaded' });
   await page.waitForURL('**/auth/realms/**');
@@ -95,9 +81,6 @@ export async function signIn(page: Page, context: BrowserContext, role: Role): P
   await clearRequiredActions(page);
   await page.waitForURL('**/app/**');
 
-  // Bun.write creates the run directory on the way, so nothing has to mkdir
-  // first. This needs `bun --bun`, which every script in package.json uses;
-  // plain `bunx playwright` would run these workers under node instead.
   await Bun.write(authStatePath(role), JSON.stringify(await context.storageState()));
   await Bun.write(tokenPath(role), await readAccessToken(page, role));
 }

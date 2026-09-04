@@ -7,9 +7,6 @@ import { expect, test } from '@fixtures/test';
 import { WIDE_VIEWPORT } from '@fixtures/viewport';
 import { entityListing } from '@locators/listing';
 
-// Scenario: scenarios/data/circuit/scenario.md
-// Full column names, units included, because several share a prefix:
-// "Temperature [°C]" and "Temperature dependent" are different columns.
 const COLUMNS = [
   'Name',
   'Subcircuits',
@@ -23,8 +20,6 @@ const COLUMNS = [
   'Build category',
 ];
 
-// The columns the chooser shows as on, and the ones it shows as off. Listing
-// both locks the table's shape: a column added to either side fails the guard.
 const SHOWN_COLUMNS = [
   'Name',
   'Subcircuits',
@@ -99,7 +94,6 @@ test.describe('Circuit listing', () => {
       await expect(listing.columnToggle(column)).not.toBeChecked();
     }
 
-    // Anything added to this table fails here rather than passing unnoticed.
     await expect(listing.columnToggles).toHaveCount(toggleCount(SHOWN_COLUMNS, HIDDEN_COLUMNS));
   });
 
@@ -109,9 +103,6 @@ test.describe('Circuit listing', () => {
     await listing.columns.click();
     await expect(listing.columnsMenu).toBeVisible();
 
-    // Free the width first. A wide table renders only the columns that fit,
-    // so a newly added one can land outside the window and look like it never
-    // arrived. Two columns are enough to keep the grid alive.
     for (const column of SHOWN_COLUMNS.slice(2)) {
       await listing.columnToggle(column).click();
     }
@@ -119,8 +110,6 @@ test.describe('Circuit listing', () => {
     for (const column of HIDDEN_COLUMNS) {
       const toggle = listing.columnToggle(column);
 
-      // Click and assert, rather than check(), because the chooser re-renders
-      // as the grid rebuilds and check() reads the state back too early.
       await toggle.click();
       await expect(toggle).toBeChecked();
       await expect(listing.columnHeader(column)).toBeVisible();
@@ -134,7 +123,6 @@ test.describe('Circuit listing', () => {
     const listing = entityListing(page);
 
     await expect(listing.resultCount).toBeVisible();
-    // Header rows carry the columnheader role, so a gridcell means real data.
     await expect(listing.cells.first()).toBeVisible();
   });
 
@@ -154,7 +142,6 @@ test.describe('Circuit listing', () => {
     test.slow();
     await expect(entityListing(page).table).toBeVisible();
 
-    // One step per column, so a failure names the filter that broke.
     for (const column of FILTERS) {
       await test.step(column, () => checkFilter(page, column));
     }
@@ -168,8 +155,6 @@ test.describe('Circuit listing', () => {
       const subcircuits = listing.columnHeader('Subcircuits');
       const lifecycle = listing.columnHeader('Lifecycle status');
 
-      // Circuits nest, so the default view carries a Subcircuits column. The
-      // other view drops it and shows the lifecycle of each circuit instead.
       await expect(subcircuits).toBeVisible();
 
       await listing.viewToggle.click();

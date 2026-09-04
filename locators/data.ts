@@ -1,11 +1,9 @@
+/** The Data page: scope tabs, sections, and type links. */
+
 import type { Page } from '@playwright/test';
 
 export type DataSection = 'experimental' | 'models' | 'simulations';
 
-/**
- * The Data page frame: scope, section tabs and the data type list. Shared
- * because every data scenario starts by reaching a type through it.
- */
 export function dataPage(page: Page) {
   const typeList = page.getByTestId('data-type-items-container');
 
@@ -19,12 +17,7 @@ export function dataPage(page: Page) {
     sectionTabs: page.getByTestId('data-type-tabs-container'),
     section: (name: DataSection) => page.getByTestId(`data-type-tab-${name}`),
     typeList,
-    /** The entity counter carries the entity's snake_case name. */
     typeCounter: (entity: string) => page.getByTestId(`entity-link-counter-${entity}`),
-    /**
-     * One data type, found by its listing slug. Labels are not unique on their
-     * own: "Synaptome" is a prefix of "Synaptome (legacy)".
-     */
     typeLink: (slug: string) =>
       page.getByTestId(`entity-link-counter-${slug.replaceAll('-', '_')}`),
     dataType: (name: string | RegExp) => typeList.getByRole('button', { name }),

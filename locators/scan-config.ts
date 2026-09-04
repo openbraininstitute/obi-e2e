@@ -1,13 +1,9 @@
 /**
- * The scan-configuration editor, the form behind every
- * `/workflows/{activity}/configure/{type}` route.
+ * The scan config editor, the form behind /workflows/{activity}/configure/{type}.
  *
- * The editor is not hand-written: it renders whatever obi-one's `openapi.json`
- * describes, so every label is product data that a schema change can rewrite.
- * Each handle here is therefore a test id keyed on the schema's own property
- * key or type name, which is stable in a way the visible text is not. The ids
- * are guarded by a unit test in core-web-app
- * (`src/__tests__/scan-config/block-field-testids.test.tsx`).
+ * The editor is generated from obi-one's schema, so its labels can change. It
+ * marks every part it renders with the ui_element it came from, so these
+ * locators use that attribute, then find the control inside by role and name.
  */
 
 import type { Locator, Page } from '@playwright/test';
@@ -97,7 +93,6 @@ export function scanConfigEditor(page: Page) {
       '[data-scan-config-block-element-item="block_dictionary_item"] > span'
     ),
 
-    /** One entry of a block dictionary, in the left-hand list. */
     entry: (rootElement: string, name: string): Locator =>
       page
         .getByTestId(`scan-config-entry-${rootElement}-${name}`)
@@ -137,7 +132,6 @@ export function scanConfigResults(page: Page) {
     .first();
 
   return {
-    /** One card per coordinate in the campaign grid. */
     coordinates: page.locator('[data-testid^="scan-config-coordinate-"]'),
 
     status: results.getByRole('status'),
@@ -147,22 +141,16 @@ export function scanConfigResults(page: Page) {
     costConfirm: page.getByRole('dialog').getByRole('button', { name: /^(Launch|Confirm|Yes)/ }),
     costCancel: page.getByRole('dialog').getByRole('button', { name: /^(Cancel|No)/ }),
 
-    /** The files a coordinate was generated from. */
     inputs: page.getByTestId('scan-config-inputs'),
-
-    /** The files a run produced. */
     outputs: page.getByTestId('scan-config-outputs'),
 
-    /** One input or output file, by the name the panel shows. */
     file: (name: string): Locator => page.locator(`[data-file-name="${name}"]`),
 
     fileView: view,
 
     logs: view,
 
-    /** What the right-hand pane shows for the file that is open. */
     preview: {
-      /** A registered entity: its name, what it is, and what can be done with it. */
       entity: {
         card: mini,
         name: mini.getByRole('heading', { level: 1 }),
@@ -177,10 +165,6 @@ export function scanConfigResults(page: Page) {
   };
 }
 
-/**
- * A field that picks an entity opens the same browse table in a modal, rather
- * than a dropdown, because choosing a model is choosing from a catalogue.
- */
 export function scanConfigModelPicker(page: Page) {
   const overlay = page.locator('#scan-config-model-selection-overlay');
 
@@ -193,7 +177,7 @@ export function scanConfigModelPicker(page: Page) {
   };
 }
 
-/** One field inside a block. A property key is only unique within its block. */
+/** A field inside a block, found by its property key. */
 export function scanConfigField(block: Locator, key: string): Locator {
   return block
     .getByTestId(`scan-config-field-${key}`)
@@ -206,24 +190,15 @@ function fieldPattern(key: string): RegExp {
   return new RegExp(`^${parts.join('[^a-z0-9]*')}`, 'i');
 }
 
-/**
- * The control a field renders: its text box, checkbox, select or popover
- * trigger. Which of those it is follows from the field's `ui_element`.
- */
 export function scanConfigControl(field: Locator): Locator {
   return field.getByTestId('scan-config-control').or(field.locator(RENDERED_PART)).last();
 }
 
-/**
- * One value of a sweep. A field holds one of these when it takes a single
- * number, and one per value once it scans over several.
- */
 export function scanConfigSweepValues(field: Locator): Locator {
   const marked = field.getByTestId('scan-config-sweep-value');
   return marked.or(field.getByRole('spinbutton'));
 }
 
-/** The controls that turn one value into a list of them, and back. */
 export function scanConfigSweep(field: Locator) {
   return {
     expand: field

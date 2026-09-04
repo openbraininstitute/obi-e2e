@@ -1,6 +1,7 @@
+/** Workflows hub, workspace nav, and the entity browse step. */
+
 import type { Locator, Page } from '@playwright/test';
 
-/** The notice the application shows when a project has no credits to spend. */
 export function lowCredits(page: Page) {
   const notice = page.getByRole('alert').filter({ hasText: /credit/i });
 
@@ -10,7 +11,6 @@ export function lowCredits(page: Page) {
   };
 }
 
-/** The workspace navigation, above every page inside a project. */
 export function workspaceNav(page: Page) {
   return {
     workflows: page.getByRole('link', { name: /^Workflows/ }),
@@ -44,21 +44,10 @@ export function workflowsHub(page: Page) {
   };
 }
 
-/**
- * The `/new` step, where a workflow collects the entities it starts from. The
- * table itself is the shared entity listing, so use {@link entityListing} for
- * its rows, search and result count.
- */
 export function workflowBrowse(page: Page) {
   return {
-    /** Public entities or the project's own. The browse step opens on public. */
     scope: (name: 'public' | 'project'): Locator => page.getByTestId(`scope-selector-tab-${name}`),
 
-    /**
-     * A workflow that scopes its tables asks for one of these first. The test id
-     * carries the dataset id, which differs per environment, so the card is
-     * narrowed to prerequisites and then found by the name the fixture uses.
-     */
     prerequisite: (name: string): Locator =>
       page.getByRole('button').filter({ hasText: name }).first(),
 
@@ -66,7 +55,6 @@ export function workflowBrowse(page: Page) {
       .getByRole('button', { name: 'Use model' })
       .or(page.getByRole('link', { name: 'Use model' })),
 
-    /** Several entities, confirmed from the table footer. */
     useSelection: page.getByTestId('workflow-browse-use-selection').getByRole('button', {
       name: /^Use selection/,
     }),

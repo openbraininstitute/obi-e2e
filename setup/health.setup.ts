@@ -1,15 +1,11 @@
+/** Checks the backend services before anything else runs. */
+
 import { checkAllServices, formatStatusTable } from '@api/health';
 import { services } from '@api/services';
 import { resetCreditReport } from '@fixtures/credit-report';
 import { expect, test as setup } from '@playwright/test';
 
-/**
- * Runs before every other project. A service that is down produces one clear
- * failure here instead of a suite full of unexplained test failures.
- */
 setup('backend services are healthy', async () => {
-  // This project runs before every other one, so it is where a run drops what
-  // the last run left behind.
   resetCreditReport();
 
   const statuses = await checkAllServices();
@@ -39,8 +35,6 @@ setup('backend services are healthy', async () => {
     })),
   ];
 
-  // Written before the assertion so a down service still reaches the Teams
-  // card. Bun.write creates test-results on the way.
   await Bun.write('test-results/services.json', `${JSON.stringify({ services: rows }, null, 2)}\n`);
 
   expect(

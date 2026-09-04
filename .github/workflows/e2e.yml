@@ -2,7 +2,6 @@ name: E2E
 
 on:
   schedule:
-    # 07:00 UTC daily — the full suite against staging and production both.
     - cron: '0 7 * * *'
   push:
     branches: [main]
@@ -19,7 +18,6 @@ on:
         type: string
         default: ''
   repository_dispatch:
-    # Sent by core-web-app when the `e2e` label is added to a PR.
     types: [e2e-preview]
 
 concurrency:
@@ -31,7 +29,6 @@ permissions:
 
 jobs:
   matrix:
-    # Builds the list of runs for this trigger, so the run job stays a single definition.
     runs-on: ubuntu-latest
     outputs:
       runs: ${{ steps.plan.outputs.runs }}
@@ -43,7 +40,6 @@ jobs:
           INPUT_GREP: ${{ inputs.grep }}
           PREVIEW_URL: ${{ github.event.client_payload.preview_url }}
         run: |
-          # jq builds the JSON so values containing spaces or quotes stay intact.
           case "$EVENT" in
             schedule)
               runs=$(jq -cn '[{name:"staging",environment:"staging",grep:""},
@@ -114,12 +110,8 @@ jobs:
       - name: Run tests
         id: tests
         env:
-          # Passed as an environment variable so a filter containing spaces is not
-          # re-split by the shell.
           E2E_GREP: ${{ matrix.run.grep }}
         run: |
-          # bun run test is `bun --bun playwright test`, which runs the workers
-          # under Bun so Bun APIs are available in test code.
           if [[ -n "$E2E_GREP" ]]; then
             bun run test --grep "$E2E_GREP"
           else
@@ -134,8 +126,6 @@ jobs:
         if: always()
         run: cat test-results/summary.md >> "$GITHUB_STEP_SUMMARY"
 
-      # Named, because the Teams card links straight to this download: the
-      # HTML report is what someone actually wants to open when a run is red.
       - id: report
         uses: actions/upload-artifact@v4
         if: always()
@@ -161,7 +151,6 @@ jobs:
         run: bun scripts/ci/teams-card.ts test-results/summary.json
 
   report-to-pr:
-    # Writes the result back onto the core-web-app PR that asked for this run.
     needs: run
     if: always() && github.event_name == 'repository_dispatch'
     runs-on: ubuntu-latest

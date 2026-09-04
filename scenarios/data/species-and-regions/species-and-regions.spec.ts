@@ -7,7 +7,6 @@ import { atlas, SPECIES_WITH_ATLAS, SPECIES_WITHOUT_ATLAS } from '@locators/atla
 import { dataPage } from '@locators/data';
 import { entityListing } from '@locators/listing';
 
-// Scenario: scenarios/data/species-and-regions/scenario.md
 test.use(WIDE_VIEWPORT);
 
 test.describe('Species and brain regions', () => {
@@ -28,9 +27,6 @@ test.describe('Species and brain regions', () => {
         await chooseSpecies(page, species);
 
         await expect(controls.viewer).toBeVisible();
-        // A real hierarchy to walk, rather than a single placeholder region.
-        // Canvas count is not the signal: the species cards leave their own
-        // previews behind, so the 3D area holds canvases either way.
         await expect.poll(() => controls.regionNodes.count()).toBeGreaterThan(1);
         await expect.poll(() => counter.innerText()).not.toBe(before);
       });
@@ -42,7 +38,6 @@ test.describe('Species and brain regions', () => {
 
         await chooseSpecies(page, species);
 
-        // The area is still laid out; there is simply nothing to navigate.
         await expect(controls.viewer).toBeVisible();
         await expect.poll(() => controls.regionNodes.count()).toBe(1);
       });
@@ -54,7 +49,6 @@ test.describe('Species and brain regions', () => {
       await expect(controls.speciesCards).toHaveCount(9);
 
       await controls.speciesSelector.click();
-      // Nine species plus the "All species" entry.
       await expect(page.getByRole('option')).toHaveCount(11);
     });
   });
@@ -84,8 +78,6 @@ test.describe('Species and brain regions', () => {
       await expect(listing.cells.first()).toBeVisible();
       const before = await listing.resultCount.innerText();
 
-      // Forced: the region sits under the data type panel, which covers it
-      // without hiding it. A person clicks it fine; only automation notices.
       await controls.region('Cerebellum').click({ force: true });
 
       await expect.poll(() => listing.resultCount.innerText()).not.toBe(before);

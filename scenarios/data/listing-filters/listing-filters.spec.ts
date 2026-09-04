@@ -4,14 +4,6 @@ import { PRIVATE_READONLY } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { entityListing } from '@locators/listing';
 
-/**
- * Scenario: scenarios/data/listing-filters/scenario.md
- *
- * The funnel beside each column header is not covered. Clicking it marks the
- * column as filtered but opens no panel under automation, so there is nothing
- * to choose a value from. Reported rather than worked around, because a test
- * that clicked it and asserted nothing would only look like coverage.
- */
 test.describe('Filtering a listing', () => {
   test.beforeEach(async ({ page, workspace }) => {
     await page.goto(
@@ -56,7 +48,6 @@ test.describe('Filtering a listing', () => {
     await listing.filters.click();
 
     await expect(listing.advancedFilters).toBeVisible();
-    // Each filter is a menu item whose name repeats its own description.
     for (const filter of ['Generation type', 'Strain', 'Subject name']) {
       await expect(
         listing.advancedFilters.getByRole('menuitem', { name: new RegExp(`^${filter}`) })

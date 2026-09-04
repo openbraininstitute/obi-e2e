@@ -7,9 +7,6 @@ import { expect, test } from '@fixtures/test';
 import { WIDE_VIEWPORT } from '@fixtures/viewport';
 import { entityListing } from '@locators/listing';
 
-// Scenario: scenarios/data/whole-brain-circuit-simulation/scenario.md
-// Full column names, units included, because several share a prefix:
-// "Temperature [°C]" and "Temperature dependent" are different columns.
 const COLUMNS = [
   'Name',
   'Description',
@@ -20,8 +17,6 @@ const COLUMNS = [
   'Lifecycle status',
 ];
 
-// The columns the chooser shows as on, and the ones it shows as off. Listing
-// both locks the table's shape: a column added to either side fails the guard.
 const SHOWN_COLUMNS = [
   'Name',
   'Description',
@@ -71,15 +66,12 @@ test.describe('Whole brain circuit listing', () => {
       await expect(listing.columnToggle(column)).not.toBeChecked();
     }
 
-    // Anything added to this table fails here rather than passing unnoticed.
     await expect(listing.columnToggles).toHaveCount(toggleCount(SHOWN_COLUMNS, HIDDEN_COLUMNS));
   });
 
   test('shows an empty listing', { tag: PRIVATE_READONLY }, async ({ page }) => {
     const listing = entityListing(page);
 
-    // Nothing of this type exists yet. The listing still has to build, so this
-    // catches a broken page rather than an empty one.
     await expect(listing.resultCount).toHaveText(/^0 results/);
     await expect(listing.toolbar).toBeVisible();
   });
@@ -88,7 +80,6 @@ test.describe('Whole brain circuit listing', () => {
     test.slow();
     await expect(entityListing(page).table).toBeVisible();
 
-    // One step per column, so a failure names the filter that broke.
     for (const column of FILTERS) {
       await test.step(column, () => checkFilter(page, column));
     }

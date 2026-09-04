@@ -1,7 +1,8 @@
 #!/usr/bin/env bun
+
 /**
  * Posts the run result to Microsoft Teams as an Adaptive Card.
- * Reads `summary.json` produced by summarize-results.ts.
+ * It reads the summary.json that summarize-results.ts writes.
  *
  * Usage: TEAMS_WEBHOOK_URL=... bun scripts/ci/teams-card.ts test-results/summary.json
  */
@@ -125,9 +126,7 @@ function cell(
     color?: TextColor;
     subtle?: boolean;
     style?: ContainerStyle;
-    /** Second, quieter line. Used to say why an endpoint is down or skipped. */
     note?: string;
-    /** Makes the cell clickable. Applied to every cell so the row responds. */
     selectAction?: unknown;
   } = {}
 ) {
@@ -181,19 +180,8 @@ function fact(title: string, value: string) {
 
 const FEATURE_COLUMNS = [3, 2, 2, 1, 2];
 
-/**
- * Expand and collapse affordance. Plain glyphs on purpose: Teams renders images
- * only from a public HTTPS URL, rejects SVG and redirects, and ignores base64
- * data URIs on desktop and web. A glyph costs nothing and always draws.
- */
 const CHEVRON = { collapsed: '▸', expanded: '▾' } as const;
 
-/**
- * Card text comes from test titles, service errors and scenario names, none of
- * which have a bound. One long string could push a message past the payload
- * limit and get the whole post rejected, so every variable string is clamped
- * before it reaches a cell.
- */
 function clamp(value: string, max: number): string {
   return value.length <= max ? value : `${value.slice(0, max - 1)}…`;
 }
@@ -210,13 +198,6 @@ const MAX = {
   baseUrl: 120,
 } as const;
 
-/**
- * A table row cannot be hidden: `TableRow` has no `id` or `isVisible`. A whole
- * `Table` can. So each section becomes a one-row table plus a hidden table of
- * its features, all sharing the same column widths so they line up as one grid.
- * Clicking any cell of the section row toggles its features and swaps the
- * chevron, using `Action.ToggleVisibility`, which needs no server round trip.
- */
 function featureTables(sections: Section[], expandable: boolean): unknown[] {
   const elements: unknown[] = [
     table(
@@ -307,21 +288,6 @@ function featureTables(sections: Section[], expandable: boolean): unknown[] {
   return elements;
 }
 
-/**
- * The run's outcome as a donut, on the summary card only.
- *
- * `Chart.Donut` is a Teams extension rather than part of the Adaptive Cards
- * schema, so a host that cannot draw it — Teams mobile, Outlook, an older
- * client — is told to drop the element outright. The same counts sit in the
- * FactSet above it, so nothing is lost, and dropping beats rendering a hole.
- *
- * All four statuses are always drawn, including the ones at zero. The legend is
- * then the same from run to run, which is what makes two runs comparable at a
- * glance, and a run with no failures says so outright rather than leaving it to
- * be inferred from an entry that is not there.
- *
- * A run that produced no tests at all is the one case with nothing to draw.
- */
 function outcomeChart(summary: Summary): unknown | null {
   const slices = [
     { legend: 'Passed', value: summary.passed, color: 'good' },
@@ -335,28 +301,15 @@ function outcomeChart(summary: Summary): unknown | null {
   return {
     type: 'Chart.Donut',
     title: 'Tests',
-    // Standard Adaptive Cards fallback, understood even where the chart is not.
     fallback: 'drop',
     data: slices,
   };
 }
 
-/**
- * Where the budget went, as one stacked bar.
- *
- * The three parts add up to exactly what the project was given, and each is a
- * different thing that can happen to a credit: the run consumed it, it went
- * back to the lab, or it did neither and is now gone with the project. All
- * three are drawn even at zero, so the bar reads the same way every run and
- * "nothing was stranded" is stated rather than inferred.
- */
 function creditChart(credits: CreditReport | undefined): unknown | null {
   if (!credits || credits.assigned === undefined || credits.remaining === undefined) return null;
 
   const spent = credits.spent ?? credits.assigned - credits.remaining;
-  // A teardown that never finished returned nothing, and what it left in the
-  // project went with it. `reversed` covers a report written before the amount
-  // itself was recorded.
   const returned = credits.returned ?? (credits.reversed === 'ok' ? credits.remaining : 0);
   const stranded = Math.round((credits.remaining - returned) * 100) / 100;
 
@@ -378,18 +331,6 @@ function creditChart(credits: CreditReport | undefined): unknown | null {
   };
 }
 
-/**
- * People to pull into the channel when the run could not be paid for.
- *
- * Nobody watches a card that says a run failed for want of credits; a mention
- * reaches them. Read from `TEAMS_ALERT_MENTIONS` as `Name <id>`, comma
- * separated, where the id is the person's Teams sign-in address:
- *
- *   TEAMS_ALERT_MENTIONS="Ada Lovelace <ada@example.org>, Alan Turing <alan@example.org>"
- *
- * A mention only renders when the webhook is a Power Automate flow posting the
- * card; a plain incoming webhook drops it and shows the name as written.
- */
 export type Mention = { name: string; id: string };
 
 export function parseMentions(raw = process.env.TEAMS_ALERT_MENTIONS): Mention[] {
@@ -405,7 +346,6 @@ export function parseMentions(raw = process.env.TEAMS_ALERT_MENTIONS): Mention[]
     );
 }
 
-/** The `<at>` tags Teams swaps for real mentions, paired with their entities. */
 function mentionBlock(mentions: Mention[]): { text: string; entities: unknown[] } {
   return {
     text: mentions.map((person) => `<at>${person.name}</at>`).join(' '),
@@ -417,7 +357,6 @@ function mentionBlock(mentions: Mention[]): { text: string; entities: unknown[] 
   };
 }
 
-/** Wraps card content in the envelope the Teams webhook expects. */
 function message(body: unknown[], runUrl: string) {
   return {
     type: 'message',
@@ -441,10 +380,6 @@ function message(body: unknown[], runUrl: string) {
 
 export type Post = { label: string; message: ReturnType<typeof message>; bytes: number };
 
-/**
- * The head of the run: outcome, counts and the service table. Degrades the same
- * way the single card does, so a run with many failing services still posts.
- */
 function rootPost(summary: Summary): Post {
   const { card, bytes } = buildCardWithinLimit({ ...summary, features: [] });
   return { label: 'summary', message: card, bytes };
@@ -476,12 +411,6 @@ function sectionBody(section: Section, features: Feature[], part: string): unkno
   ];
 }
 
-/**
- * Splits a section's features into groups that each fit the payload limit.
- * Features are added one at a time and the card measured, so the split follows
- * the real byte count rather than a guessed row count. At least one feature per
- * group, so an oversized single feature still gets posted.
- */
 function chunkFeatures(section: Section, runUrl: string): Feature[][] {
   const chunks: Feature[][] = [];
   let current: Feature[] = [];
@@ -516,11 +445,6 @@ function sectionPosts(section: Section, runUrl: string): Post[] {
   });
 }
 
-/**
- * The run as a sequence of posts: the summary and services first, then one per
- * section. The webhook answers 202 with an empty body and no message id, so
- * these cannot be threaded from here; each is its own channel message.
- */
 export function buildPosts(summary: Summary): Post[] {
   const sections = collectSections(summary.features ?? []);
   return [
@@ -529,21 +453,12 @@ export function buildPosts(summary: Summary): Post[] {
   ];
 }
 
-/**
- * All the cards in one request, for a flow that posts the first and replies
- * with the rest. Each entry is the bare Adaptive Card, which is what the
- * "Post card in a chat or channel" action expects.
- */
 export function buildThreadPayload(summary: Summary): { cards: unknown[] } {
   return {
     cards: buildPosts(summary).map((item) => item.message.attachments[0]?.content),
   };
 }
 
-/**
- * The largest card that still fits Teams' payload limit. Detail is dropped a
- * level at a time rather than letting the post be rejected.
- */
 export function buildCardWithinLimit(summary: Summary): {
   card: ReturnType<typeof buildCard>;
   detail: Detail;
@@ -561,14 +476,8 @@ export function buildCardWithinLimit(summary: Summary): {
   return last;
 }
 
-/**
- * Teams rejects a message whose payload exceeds this, card JSON included. The
- * feature tables grow with every scenario, so the card is trimmed to fit rather
- * than being refused outright.
- */
 export const TEAMS_PAYLOAD_LIMIT = 25_000;
 
-/** How much of the card to draw. Each level is smaller than the one before. */
 export type Detail = 'full' | 'sections' | 'summary';
 
 export function buildCard(summary: Summary, detail: Detail = 'full', mentions = parseMentions()) {
@@ -576,8 +485,6 @@ export function buildCard(summary: Summary, detail: Detail = 'full', mentions = 
   const services = detail === 'summary' ? [] : (summary.services ?? []);
   const features = detail === 'summary' ? [] : (summary.features ?? []);
 
-  // A run nobody could pay for is not a run that found something, so this sits
-  // above the counts rather than among the failures.
   const notice = creditNotice(summary.credits, summary.failed);
   const alert = notice && summary.credits?.problem ? mentionBlock(mentions) : null;
 
@@ -755,8 +662,6 @@ export function buildCard(summary: Summary, detail: Detail = 'full', mentions = 
             ...(summary.runUrl
               ? [{ type: 'Action.OpenUrl', title: 'Open the run', url: summary.runUrl }]
               : []),
-            // The HTML report is the thing someone actually wants: every test,
-            // its trace and its screenshots, openable on their own machine.
             ...(summary.reportUrl
               ? [
                   {
@@ -773,15 +678,6 @@ export function buildCard(summary: Summary, detail: Detail = 'full', mentions = 
   };
 }
 
-/**
- * What was sent, and the fact that sending is not posting.
- *
- * A Power Automate endpoint answers as soon as it has the request, before the
- * flow behind it has done anything, so a send that succeeded is not a message
- * in the channel. Naming the shape matters too: a flow written for one layout
- * quietly posts nothing when it is handed the other, and the payload is the
- * only way to tell the two apart from here.
- */
 function report(what: string, shape: string): void {
   console.log(`${what}\n  shape: ${shape}`);
   console.log(
@@ -816,8 +712,6 @@ async function post(): Promise<void> {
 
   const summary = (await Bun.file(summaryPath).json()) as Summary;
 
-  // `thread` sends every card in one request. The flow behind the webhook posts
-  // the first and replies with the rest, which is the only way to get a thread.
   if (process.env.TEAMS_LAYOUT === 'thread') {
     const payload = buildThreadPayload(summary);
     if (!(await send(webhook, payload))) process.exit(1);
@@ -828,8 +722,6 @@ async function post(): Promise<void> {
     return;
   }
 
-  // `split` posts the summary first, then one message per section. The webhook
-  // cannot thread, so these arrive as separate channel messages.
   if (process.env.TEAMS_LAYOUT === 'split') {
     const posts = buildPosts(summary);
 
@@ -839,8 +731,6 @@ async function post(): Promise<void> {
       }
       console.log(`Sent ${index + 1}/${posts.length}: ${item.label} (${item.bytes} bytes).`);
 
-      // The webhook answers 202 before the message is created, so ordering is
-      // not guaranteed. A short gap makes it far more likely to hold.
       if (index < posts.length - 1) await Bun.sleep(1200);
     }
 
@@ -867,8 +757,6 @@ async function post(): Promise<void> {
   );
 }
 
-// Only post when run as a script. Importing this file for `buildCard` must not
-// send anything to the channel.
 if (import.meta.main) {
   await post();
 }

@@ -3,14 +3,10 @@ import { PRIVATE_READONLY } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { dataPage } from '@locators/data';
 
-// Scenario: scenarios/data-page/scenario.md
 test.describe('Data page', () => {
   test.beforeEach(async ({ page, workspace }) => {
     await page.goto(routes.data(workspace.labId, workspace.projectId));
 
-    // The page rewrites its own URL to add the scope shortly after loading, and
-    // the counters only render once its data arrives. Interacting before both
-    // have happened loses the interaction.
     await page.waitForURL(/[?&]s=/);
     await expect(dataPage(page).typeCounter('cell_morphology')).toBeVisible();
   });
@@ -30,8 +26,6 @@ test.describe('Data page', () => {
       }
 
       await expect(data.dataType(/^Morphology/)).toBeVisible();
-      // The counter reads "6225 of 6225". Assert it carries a number rather than
-      // a fixed one, because staging data changes.
       await expect(data.typeCounter('cell_morphology')).toContainText(/\d/);
     }
   );

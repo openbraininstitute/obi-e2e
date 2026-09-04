@@ -1,3 +1,5 @@
+/** Client for the virtual lab manager: labs, projects and credits. */
+
 import { virtualLabApiUrl } from '@fixtures/env';
 import { Result } from 'better-result';
 
@@ -7,9 +9,10 @@ import { requestJson } from './http';
 export type Lab = { id: string; name: string; created_at?: string };
 export type Project = { id: string; name: string; created_at?: string };
 
-/** A virtual lab may hold at most this many projects. */
+/** How many projects one lab can hold. */
 export const PROJECT_LIMIT = 40;
 
+/** Calls the virtual lab manager as the user the token belongs to. */
 export class VirtualLabApi {
   constructor(
     private readonly token: string,
@@ -27,15 +30,12 @@ export class VirtualLabApi {
     });
 
     if (Result.isError(result)) {
-      // Callers are test setup and teardown, where a failure should stop the
-      // run loudly rather than be handled.
       throw new Error(`${init.method ?? 'GET'} ${path}: ${describe(result.error as RequestError)}`);
     }
 
     return result.value;
   }
 
-  /** Unwraps the `{ data: ... }` envelope the service returns. */
   private async list<T>(path: string): Promise<T[]> {
     const payload = await this.call<{ data?: unknown }>(path);
     const data = payload.data;
@@ -90,11 +90,6 @@ export class VirtualLabApi {
     return this.call(`/virtual-labs/${encodeURIComponent(labId)}`, { method: 'DELETE' });
   }
 
-  /**
-   * Credits, as the accounting service reports them: a decimal string, because
-   * money does not survive a float. Read back as a number for arithmetic the
-   * run only ever does at two decimal places.
-   */
   private static amount(value: unknown, at: string): number {
     const parsed = Number(value);
     if (!Number.isFinite(parsed)) {
@@ -103,7 +98,6 @@ export class VirtualLabApi {
     return parsed;
   }
 
-  /** What the lab itself holds, before anything is handed to a project. */
   async labBalance(labId: string): Promise<number> {
     const payload = await this.call<{ data?: { balance?: string } }>(
       `/virtual-labs/${encodeURIComponent(labId)}/accounting/balance`
@@ -111,10 +105,7 @@ export class VirtualLabApi {
     return VirtualLabApi.amount(payload.data?.balance, 'the lab balance');
   }
 
-  /**
-   * What a project holds. `reservation` is the part a running job has already
-   * claimed, so only the balance is free to hand back.
-   */
+  /** What the project holds, and how much of it running work has reserved. */
   async projectBalance(
     labId: string,
     projectId: string
@@ -128,7 +119,7 @@ export class VirtualLabApi {
     };
   }
 
-  /** Moves credits from the lab to one of its projects. */
+  /** Moves credits from the lab into the project. */
   assignBudget(labId: string, projectId: string, amount: number): Promise<unknown> {
     return this.call(
       `/virtual-labs/${encodeURIComponent(labId)}/projects/${encodeURIComponent(projectId)}/accounting/budget/assign`,
@@ -136,7 +127,7 @@ export class VirtualLabApi {
     );
   }
 
-  /** Moves credits back from a project to the lab that owns it. */
+  /** Moves credits from the project back to the lab. */
   reverseBudget(labId: string, projectId: string, amount: number): Promise<unknown> {
     return this.call(
       `/virtual-labs/${encodeURIComponent(labId)}/projects/${encodeURIComponent(projectId)}/accounting/budget/reverse`,
@@ -144,10 +135,7 @@ export class VirtualLabApi {
     );
   }
 
-  /**
-   * The primary user owns exactly one lab, so reuse whatever it already has and
-   * only create when it owns none. Never deletes an existing lab.
-   */
+  /** The lab with this name, any other lab the user has, or a new one. */
   async ensureLab(name: string, description: string): Promise<{ id: string; created: boolean }> {
     const existing = await this.listLabs();
     const match = existing.find((lab) => lab.name === name) ?? existing[0];

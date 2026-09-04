@@ -1,14 +1,7 @@
+/** Entity type names, as the backend spells them. */
+
 import { kebabCase } from 'es-toolkit';
 
-/**
- * The entity types the application knows about.
- *
- * Mirrors `src/api/entitycore/types/entity-type.ts` and
- * `extended-entity-type.ts` in `core-web-app`. It is a copy because the two
- * repositories are separate, so it can drift. The listing tests catch that:
- * every slug here is opened against the running application, and a type the
- * application no longer serves fails there.
- */
 export const EntityTypeDict = {
   AnalysisNotebookResult: 'analysis_notebook_result',
   AnalysisNotebookTemplate: 'analysis_notebook_template',
@@ -81,10 +74,7 @@ export const ExtendedEntitiesTypeDict = {
 export type TExtendedEntitiesTypeDict =
   (typeof ExtendedEntitiesTypeDict)[keyof typeof ExtendedEntitiesTypeDict];
 
-/**
- * The last segment of a listing URL. The application builds it the same way,
- * so the slug never has to be written down twice.
- */
+/** The listing slug for an entity type. */
 export function entitySlug(type: TExtendedEntitiesTypeDict): string {
   return kebabCase(type);
 }

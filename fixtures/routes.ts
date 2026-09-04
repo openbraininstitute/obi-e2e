@@ -1,4 +1,5 @@
-/** Application paths, built from the lab and project under test. */
+/** App URLs the tests open. */
+
 export const routes = {
   data: (labId: string, projectId: string) => `/app/virtual-lab/${labId}/${projectId}/data`,
 

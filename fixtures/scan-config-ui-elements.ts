@@ -1,18 +1,9 @@
-/**
- * The `ui_element` extension obi-one puts on every schema field, and which the
- * application uses to choose a control.
- *
- * Mirrors `ScanConfigUIElementDict` in core-web-app
- * (`src/features/scan-config/types.ts`). The editor records the value it
- * rendered from on each field, so a test reads it back rather than guessing
- * from the shape of the control.
- */
+/** The ui_element names obi-one renders a field from. */
+
 export const ScanConfigUiElement = {
-  // blocks
   BlockUnion: 'block_union',
   BlockSingle: 'block_single',
   BlockDictionary: 'block_dictionary',
-  // components
   StringInput: 'string_input',
   ModelIdentifier: 'model_identifier',
   FloatParameterSweep: 'float_parameter_sweep',

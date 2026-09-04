@@ -1,7 +1,6 @@
 import { entityListing } from '@locators/listing';
 import { expect, type Page } from '@playwright/test';
 
-/** What the visible rows are, used to tell one page from another. */
 async function pageSignature(page: Page): Promise<string> {
   const cells = await entityListing(page).cells.allInnerTexts();
   return cells
@@ -11,12 +10,7 @@ async function pageSignature(page: Page): Promise<string> {
     .join('|');
 }
 
-/**
- * Checks the pager moves between pages and comes back.
- *
- * The row content has to change, and the total must not: a pager that silently
- * refilters, or one that shows the same rows on every page, fails here.
- */
+/** Checks page 2 holds other rows, and page 1 comes back the same. */
 export async function checkPagination(page: Page): Promise<void> {
   const listing = entityListing(page);
 
@@ -33,7 +27,6 @@ export async function checkPagination(page: Page): Promise<void> {
     .poll(() => pageSignature(page), { message: 'page 2 shows the same rows as page 1' })
     .not.toBe(firstPage);
 
-  // Paging is not filtering, so the number of results cannot move.
   await expect(listing.resultCount).toHaveText(total);
 
   await listing.pageLink(1).click();

@@ -8,9 +8,6 @@ import { expect, test } from '@fixtures/test';
 import { WIDE_VIEWPORT } from '@fixtures/viewport';
 import { entityListing } from '@locators/listing';
 
-// Scenario: scenarios/data/single-neuron-circuit/scenario.md
-// Full column names, units included, because several share a prefix:
-// "Temperature [°C]" and "Temperature dependent" are different columns.
 const COLUMNS = [
   'Name',
   'Description',
@@ -24,8 +21,6 @@ const COLUMNS = [
   'Created by',
 ];
 
-// The columns the chooser shows as on, and the ones it shows as off. Listing
-// both locks the table's shape: a column added to either side fails the guard.
 const SHOWN_COLUMNS = [
   'Name',
   'Description',
@@ -87,7 +82,6 @@ test.describe('Synaptome listing', () => {
       await expect(listing.columnToggle(column)).not.toBeChecked();
     }
 
-    // Anything added to this table fails here rather than passing unnoticed.
     await expect(listing.columnToggles).toHaveCount(toggleCount(SHOWN_COLUMNS, HIDDEN_COLUMNS));
   });
 
@@ -95,7 +89,6 @@ test.describe('Synaptome listing', () => {
     const listing = entityListing(page);
 
     await expect(listing.resultCount).toBeVisible();
-    // Header rows carry the columnheader role, so a gridcell means real data.
     await expect(listing.cells.first()).toBeVisible();
   });
 
@@ -115,7 +108,6 @@ test.describe('Synaptome listing', () => {
     test.slow();
     await expect(entityListing(page).table).toBeVisible();
 
-    // One step per column, so a failure names the filter that broke.
     for (const column of FILTERS) {
       await test.step(column, () => checkFilter(page, column));
     }

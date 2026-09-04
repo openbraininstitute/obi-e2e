@@ -1,3 +1,5 @@
+/** Health checks for the backend services. */
+
 import { Result } from 'better-result';
 
 import { describe, type RequestError } from './errors';
@@ -7,7 +9,6 @@ import { checkableServices, type Service } from './services';
 export type ServiceStatus = {
   service: Service;
   healthy: boolean;
-  /** Reported version, when the service exposes one. */
   version?: string;
   problem?: string;
 };
@@ -20,9 +21,8 @@ async function readVersion(url: string): Promise<string | undefined> {
   return payload.value.version ?? payload.value.app_version;
 }
 
+/** Calls one service's health URL, and its version URL when it has one. */
 export async function checkService(service: Service): Promise<ServiceStatus> {
-  // Health answers vary across services: `"OK"`, `{ status: "OK" }`, `{ status:
-  // "ok" }`. Any 2xx counts, so do not require a shape.
   const health = await request(service.healthUrl);
 
   if (Result.isError(health)) {
@@ -36,11 +36,11 @@ export async function checkService(service: Service): Promise<ServiceStatus> {
   };
 }
 
-/** Checks every service a run can reach, in parallel. */
 export function checkAllServices(): Promise<ServiceStatus[]> {
   return Promise.all(checkableServices().map(checkService));
 }
 
+/** The statuses as aligned lines for the console. */
 export function formatStatusTable(statuses: ServiceStatus[]): string {
   const width = Math.max(...statuses.map((s) => s.service.label.length));
 

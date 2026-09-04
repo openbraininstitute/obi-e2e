@@ -4,13 +4,10 @@ import { PRIVATE_READONLY } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { dataPage } from '@locators/data';
 
-// Scenario: scenarios/data/data-types/scenario.md
 test.describe('Data types', () => {
   test.beforeEach(async ({ page, workspace }) => {
     await page.goto(routes.data(workspace.labId, workspace.projectId));
 
-    // The page rewrites its own URL to add the scope, and the counters only
-    // render once its data arrives. Interacting earlier loses the interaction.
     await page.waitForURL(/[?&]s=/);
     await expect(dataPage(page).typeCounter('cell_morphology')).toBeVisible();
   });

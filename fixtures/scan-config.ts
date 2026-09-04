@@ -1,128 +1,59 @@
+/** The scan config fixtures in data/scan-configs, read and checked. */
+
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import { DEPLOYMENT_ENVS, type DeploymentEnv, deploymentEnv } from './env';
 
-/**
- * A scan-configuration fixture is one case for the form behind every
- * `/workflows/{activity}/configure/{type}` route.
- *
- * `config` is exactly the object the application posts to obi-one, so the same
- * file can drive the browser and, later, an API-level check. Everything else in
- * the envelope is only what a test needs to open the right editor and to know
- * what a user should see.
- *
- * Fixtures never contain credentials. An entity id belongs here only when the
- * QA project owns that entity; otherwise the fixture names the entity and the
- * test resolves it at run time.
- */
+/** One workflow: how to reach it, what to select, and its configurations. */
 export type ScanConfigFixture = {
   name: string;
   activity: ScanConfigActivity;
-  /**
-   * The deployments that offer this workflow. Which ones do is a fact about the
-   * release, not something a test can read off the page: a card that is absent
-   * and one that has not rendered yet look the same, so a run elsewhere skips on
-   * what the fixture declares rather than on what a probe guessed.
-   *
-   * Empty means nowhere yet: a fixture written against something that does not
-   * exist to test against, which skips everywhere until it does. The field is
-   * still required, so a fixture that never runs says so on purpose rather than
-   * by having forgotten to say anything.
-   */
   env: DeploymentEnv[];
-  /** How the workflow is reached from the workflows hub. */
   workflow: {
-    /** Visible name of the type card, for example `Synaptome`. Used in messages. */
     label: string;
-    /** Kebab-case campaign type: both the card's test id and the configure URL. */
     type: string;
-    /**
-     * Whether launching asks what it will cost first. True for most workflows;
-     * an ME-model campaign has no cost estimator behind it, so it launches
-     * straight away. Defaults to true.
-     */
     confirmsCost?: boolean;
   };
-  /** obi-one schema component name, used to resolve titles from `openapi.json`. */
   schemaName: string;
-  /** Entities the `/new` browse step selects before the editor opens. */
   selection: ScanConfigSelection;
-  /** What a deployment must have before the workflow is offered at all. */
   requires?: {
-    /** An experimental feature that is off by default outside local and preview. */
     featureFlag?: string;
   };
-  /**
-   * One workflow can be configured several ways, and each is worth its own run.
-   * Every case becomes a test of its own, so they run in parallel and a failure
-   * names the configuration that broke.
-   */
   cases: ScanConfigCase[];
 };
 
 export type ScanConfigCase = {
-  /** Names the test. Short, and says what makes this configuration different. */
   name: string;
-  /** The configuration itself, keyed by root element. */
   config: Record<string, unknown>;
-  /** Only what a user can see or count. */
   expect: {
-    /** Size of the campaign grid: one coordinate per combination of swept values. */
     coordinateCount: number;
-    /** The files a coordinate carries the moment its campaign is generated. */
     generated?: ScanConfigFiles;
-    /** The files it carries once the run has finished. */
     completed?: ScanConfigFiles;
-    /** The entity the finished run registered, as its preview shows it. */
     built?: ScanConfigBuiltEntity;
   };
 };
 
-/**
- * What the right-hand pane shows for the entity a run produced. The properties
- * are label and value as a user reads them, so a build that starts producing a
- * different shape of thing fails here.
- */
 export type ScanConfigBuiltEntity = {
   name: string;
   properties: Record<string, string>;
 };
 
-/** Which of the two tabs above the browse table the entities live under. */
 export type ScanConfigScope = 'public' | 'project';
 
-/**
- * The exact files a coordinate lists, by the name the panel shows. Both lists
- * are complete: a file the application starts or stops producing fails here
- * rather than passing unnoticed. Only names seen on a real run belong here, so
- * a workflow that has never been run through leaves them out.
- */
 export type ScanConfigFiles = {
   inputs: string[];
   outputs: string[];
-  /**
-   * What opening one of those files shows, by the text a user reads in the pane
-   * beside it. A recording draws a voltage trace, a spike file a raster, so
-   * this is what says the run produced a result and not just a file.
-   */
   views?: Record<string, string[]>;
 };
 
 type SelectionBase = {
-  /** Defaults to `public`, which is the tab the browse step opens on. */
   scope?: ScanConfigScope;
 };
 
 export type ScanConfigSelection =
-  /**
-   * No browse step at all: the workflow opens its editor straight away and the
-   * entity is picked inside it, from a field's own catalogue.
-   */
   | { mode: 'none' }
-  /** One entity, chosen from a table and confirmed with `Use model`. */
   | (SelectionBase & { mode: 'single'; entities: [string] })
-  /** Several entities, confirmed with `Use selection`. */
   | (SelectionBase & { mode: 'multiple'; entities: string[]; prerequisite?: string });
 
 export const SCAN_CONFIG_ACTIVITIES = ['build', 'simulate', 'extract', 'process'] as const;
@@ -130,12 +61,12 @@ export type ScanConfigActivity = (typeof SCAN_CONFIG_ACTIVITIES)[number];
 
 export const SCAN_CONFIG_DIR = path.resolve(import.meta.dirname, '..', 'data', 'scan-configs');
 
-/** Whether the run is pointed at a deployment this fixture is offered on. */
+/** Whether this workflow runs on the deployment under test. */
 export function runsOnThisDeployment(fixture: ScanConfigFixture): boolean {
   return fixture.env.includes(deploymentEnv());
 }
 
-/** Why the fixture does not run here, in the words a skip should use. */
+/** The skip message for a workflow this deployment does not offer. */
 export function notDeployedHere(fixture: ScanConfigFixture): string {
   if (fixture.env.length === 0) {
     return `"${fixture.workflow.label}" runs on no deployment yet: its fixture names none.`;
@@ -147,7 +78,6 @@ export function notDeployedHere(fixture: ScanConfigFixture): string {
   );
 }
 
-/** Every fixture file on disk, so one unit test can validate the whole folder. */
 export function scanConfigFixtureFiles(): string[] {
   return fs
     .readdirSync(SCAN_CONFIG_DIR)
@@ -161,13 +91,7 @@ export function loadScanConfigFixture(fileName: string): ScanConfigFixture {
   return parseScanConfigFixture(raw, fileName);
 }
 
-/**
- * Validates the envelope, not the configuration body. The body is schema-driven
- * and open-ended, so obi-one is the only thing that can judge it; a malformed
- * envelope, by contrast, would otherwise fail halfway through a browser run.
- *
- * @throws Error naming the fixture and the offending field.
- */
+/** Reads a fixture, and fails naming the field that is wrong. */
 export function parseScanConfigFixture(value: unknown, source: string): ScanConfigFixture {
   const fail = (message: string): never => {
     throw new Error(`${source}: ${message}`);
@@ -214,8 +138,6 @@ export function parseScanConfigFixture(value: unknown, source: string): ScanConf
     fail(`selection.scope must be "public" or "project", got "${String(scope)}"`);
   }
 
-  // A workflow with no browse step names no entities here: the editor's own
-  // field picks one.
   const entities = mode === 'none' ? [] : selection.entities;
   if (mode !== 'none') {
     if (!Array.isArray(entities) || entities.length === 0) {
@@ -344,7 +266,6 @@ function parseFiles(value: unknown, at: string, fail: (message: string) => never
   };
 }
 
-/** An empty list is meaningful: it says the panel shows nothing yet. */
 function parseFileNames(value: unknown, at: string, fail: (message: string) => never): string[] {
   if (!Array.isArray(value)) fail(`${at} must be a list of file names`);
   for (const [index, name] of (value as unknown[]).entries()) {

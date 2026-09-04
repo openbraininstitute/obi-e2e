@@ -12,7 +12,6 @@ import {
 
 type Node = Record<string, unknown> & { type?: string };
 
-/** Every object in the card tree that matches. */
 function collect(root: unknown, predicate: (node: Node) => boolean): Node[] {
   const found: Node[] = [];
   const visit = (node: unknown): void => {
@@ -79,8 +78,6 @@ describe('buildCard', () => {
 
     expect(found).toContain('schema:1.5');
     expect(found).toContain('width:Full');
-    // Services, the feature header, then a parent and a hidden child table
-    // for each section.
     expect(found.filter((item) => item === 'Table')).toHaveLength(4);
     expect(found).toContain('Services');
     expect(found).toContain('Features');
@@ -96,7 +93,6 @@ describe('buildCard', () => {
     expect(found).toContain('▾ site');
     expect(found).toContain('↳ Home page');
     expect(found).toContain('1 feature');
-    // A skipped endpoint has to say why, or the reader cannot act on it.
     expect(found).toContain('reachable only inside the VPC');
   });
 
@@ -132,7 +128,6 @@ describe('buildCard', () => {
     walk(card, found);
     expect(found).toContain('Failed');
     expect(found).toContain('**Home page › boom**');
-    // The message is the part a reader acts on, so it belongs on the card.
     expect(found).toContain('timeout');
     expect(found).not.toContain('Table');
   });
@@ -175,11 +170,9 @@ describe('buildCard', () => {
       (node) => node.type === 'Table' && node.isVisible === false && typeof node.id === 'string'
     );
 
-    // One toggle per cell of each section row, over two sections.
     expect(new Set(toggles.map((t) => JSON.stringify(t.targetElements))).size).toBe(2);
     expect(hidden.map((t) => t.id)).toEqual(['features-0', 'features-1']);
 
-    // Every toggle names an id that exists on a hidden table.
     for (const toggle of toggles) {
       const [rowsId] = toggle.targetElements as string[];
       expect(hidden.some((table) => table.id === rowsId)).toBe(true);
@@ -234,7 +227,6 @@ describe('buildCardWithinLimit', () => {
   test('drops detail rather than exceeding the Teams limit', () => {
     const big = summaryWith(30, 8);
 
-    // Full detail on this many scenarios would be refused by Teams.
     expect(JSON.stringify(buildCard(big, 'full')).length).toBeGreaterThan(TEAMS_PAYLOAD_LIMIT);
 
     const { detail, bytes } = buildCardWithinLimit(big);
@@ -254,7 +246,6 @@ describe('buildPosts', () => {
       'section-2',
     ]);
 
-    // The summary post carries the services, not the features.
     const first: string[] = [];
     walk(posts[0]?.message, first);
     expect(first).toContain('Services');
@@ -302,9 +293,6 @@ describe('buildThreadPayload', () => {
   });
 });
 
-// Card text comes from test titles and service errors, which have no bound.
-// Before clamping, one long string pushed a card to 92 KB and Teams would have
-// refused the whole post.
 const huge = (length: number, prefix: string) => prefix + 'x'.repeat(length);
 
 describe('payload limits', () => {
@@ -365,7 +353,6 @@ describe('payload limits', () => {
   });
 });
 
-/** A run with nothing in it but the money. */
 function spentSummary(credits: Summary['credits'], failed = 0): Summary {
   return { ...buildSummary({ suites: [], stats: {} }), failed, credits };
 }
@@ -384,7 +371,6 @@ describe('parseMentions', () => {
     ]);
   });
 
-  // A malformed entry must not take the rest of the list down with it.
   test('drops an entry with no address and keeps the others', () => {
     expect(parseMentions('Ada, Alan <b@x.org>')).toEqual([{ name: 'Alan', id: 'b@x.org' }]);
   });
@@ -410,7 +396,6 @@ describe('credits on the card', () => {
     ]);
   });
 
-  // Nobody is pulled into the channel for a run that merely spent its budget.
   test('tags nobody when the money was not the problem', () => {
     const card = buildCard(
       spentSummary({ required: 2000, assigned: 2000, remaining: 1200 }, 1),
@@ -455,8 +440,6 @@ describe('the outcome donut', () => {
     ]);
   });
 
-  // The same four entries every run is what makes two runs comparable, and a
-  // run with no failures should say so rather than leave the entry out.
   test('keeps the statuses at zero, so the legend never changes shape', () => {
     const card = buildCard({ ...buildSummary({ suites: [], stats: {} }), passed: 9 });
     expect(chartIn(card)?.data).toEqual([
@@ -471,14 +454,11 @@ describe('the outcome donut', () => {
     expect(chartIn(buildCard(buildSummary({ suites: [], stats: {} })))).toBeUndefined();
   });
 
-  // Teams mobile and Outlook cannot draw it, and the counts are in the FactSet
-  // beside it, so an unsupported host drops the element rather than showing a hole.
   test('tells a host that cannot draw it to drop it', () => {
     const card = buildCard({ ...buildSummary({ suites: [], stats: {} }), passed: 1 });
     expect(chartIn(card)?.fallback).toBe('drop');
   });
 
-  // Section cards carry a feature table; the chart belongs to the summary alone.
   test('appears on the summary card only', () => {
     const summary = {
       ...buildSummary({ suites: [], stats: {} }),
@@ -531,8 +511,6 @@ describe('the credits bar', () => {
     ]);
   });
 
-  // Credits that never made it back went nowhere: the project holding them is
-  // deleted straight afterwards, so this is the slice worth seeing.
   test('shows what a failed transfer stranded', () => {
     const card = buildCard(
       spentSummary({
@@ -552,8 +530,6 @@ describe('the credits bar', () => {
     ]);
   });
 
-  // A run that was killed before its teardown finished returned nothing, and
-  // the credits went with the project.
   test('counts an unfinished teardown as stranded', () => {
     const card = buildCard(spentSummary({ required: 2000, assigned: 2000, remaining: 900 }));
     expect(slices(card)).toEqual([
@@ -574,7 +550,6 @@ describe('the credits bar', () => {
     ]);
   });
 
-  // Teardown records the remaining balance; the spend follows from it.
   test('draws nothing before the teardown has read the balance', () => {
     expect(barIn(buildCard(spentSummary({ required: 2000, assigned: 2000 })))).toBeUndefined();
   });

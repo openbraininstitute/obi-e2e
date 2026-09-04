@@ -1,17 +1,11 @@
+/** The data types each section of the Data page lists, in order. */
+
 import {
   entitySlug,
   ExtendedEntitiesTypeDict as Type,
   type TExtendedEntitiesTypeDict,
 } from './entity-types';
 
-/**
- * The data types each section of the Data page offers, in the order the
- * application lists them.
- *
- * Only the entity type is written down. The label comes from the UI and the
- * slug is derived, so a rename in the application shows up as a failing test
- * rather than as two lists quietly disagreeing.
- */
 export type DataSectionName = 'experimental' | 'models' | 'simulations';
 
 export type DataType = { type: TExtendedEntitiesTypeDict; label: string; slug: string };

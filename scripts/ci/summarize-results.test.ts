@@ -90,7 +90,6 @@ describe('feature helpers', () => {
     expect(featureStatus({ passed: 0, failed: 0, flaky: 0, skipped: 2 })).toBe('skipped');
     expect(passRate({ passed: 4, failed: 1, flaky: 0 })).toBe('80%');
     expect(passRate({ passed: 0, failed: 0, flaky: 0 })).toBe('—');
-    // The same helper serves the whole run, not just one feature.
     expect(passRate({ passed: 9, failed: 1, flaky: 0 })).toBe('90%');
   });
 
@@ -142,7 +141,6 @@ describe('creditNotice', () => {
     expect(notice).toContain('E2E_PROJECT_CREDITS');
   });
 
-  // Spending everything is only worth saying when something failed because of it.
   test('stays quiet about an empty project when nothing failed', () => {
     expect(creditNotice({ required: 2000, assigned: 2000, remaining: 0 }, 0)).toBeNull();
   });

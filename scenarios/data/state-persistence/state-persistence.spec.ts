@@ -7,7 +7,6 @@ import { WIDE_VIEWPORT } from '@fixtures/viewport';
 import { dataView } from '@locators/data-view';
 import { entityListing } from '@locators/listing';
 
-// Scenario: scenarios/data/state-persistence/scenario.md
 const SLUG = entitySlug(Type.CellMorphology);
 const SEARCH = 'Sst-IRES';
 
@@ -19,18 +18,13 @@ test.describe('What the listing remembers', () => {
 
     await page.goto(routes.dataEntity(workspace.labId, workspace.projectId, SLUG));
 
-    // The species choice is remembered for the user, so a species left by an
-    // earlier test would narrow this listing and be read as its own doing.
     await showAllSpecies(page);
     await expect(listing.cells.first()).toBeVisible();
 
-    // Start from a clean listing: the state under test survives a reload, so a
-    // search left by an earlier test would be read as this test's own doing.
     await listing.search.clear();
     await expect(listing.resultCount).toHaveText(/^6,225 results/);
   });
 
-  /** Searches, then opens the first match's details page. */
   async function searchAndOpenOne(page: Parameters<typeof dataView>[0]) {
     const listing = entityListing(page);
     const view = dataView(page);
@@ -98,12 +92,9 @@ test.describe('What the listing remembers', () => {
     await dataView(page).breadcrumbLink('Morphology').click();
     await page.waitForURL(/browse\/entity/);
 
-    // The breadcrumb clears the search but not the layout: the two are kept in
-    // different places, one for the tab and one for good.
     await expect(listing.search).toHaveValue('');
     await expect(listing.columnHeader(column)).toBeHidden();
 
-    // Put it back, so the next run starts from the same table.
     await listing.columns.click();
     await listing.columnToggle(column).click();
     await expect(listing.columnHeader(column)).toBeVisible();

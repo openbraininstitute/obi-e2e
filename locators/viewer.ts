@@ -1,16 +1,9 @@
+/** The morphology viewer, and the location rows beside it. */
+
 import type { Locator, Page } from '@playwright/test';
 
-/**
- * The 3D preview beside the scan-configuration editor: the scene itself, the
- * pill that switches how it draws, and the settings behind the equaliser.
- *
- * Every handle is a test id: the buttons are icons whose only text is a
- * tooltip, and several of those labels change with the state they toggle
- * (`Full screen` becomes `Exit full screen`).
- */
 export function morphologyViewer(page: Page) {
   return {
-    /** The surface a click lands on. Clicking a neurite adds a location. */
     scene: page.getByTestId('viewer-scene'),
 
     mode: {
@@ -19,7 +12,6 @@ export function morphologyViewer(page: Page) {
       image: page.getByTestId('viewer-mode-image'),
     },
 
-    /** Opens and closes the settings popover. */
     settings: page.getByTestId('viewer-settings'),
 
     toggle: {
@@ -36,7 +28,6 @@ export function morphologyViewer(page: Page) {
       electrodeSize: page.getByTestId('viewer-slider-electrode-size'),
     },
 
-    /** Only on the scene once its toggle is turned on. */
     zoomSlider: page.getByTestId('viewer-zoom-slider'),
 
     resetView: page.getByTestId('viewer-reset-view'),
@@ -45,10 +36,6 @@ export function morphologyViewer(page: Page) {
   };
 }
 
-/**
- * The locations a user picked on the morphology, one row each. The section id
- * is read-only because it comes from the viewer; the offset along it is not.
- */
 export function morphologyLocations(page: Page) {
   const rows = page.getByTestId('scan-config-location');
 

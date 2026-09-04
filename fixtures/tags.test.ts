@@ -7,8 +7,6 @@ test('a run excludes the other deployment', () => {
   expect(excludedEnvironmentTag('production').source).toBe('@staging\\b');
 });
 
-// A test says nothing about deployments and runs on both. That is the default
-// almost every test wants, so it must not be something anyone has to opt into.
 test('an untagged test is excluded by neither', () => {
   const title = `a test ${PRIVATE.join(' ')}`;
   expect(excludedEnvironmentTag('staging').test(title)).toBe(false);

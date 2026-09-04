@@ -6,10 +6,8 @@ import { WIDE_VIEWPORT } from '@fixtures/viewport';
 import { dataView } from '@locators/data-view';
 import { entityListing } from '@locators/listing';
 
-// Scenario: scenarios/data/circuit/view/scenario.md
 const SLUG = 'circuit';
 
-/** Every property the panel shows for this type, named as the application names it. */
 const PROPERTIES = [
   'species',
   'brain_region',
@@ -24,7 +22,6 @@ const PROPERTIES = [
   'lifecycle_status',
 ];
 
-/** Every part of the full page. A part that disappears fails here. */
 const SECTIONS = ['visualizations', 'visualization', 'metadata-grid', 'subject-details'];
 
 test.use(WIDE_VIEWPORT);
@@ -34,8 +31,6 @@ test.describe('Circuit details', () => {
     const listing = entityListing(page);
 
     await page.goto(routes.dataEntity(workspace.labId, workspace.projectId, SLUG));
-    // The species choice is remembered for the user, so one left behind by an
-    // earlier test would empty this listing and leave no row to open.
     await showAllSpecies(page);
     await expect(listing.cells.first()).toBeVisible();
 
@@ -54,7 +49,6 @@ test.describe('Circuit details', () => {
   });
 
   test('opens the full page', { tag: PRIVATE_READONLY }, async ({ page }) => {
-    // The page draws its own viewers, which take a while under load.
     test.slow();
     const view = dataView(page);
 
@@ -62,8 +56,6 @@ test.describe('Circuit details', () => {
     await expect(page).toHaveURL(new RegExp(`/data/view/${SLUG}/[0-9a-f-]+/`));
 
     for (const name of SECTIONS) {
-      // First match: a few of these name a control the page repeats rather
-      // than a section it shows once.
       await expect(view.section(name).first()).toBeVisible();
     }
   });

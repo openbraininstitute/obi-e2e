@@ -1,11 +1,7 @@
+/** The backend services this suite checks. */
+
 import { cellApiUrl } from '@fixtures/env';
 
-/**
- * The backend services the application talks to.
- *
- * Every entry is checked before the suite runs, so a red suite caused by a down
- * service is reported as a down service instead of as failing tests.
- */
 export type Service = {
   key: string;
   label: string;
@@ -13,7 +9,6 @@ export type Service = {
   baseUrl: string;
   healthUrl: string;
   versionUrl?: string;
-  /** Reachable only from inside the VPC, so it cannot be checked from CI. */
   vpcOnly: boolean;
 };
 
@@ -21,13 +16,10 @@ type Definition = {
   key: string;
   label: string;
   envVar: string;
-  /** Where the service sits under the deployment's API host. */
   path: string;
-  /** Appended to the base URL. Verified against staging. */
   health?: string;
   version?: string;
   vpcOnly?: boolean;
-  /** Some services host health outside their versioned base. */
   healthBase?: (baseUrl: string) => string;
 };
 
@@ -82,7 +74,6 @@ const DEFINITIONS: Definition[] = [
     label: 'AI agent',
     envVar: 'AI_AGENT_URL',
     path: '/agent-ts/api',
-    // This one answers on /healthz; /health is a 404.
     health: '/healthz',
     version: '/version',
   },
@@ -91,7 +82,6 @@ const DEFINITIONS: Definition[] = [
     label: 'Auth manager',
     envVar: 'AUTH_MANAGER_URL',
     path: '/auth-manager/v1',
-    // Health sits above the versioned path.
     healthBase: (baseUrl) => baseUrl.replace(/\/v\d+$/, ''),
   },
   {
@@ -99,15 +89,12 @@ const DEFINITIONS: Definition[] = [
     label: 'Launch system',
     envVar: 'LAUNCH_SYSTEM_URL',
     path: '/launch-system',
-    // From outside the VPC the load balancer redirects to the web application,
-    // which answers 200 with HTML. That is not a health signal, so skip it.
     vpcOnly: true,
   },
 ];
 
+/** Every service. Its URL comes from its env var, or from the deployment. */
 export function services(): Service[] {
-  // Read once per call rather than at module load, so a run that sets the
-  // deployment from a fixture or the config still gets the right host.
   const apiUrl = cellApiUrl();
 
   return DEFINITIONS.map((definition) => {
@@ -127,7 +114,7 @@ export function services(): Service[] {
   });
 }
 
-/** The services a run can actually check. */
+/** The services that can be reached from outside the VPC. */
 export function checkableServices(): Service[] {
   return services().filter((service) => !service.vpcOnly);
 }

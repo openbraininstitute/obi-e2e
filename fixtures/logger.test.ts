@@ -23,8 +23,6 @@ test('an explicit format wins', () => {
   expect(logFormat()).toBe('text');
 });
 
-// A format that does not exist would otherwise fall back silently, and a run
-// whose records are not the shape a collector expects is a run nobody can read.
 test('a format that does not exist is rejected by name', () => {
   process.env.E2E_LOG_FORMAT = 'pretty';
   expect(() => logFormat()).toThrow(/E2E_LOG_FORMAT must be one of text, json, got "pretty"/);

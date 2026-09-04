@@ -1,3 +1,5 @@
+/** Small fetch wrapper. It returns a Result instead of throwing. */
+
 import { Result } from 'better-result';
 
 import { HttpError, NetworkError, ParseError, type RequestError } from './errors';
@@ -6,10 +8,7 @@ const DEFAULT_TIMEOUT_MS = 15_000;
 
 type Options = RequestInit & { timeoutMs?: number };
 
-/**
- * Every call returns a Result, so a caller has to handle failure before it can
- * reach the value. Nothing here throws.
- */
+/** Fetches a URL. A non-2xx reply comes back as an HttpError. */
 export async function request(
   url: string,
   options: Options = {}
@@ -34,7 +33,7 @@ export async function request(
   return Result.ok(value);
 }
 
-/** As `request`, then reads the body as JSON. */
+/** Fetches a URL and parses the JSON body. */
 export async function requestJson<T>(
   url: string,
   options: Options = {}

@@ -1,3 +1,5 @@
+/** The entity view page and its mini viewer. */
+
 import type { Page } from '@playwright/test';
 
 const PROPERTY_LABELS: Record<string, string> = {
@@ -31,7 +33,6 @@ export function dataView(page: Page) {
     miniDownload: mini.getByTitle('download'),
     viewDetails: mini.getByTitle('Go to details page'),
 
-    /** Sections of the full details page. Which ones exist varies by type. */
     section: (name: string) => page.getByTestId(name),
   };
 }

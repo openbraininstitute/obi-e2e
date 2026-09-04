@@ -7,8 +7,6 @@ import {
   scanConfigFixtureFiles,
 } from './scan-config';
 
-// A malformed fixture would otherwise fail halfway through a browser run, so
-// every file on disk is validated here in milliseconds instead.
 test('every scan-config fixture has a valid envelope', () => {
   const files = scanConfigFixtureFiles();
   expect(files.length).toBeGreaterThan(0);
@@ -86,8 +84,6 @@ test('a fixture that declares no env at all is rejected', () => {
   expect(() => parseScanConfigFixture(fixture, 'bad.json')).toThrow(/env must be a list/);
 });
 
-// A workflow with nothing to test against yet is a real state, and saying so
-// outright is better than deleting the fixture or letting it fail everywhere.
 test('an empty env is allowed, and means the fixture runs nowhere', () => {
   const fixture = {
     name: 'not ready',

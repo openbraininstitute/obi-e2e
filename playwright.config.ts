@@ -1,3 +1,10 @@
+/**
+ * Playwright configuration.
+ *
+ * Setup runs in order: health, sign-in, workspace, credits. Each scenario
+ * project then picks its tests by tag, and skips the other deployment's.
+ */
+
 import { defineConfig, devices } from '@playwright/test';
 
 import {
@@ -11,19 +18,9 @@ import {
 } from './fixtures/env';
 import { excludedEnvironmentTag } from './fixtures/tags';
 
-// Not a sleep: a web-first assertion resolves as soon as its condition holds
-// and only spends this budget when the condition never becomes true.
 const ASSERTION_TIMEOUT = 30_000;
 
-/**
- * What a project must not pick up: the other deployment's tests, plus whatever
- * else that project excludes.
- *
- * Every test runs against both deployments unless it says otherwise, and the
- * exclusion is composed here rather than set once at the top of the config,
- * because a project that declares its own `grepInvert` replaces the config's
- * instead of adding to it — which silently drops the deployment filter.
- */
+/** Tags to skip: the other deployment's, plus any named here. */
 function excluding(...also: RegExp[]): RegExp {
   const patterns = [excludedEnvironmentTag(deploymentEnv()), ...also];
   return new RegExp(patterns.map((pattern) => pattern.source).join('|'));
@@ -38,19 +35,13 @@ export default defineConfig({
 
   fullyParallel: true,
   forbidOnly: isCI,
-  // One retry exists to capture a trace, not to hide a flaky test.
   retries: isCI ? 1 : 0,
   workers: resolveWorkers(),
-  // Playwright wipes outputDir at the start of every run, so the JSON report
-  // must not live inside it.
   outputDir: 'test-results/artifacts',
 
   reporter: [
     ['list'],
     ['html', { open: isCI ? 'never' : 'on-failure' }],
-    // `bun run summarize` and `bun run notify` read this, so every run writes it
-    // and not only CI: a local run that cannot produce the card is a local run
-    // that cannot check the card before it reaches the channel.
     ['json', { outputFile: 'test-results/results.json' }],
     ...(isCI ? [['github'] as const] : []),
   ],
@@ -67,7 +58,6 @@ export default defineConfig({
 
   projects: [
     {
-      // Runs first. A down service fails here, not as a wall of broken tests.
       name: 'health',
       testDir: './setup',
       testMatch: /health\.setup\.ts/,
@@ -79,9 +69,6 @@ export default defineConfig({
       dependencies: ['health'],
     },
     {
-      // A project of this run's own, with a budget moved into it. Only the
-      // private suite needs one, so a lab that cannot pay stops that suite
-      // and leaves the other two to run.
       name: 'workspace',
       testDir: './setup',
       testMatch: /workspace\.setup\.ts/,
@@ -94,15 +81,11 @@ export default defineConfig({
       testMatch: /workspace\.teardown\.ts/,
     },
     {
-      // Stands in front of the tests that spend, so a lab that cannot pay
-      // stops those and leaves everything that only reads to run.
       name: 'credits',
       testDir: './setup',
       testMatch: /credits\.setup\.ts/,
       dependencies: ['workspace'],
     },
-    // Every project reads the same scenario folders and selects its tests by
-    // tag, so one scenario can run signed out and signed in without duplication.
     {
       name: 'public',
       testDir: './scenarios',
@@ -119,8 +102,6 @@ export default defineConfig({
       use: { storageState: authStatePath('primary') },
     },
     {
-      // The tests that launch something. Same user, but they need a funded
-      // project, so they wait for the credits check.
       name: 'spends',
       testDir: './scenarios',
       grep: /@spends/,
@@ -129,7 +110,6 @@ export default defineConfig({
       use: { storageState: authStatePath('primary') },
     },
     {
-      // Lab and project creation, run as a user that owns nothing.
       name: 'onboarding',
       testDir: './scenarios',
       grep: /@onboarding/,
