@@ -19,7 +19,11 @@ export class VirtualLabApi {
   private async call<T>(path: string, init: RequestInit = {}): Promise<T> {
     const result = await requestJson<T>(`${this.baseUrl}${path}`, {
       ...init,
-      headers: { Authorization: `Bearer ${this.token}`, ...init.headers },
+      headers: {
+        Authorization: `Bearer ${this.token}`,
+        ...(init.body === undefined ? {} : { 'Content-Type': 'application/json' }),
+        ...init.headers,
+      },
     });
 
     if (Result.isError(result)) {
@@ -84,6 +88,60 @@ export class VirtualLabApi {
 
   deleteLab(labId: string): Promise<unknown> {
     return this.call(`/virtual-labs/${encodeURIComponent(labId)}`, { method: 'DELETE' });
+  }
+
+  /**
+   * Credits, as the accounting service reports them: a decimal string, because
+   * money does not survive a float. Read back as a number for arithmetic the
+   * run only ever does at two decimal places.
+   */
+  private static amount(value: unknown, at: string): number {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) {
+      throw new Error(`${at}: expected a credit amount, got ${JSON.stringify(value)}`);
+    }
+    return parsed;
+  }
+
+  /** What the lab itself holds, before anything is handed to a project. */
+  async labBalance(labId: string): Promise<number> {
+    const payload = await this.call<{ data?: { balance?: string } }>(
+      `/virtual-labs/${encodeURIComponent(labId)}/accounting/balance`
+    );
+    return VirtualLabApi.amount(payload.data?.balance, 'the lab balance');
+  }
+
+  /**
+   * What a project holds. `reservation` is the part a running job has already
+   * claimed, so only the balance is free to hand back.
+   */
+  async projectBalance(
+    labId: string,
+    projectId: string
+  ): Promise<{ balance: number; reservation: number }> {
+    const payload = await this.call<{ data?: { balance?: string; reservation?: string } }>(
+      `/virtual-labs/${encodeURIComponent(labId)}/projects/${encodeURIComponent(projectId)}/accounting/balance`
+    );
+    return {
+      balance: VirtualLabApi.amount(payload.data?.balance, 'the project balance'),
+      reservation: VirtualLabApi.amount(payload.data?.reservation ?? 0, 'the project reservation'),
+    };
+  }
+
+  /** Moves credits from the lab to one of its projects. */
+  assignBudget(labId: string, projectId: string, amount: number): Promise<unknown> {
+    return this.call(
+      `/virtual-labs/${encodeURIComponent(labId)}/projects/${encodeURIComponent(projectId)}/accounting/budget/assign`,
+      { method: 'POST', body: JSON.stringify({ amount }) }
+    );
+  }
+
+  /** Moves credits back from a project to the lab that owns it. */
+  reverseBudget(labId: string, projectId: string, amount: number): Promise<unknown> {
+    return this.call(
+      `/virtual-labs/${encodeURIComponent(labId)}/projects/${encodeURIComponent(projectId)}/accounting/budget/reverse`,
+      { method: 'POST', body: JSON.stringify({ amount }) }
+    );
   }
 
   /**

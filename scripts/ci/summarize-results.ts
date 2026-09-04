@@ -7,6 +7,8 @@
  * Usage: bun scripts/ci/summarize-results.ts <results.json> [outDir]
  */
 
+import type { CreditReport } from '@fixtures/credit-report';
+
 type Result = { status?: string; duration?: number; error?: { message?: string } };
 type TestCase = { status?: string; projectName?: string; results?: Result[] };
 type Spec = { title?: string; file?: string; line?: number; tests?: TestCase[] };
@@ -60,6 +62,8 @@ export type Summary = {
   totalFailures: number;
   services: ServiceSummary[];
   features: Feature[];
+  /** What the run did with credits, when it got far enough to do anything. */
+  credits?: CreditReport;
 };
 
 const FAILED = new Set(['failed', 'timedOut', 'interrupted']);
@@ -249,7 +253,8 @@ export function collectFeatures(suites: Suite[] = [], parents: string[] = []): F
 export function buildSummary(
   report: Report,
   services: ServiceSummary[] = [],
-  env: NodeJS.ProcessEnv = process.env
+  env: NodeJS.ProcessEnv = process.env,
+  credits?: CreditReport
 ): Summary {
   const failures = collectFailures(report.suites);
   const stats = report.stats ?? {};
@@ -273,7 +278,43 @@ export function buildSummary(
     totalFailures: failures.length,
     services,
     features: collectFeatures(report.suites),
+    ...(credits ? { credits } : {}),
   };
+}
+
+/**
+ * Below this a project is treated as empty rather than nearly empty: a run that
+ * ends with less than a credit could not have paid for another thing.
+ */
+const EXHAUSTED = 1;
+
+/**
+ * What the money says about this run, or `null` when it has nothing to add.
+ *
+ * Two failures look identical in a list of failing tests and are not the same
+ * problem at all: an application that is broken, and an application nobody
+ * could afford to run. This is what tells them apart.
+ */
+export function creditNotice(credits: CreditReport | undefined, failed: number): string | null {
+  if (!credits) return null;
+  if (credits.problem) return credits.problem;
+
+  if (failed > 0 && credits.remaining !== undefined && credits.remaining <= EXHAUSTED) {
+    return (
+      `The project ran out of credits: it was given ${credits.assigned ?? credits.required} and ` +
+      `finished with ${credits.remaining}. Tests that needed to launch something would have ` +
+      'failed for that reason. Raise E2E_PROJECT_CREDITS.'
+    );
+  }
+
+  if (credits.removed === 'failed') {
+    return (
+      `Project ${credits.projectId ?? 'this run created'} could not be deleted. It counts ` +
+      "against the lab's forty until someone removes it."
+    );
+  }
+
+  return null;
 }
 
 export function renderMarkdown(summary: Summary): string {
@@ -284,6 +325,21 @@ export function renderMarkdown(summary: Summary): string {
     `| --- | --- | --- | --- | --- | --- |`,
     `| ${summary.passed} | ${summary.failed} | ${summary.flaky} | ${summary.skipped} | ${passRate(summary)} | ${formatDuration(summary.durationMs)} |`,
   ];
+
+  const notice = creditNotice(summary.credits, summary.failed);
+  if (notice) lines.push('', `> **Credits** — ${notice}`);
+
+  if (summary.credits?.assigned !== undefined) {
+    const { assigned, spent, remaining } = summary.credits;
+    lines.push(
+      '',
+      `### Credits`,
+      '',
+      `| Assigned | Spent | Left |`,
+      `| --- | --- | --- |`,
+      `| ${assigned} | ${spent ?? '—'} | ${remaining ?? '—'} |`
+    );
+  }
 
   if (summary.services.length > 0) {
     lines.push(
@@ -339,6 +395,12 @@ export function renderMarkdown(summary: Summary): string {
   return lines.join('\n');
 }
 
+export async function loadCredits(outDir: string): Promise<CreditReport | undefined> {
+  const file = Bun.file(`${outDir}/credits.json`);
+  if (!(await file.exists())) return undefined;
+  return (await file.json()) as CreditReport;
+}
+
 export async function loadServices(outDir: string): Promise<ServiceSummary[]> {
   const file = Bun.file(`${outDir}/services.json`);
   if (!(await file.exists())) return [];
@@ -355,7 +417,9 @@ async function main(): Promise<void> {
 
   const summary = buildSummary(
     (await Bun.file(inputPath).json()) as Report,
-    await loadServices(outDir)
+    await loadServices(outDir),
+    process.env,
+    await loadCredits(outDir)
   );
   const markdown = renderMarkdown(summary);
 

@@ -52,6 +52,21 @@ export default defineConfig({
       testMatch: /auth\.setup\.ts/,
       dependencies: ['health'],
     },
+    {
+      // A project of this run's own, with a budget moved into it. Only the
+      // private suite needs one, so a lab that cannot pay stops that suite
+      // and leaves the other two to run.
+      name: 'workspace',
+      testDir: './setup',
+      testMatch: /workspace\.setup\.ts/,
+      dependencies: ['setup'],
+      teardown: 'workspace-teardown',
+    },
+    {
+      name: 'workspace-teardown',
+      testDir: './setup',
+      testMatch: /workspace\.teardown\.ts/,
+    },
     // Every project reads the same scenario folders and selects its tests by
     // tag, so one scenario can run signed out and signed in without duplication.
     {
@@ -64,7 +79,7 @@ export default defineConfig({
       name: 'private',
       testDir: './scenarios',
       grep: /@private/,
-      dependencies: ['setup'],
+      dependencies: ['workspace'],
       use: { storageState: authStatePath('primary') },
     },
     {

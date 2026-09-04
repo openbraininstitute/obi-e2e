@@ -3,6 +3,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   buildSummary,
   collectFeatures,
+  creditNotice,
   detectTrigger,
   featureStatus,
   formatDuration,
@@ -122,5 +123,36 @@ describe('buildSummary', () => {
     expect(summary.features).toHaveLength(2);
     expect(summary.failed).toBe(1);
     expect(summary.commit).toBe('abcdef123456');
+  });
+});
+
+describe('creditNotice', () => {
+  test('says nothing when the run was paid for and passed', () => {
+    expect(creditNotice({ required: 2000, assigned: 2000, remaining: 1500 }, 0)).toBeNull();
+  });
+
+  test('repeats the problem the setup recorded', () => {
+    const notice = creditNotice({ required: 2000, problem: 'The lab holds 12 credits.' }, 3);
+    expect(notice).toBe('The lab holds 12 credits.');
+  });
+
+  test('explains failures that follow an empty project', () => {
+    const notice = creditNotice({ required: 2000, assigned: 2000, remaining: 0 }, 4);
+    expect(notice).toContain('ran out of credits');
+    expect(notice).toContain('E2E_PROJECT_CREDITS');
+  });
+
+  // Spending everything is only worth saying when something failed because of it.
+  test('stays quiet about an empty project when nothing failed', () => {
+    expect(creditNotice({ required: 2000, assigned: 2000, remaining: 0 }, 0)).toBeNull();
+  });
+
+  test('reports a project that outlived its run', () => {
+    const notice = creditNotice(
+      { required: 2000, assigned: 2000, remaining: 900, removed: 'failed', projectId: 'p-1' },
+      0
+    );
+    expect(notice).toContain('p-1');
+    expect(notice).toContain('could not be deleted');
   });
 });

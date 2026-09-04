@@ -1,3 +1,4 @@
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 export const isCI = Boolean(process.env.CI);
@@ -110,6 +111,32 @@ export function credentials(role: Role): { username: string; password: string } 
   };
 }
 
+/**
+ * What the run hands the project it creates, and so the most the whole suite
+ * may spend. A first guess until a few full runs say what a run really costs;
+ * `E2E_PROJECT_CREDITS` is how that number is corrected without a code change.
+ */
+export const PROJECT_CREDITS = readCredits();
+
+function readCredits(): number {
+  const raw = process.env.E2E_PROJECT_CREDITS;
+  if (!raw) return 2_000;
+
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new Error(`E2E_PROJECT_CREDITS must be a positive number, got "${raw}".`);
+  }
+  return parsed;
+}
+
+/**
+ * Where the run records the project it made for itself. Written by the
+ * workspace setup and read by every worker, the same way the auth state is.
+ */
+export function workspacePath(): string {
+  return path.join(RUN_DIR, 'workspace.json');
+}
+
 type RequiredVar = 'LAB_ID' | 'PROJECT_ID';
 
 /**
@@ -133,10 +160,33 @@ export function requireEnv<T extends RequiredVar>(...keys: T[]): Record<T, strin
   >;
 }
 
-/** The only lab and project tests may write to. */
-export function testWorkspace() {
-  const env = requireEnv('LAB_ID', 'PROJECT_ID');
-  return { labId: env.LAB_ID, projectId: env.PROJECT_ID };
+/**
+ * The only lab and project tests may write to.
+ *
+ * The lab is long-lived and named by the environment. The project is not: the
+ * run creates one, spends inside it and deletes it, so that many runs can share
+ * one lab without sharing state or racing each other's data. `PROJECT_ID`
+ * overrides that for a local run against a project someone wants to keep.
+ */
+export function testWorkspace(): { labId: string; projectId: string } {
+  const labId = requireEnv('LAB_ID').LAB_ID;
+
+  const pinned = process.env.PROJECT_ID;
+  if (pinned) return { labId, projectId: pinned };
+
+  const file = workspacePath();
+  if (!fs.existsSync(file)) {
+    throw new Error(
+      `This run has no project: ${file} was never written. The workspace setup ` +
+        'creates one, so run the whole suite rather than a spec on its own, or set ' +
+        'PROJECT_ID to a project to use instead.'
+    );
+  }
+
+  const workspace = JSON.parse(fs.readFileSync(file, 'utf8')) as { projectId?: string };
+  if (!workspace.projectId) throw new Error(`${file} names no project.`);
+
+  return { labId, projectId: workspace.projectId };
 }
 
 export function resolveWorkers(): number {

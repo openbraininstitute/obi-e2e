@@ -8,6 +8,7 @@
 
 import {
   collectSections,
+  creditNotice,
   featureStatus,
   formatDuration,
   passRate,
@@ -243,6 +244,45 @@ function featureTables(sections: Section[], expandable: boolean): unknown[] {
   return elements;
 }
 
+/**
+ * People to pull into the channel when the run could not be paid for.
+ *
+ * Nobody watches a card that says a run failed for want of credits; a mention
+ * reaches them. Read from `TEAMS_ALERT_MENTIONS` as `Name <id>`, comma
+ * separated, where the id is the person's Teams sign-in address:
+ *
+ *   TEAMS_ALERT_MENTIONS="Ada Lovelace <ada@example.org>, Alan Turing <alan@example.org>"
+ *
+ * A mention only renders when the webhook is a Power Automate flow posting the
+ * card; a plain incoming webhook drops it and shows the name as written.
+ */
+export type Mention = { name: string; id: string };
+
+export function parseMentions(raw = process.env.TEAMS_ALERT_MENTIONS): Mention[] {
+  if (!raw?.trim()) return [];
+
+  return raw
+    .split(',')
+    .map((entry) => /^\s*(?<name>[^<]+?)\s*<\s*(?<id>[^>]+?)\s*>\s*$/u.exec(entry))
+    .flatMap((match) =>
+      match?.groups?.name && match.groups.id
+        ? [{ name: match.groups.name, id: match.groups.id }]
+        : []
+    );
+}
+
+/** The `<at>` tags Teams swaps for real mentions, paired with their entities. */
+function mentionBlock(mentions: Mention[]): { text: string; entities: unknown[] } {
+  return {
+    text: mentions.map((person) => `<at>${person.name}</at>`).join(' '),
+    entities: mentions.map((person) => ({
+      type: 'mention',
+      text: `<at>${person.name}</at>`,
+      mentioned: { id: person.id, name: person.name },
+    })),
+  };
+}
+
 /** Wraps card content in the envelope the Teams webhook expects. */
 function message(body: unknown[], runUrl: string) {
   return {
@@ -397,10 +437,15 @@ export const TEAMS_PAYLOAD_LIMIT = 25_000;
 /** How much of the card to draw. Each level is smaller than the one before. */
 export type Detail = 'full' | 'sections' | 'summary';
 
-export function buildCard(summary: Summary, detail: Detail = 'full') {
+export function buildCard(summary: Summary, detail: Detail = 'full', mentions = parseMentions()) {
   const ok = summary.failed === 0 && summary.flaky === 0;
   const services = detail === 'summary' ? [] : (summary.services ?? []);
   const features = detail === 'summary' ? [] : (summary.features ?? []);
+
+  // A run nobody could pay for is not a run that found something, so this sits
+  // above the counts rather than among the failures.
+  const notice = creditNotice(summary.credits, summary.failed);
+  const alert = notice && summary.credits?.problem ? mentionBlock(mentions) : null;
 
   const body: unknown[] = [
     {
@@ -433,6 +478,32 @@ export function buildCard(summary: Summary, detail: Detail = 'full') {
       ],
     },
   ];
+
+  if (notice) {
+    body.push({
+      type: 'Container',
+      style: 'warning',
+      spacing: 'Medium',
+      items: [
+        text('Credits', { weight: 'Bolder', color: 'Warning' }),
+        text(clamp(notice, MAX.failureError), { spacing: 'Small' }),
+        ...(alert && alert.text ? [text(alert.text, { spacing: 'Small' })] : []),
+      ],
+    });
+  }
+
+  if (summary.credits?.assigned !== undefined) {
+    const { assigned, spent, remaining } = summary.credits;
+    body.push({
+      type: 'FactSet',
+      spacing: 'Medium',
+      facts: [
+        fact('Credits assigned', String(assigned)),
+        fact('Credits spent', spent === undefined ? '—' : String(spent)),
+        fact('Credits left', remaining === undefined ? '—' : String(remaining)),
+      ],
+    });
+  }
 
   if (services.length > 0) {
     body.push(
@@ -490,7 +561,10 @@ export function buildCard(summary: Summary, detail: Detail = 'full') {
           $schema: 'http://adaptivecards.io/schemas/adaptive-card.json',
           type: 'AdaptiveCard',
           version: '1.5',
-          msteams: { width: 'Full' },
+          msteams: {
+            width: 'Full',
+            ...(alert && alert.entities.length > 0 ? { entities: alert.entities } : {}),
+          },
           body,
           actions: summary.runUrl
             ? [{ type: 'Action.OpenUrl', title: 'Open run and report', url: summary.runUrl }]

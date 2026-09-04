@@ -6,6 +6,7 @@ import {
   buildCardWithinLimit,
   buildPosts,
   buildThreadPayload,
+  parseMentions,
   TEAMS_PAYLOAD_LIMIT,
 } from './teams-card';
 
@@ -357,5 +358,73 @@ describe('payload limits', () => {
     const found: string[] = [];
     walk(buildPosts(pathological)[0]?.message, found);
     expect(found.some((item) => item.includes('…'))).toBe(true);
+  });
+});
+
+/** A run with nothing in it but the money. */
+function spentSummary(credits: Summary['credits'], failed = 0): Summary {
+  return { ...buildSummary({ suites: [], stats: {} }), failed, credits };
+}
+
+describe('parseMentions', () => {
+  test('reads a name and the address behind it', () => {
+    expect(parseMentions('Ada Lovelace <ada@example.org>')).toEqual([
+      { name: 'Ada Lovelace', id: 'ada@example.org' },
+    ]);
+  });
+
+  test('reads several, however they are spaced', () => {
+    expect(parseMentions(' Ada <a@x.org> ,Alan  <b@x.org>')).toEqual([
+      { name: 'Ada', id: 'a@x.org' },
+      { name: 'Alan', id: 'b@x.org' },
+    ]);
+  });
+
+  // A malformed entry must not take the rest of the list down with it.
+  test('drops an entry with no address and keeps the others', () => {
+    expect(parseMentions('Ada, Alan <b@x.org>')).toEqual([{ name: 'Alan', id: 'b@x.org' }]);
+  });
+
+  test('is empty when nothing is configured', () => {
+    expect(parseMentions(undefined)).toEqual([]);
+    expect(parseMentions('  ')).toEqual([]);
+  });
+});
+
+describe('credits on the card', () => {
+  test('tags the named people when the lab cannot pay', () => {
+    const card = buildCard(
+      spentSummary({ required: 2000, problem: 'The lab holds 12 credits.' }, 0),
+      'full',
+      [{ name: 'Ada', id: 'ada@example.org' }]
+    );
+
+    const content = (card.attachments[0] as { content: Record<string, unknown> }).content;
+    expect(JSON.stringify(content)).toContain('<at>Ada</at>');
+    expect((content.msteams as { entities?: unknown[] }).entities).toEqual([
+      { type: 'mention', text: '<at>Ada</at>', mentioned: { id: 'ada@example.org', name: 'Ada' } },
+    ]);
+  });
+
+  // Nobody is pulled into the channel for a run that merely spent its budget.
+  test('tags nobody when the money was not the problem', () => {
+    const card = buildCard(
+      spentSummary({ required: 2000, assigned: 2000, remaining: 1200 }, 1),
+      'full',
+      [{ name: 'Ada', id: 'ada@example.org' }]
+    );
+
+    const content = (card.attachments[0] as { content: Record<string, unknown> }).content;
+    expect((content.msteams as { entities?: unknown[] }).entities).toBeUndefined();
+    expect(JSON.stringify(content)).not.toContain('<at>');
+  });
+
+  test('shows what the run was given and what it spent', () => {
+    const card = buildCard(
+      spentSummary({ required: 2000, assigned: 2000, spent: 800, remaining: 1200 })
+    );
+    const text = JSON.stringify(card);
+    expect(text).toContain('Credits spent');
+    expect(text).toContain('800');
   });
 });

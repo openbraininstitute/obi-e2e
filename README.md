@@ -123,6 +123,33 @@ versions. A service that is down fails there, with its name, instead of showing
 up as a wall of broken tests. The launch system is skipped because it answers
 only inside the VPC. See `api/README.md`.
 
+Then the run takes a project of its own. The lab is long-lived and shared —
+a run per open pull request, plus whoever is testing locally — and a lab holds
+at most forty projects, so a run creates one, works inside it, and deletes it at
+the end rather than everyone writing into the same place.
+
+A new project is empty and cannot pay for a simulation, so the run moves a budget
+into it first. `E2E_PROJECT_CREDITS` says how much, and defaults to 2000; the
+card at the end reports what the run actually spent, which is the number to
+correct it with.
+
+| What happens                         | What follows                                                          |
+| ------------------------------------ | --------------------------------------------------------------------- |
+| the lab holds less than a run needs  | the private suite does not run; public and onboarding still do        |
+| the lab already holds forty projects | the private suite does not run, naming leftover projects as the cause |
+| the transfer in fails                | the project is deleted again and the private suite does not run       |
+| the transfer back at the end fails   | reported, and the run stays green                                     |
+| the project cannot be deleted        | the run fails: it has taken one of the lab's forty for good           |
+
+None of these are product bugs, so the card says so in its own words rather than
+leaving a list of failing tests to imply one. Set `TEAMS_ALERT_MENTIONS` to
+`Name <sign-in address>`, comma separated, and the people named are tagged when
+the lab cannot pay. Mentions render only when the webhook is a Power Automate
+flow posting the card.
+
+`PROJECT_ID` overrides all of this and points the run at a project that already
+exists, which is what you want when debugging a single spec locally.
+
 ## Imports and shared values
 
 Modules are imported by alias, not by counting `../` segments:
@@ -166,12 +193,14 @@ the strings: a typo in a tag means the test never runs and nothing warns you.
 
 An environment is one URL plus the test users.
 
-| Variable                                              | Meaning                                    |
-| ----------------------------------------------------- | ------------------------------------------ |
-| `E2E_BASE_URL`                                        | the application under test                 |
-| `E2E_TEST_USERNAME` / `E2E_TEST_PASSWORD`             | the primary user                           |
-| `LAB_ID` / `PROJECT_ID`                               | the primary user's virtual lab and project |
-| `E2E_ONBOARDING_USERNAME` / `E2E_ONBOARDING_PASSWORD` | the onboarding user, optional              |
+| Variable                                              | Meaning                                                   |
+| ----------------------------------------------------- | --------------------------------------------------------- |
+| `E2E_BASE_URL`                                        | the application under test                                |
+| `E2E_TEST_USERNAME` / `E2E_TEST_PASSWORD`             | the primary user                                          |
+| `LAB_ID`                                              | the primary user's virtual lab                            |
+| `PROJECT_ID`                                          | optional; a project to use instead of one the run creates |
+| `E2E_PROJECT_CREDITS`                                 | what to move into that project, default 2000              |
+| `E2E_ONBOARDING_USERNAME` / `E2E_ONBOARDING_PASSWORD` | the onboarding user, optional                             |
 
 There are two test users because a user may own only one virtual lab, and the
 suite is split by what each is responsible for.
