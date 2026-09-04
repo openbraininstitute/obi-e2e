@@ -245,7 +245,7 @@ stays green, the cause is the schema, not the editor.
 ## Safety
 
 Levels 1 and 2 create nothing. Levels 3 and 4 create a campaign and spend project
-credits, so they are staging only, never tagged `@smoke`, and write only inside
+credits, so they are tagged `@spends`, run behind the credit check, and write only inside
 the lab named by `LAB_ID`, inside the project the run creates for itself.
 
 Credits are the real constraint on how often these run. One synaptome build costs

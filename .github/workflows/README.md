@@ -2,13 +2,21 @@
 
 `e2e.yml` is the only workflow. It decides what to run from the trigger:
 
-| Trigger                               | Target             | What runs     | Result                                |
-| ------------------------------------- | ------------------ | ------------- | ------------------------------------- |
-| Schedule, 07:00 UTC                   | staging            | full suite    | Teams card                            |
-| Schedule, 07:00 UTC                   | production         | `@smoke` only | Teams card                            |
-| Push / PR in this repo                | staging            | full suite    | PR check                              |
-| `repository_dispatch` (`e2e-preview`) | the PR preview URL | full suite    | comment on the source PR + Teams card |
-| Manual run                            | your choice        | your choice   | Teams card                            |
+| Trigger                               | Target             | What runs   | Result                                |
+| ------------------------------------- | ------------------ | ----------- | ------------------------------------- |
+| Schedule, 07:00 UTC                   | staging            | full suite  | Teams card                            |
+| Schedule, 07:00 UTC                   | production         | full suite  | Teams card                            |
+| Push / PR in this repo                | staging            | full suite  | PR check                              |
+| `repository_dispatch` (`e2e-preview`) | the PR preview URL | full suite  | comment on the source PR + Teams card |
+| Manual run                            | your choice        | your choice | Teams card                            |
+
+Both scheduled runs run everything. A test only stays out of one of them by
+carrying `@staging` or `@production`, and a workflow only by leaving that
+deployment out of its fixture's `env` list. See
+[docs/scenario-tags.md](../../docs/scenario-tags.md).
+
+Production runs are no longer read-only: they create a project in the production
+lab, move credits into it, and delete it at the end, the same as staging.
 
 ## Configuration
 

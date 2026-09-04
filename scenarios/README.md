@@ -77,8 +77,15 @@ being written twice.
 | `@public`     | nobody, signed out                           | pages any visitor can reach, outside `/app/virtual-lab/` |
 | `@private`    | the primary user, inside its established lab | workflows, data, notebooks: the work inside a lab        |
 | `@onboarding` | the onboarding user, owning nothing          | creating a lab, creating projects, inviting members      |
-| `@smoke`      | added to any of the above                    | also runs against production                             |
+| `@spends`     | added to `@private`                          | launches something and spends the project's credits      |
+| `@staging`    | added to any of the above                    | staging only; kept off production                        |
+| `@production` | added to any of the above                    | production only; kept off staging                        |
 | `@readonly`   | added to any of the above                    | creates nothing                                          |
+| `@smoke`      | added to any of the above                    | the short subset behind `bun run test:smoke`             |
+
+Every test runs against staging and production both. `@staging` and
+`@production` are for the few that cannot; leaving both off is right nearly
+every time. A workflow says where it runs in its fixture's `env` list instead.
 
 Public pages carry `@public` and run signed out, because that is what a visitor
 actually sees. Checking them while signed in would test a different page.

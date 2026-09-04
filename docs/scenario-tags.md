@@ -84,14 +84,42 @@ A test may carry two context tags. It then runs twice, once per user.
 
 ### Extra tags — add zero or more
 
-| Tag         | Means                                              |
-| ----------- | -------------------------------------------------- |
-| `@smoke`    | also run this every morning against **production** |
-| `@readonly` | this test creates nothing and deletes nothing      |
+| Tag           | Means                                                         |
+| ------------- | ------------------------------------------------------------- |
+| `@spends`     | this test launches something and spends the project's credits |
+| `@staging`    | run this on staging **only** — keep it off production         |
+| `@production` | run this on production **only** — keep it off staging         |
+| `@readonly`   | this test creates nothing and deletes nothing                 |
+| `@smoke`      | part of the short subset behind `bun run test:smoke`          |
 
-`@smoke` is the only extra tag a job filters on today. `@readonly` is a promise
-you write down for the next reader; you can still filter on it by hand with
-`--grep @readonly`.
+**Every test runs on both deployments unless it says otherwise.** That is the
+default and almost every test wants it. `@staging` and `@production` are for the
+few that cannot: a feature that has not reached production yet, or one kept off
+it deliberately. The config excludes the other deployment's tag, so a local run
+against production skips exactly what CI skips.
+
+`@spends` moves a test into its own project, which waits for a funded project.
+A lab that cannot pay stops those tests and leaves everything that only reads to
+run. Use `PRIVATE_SPENDS` from `@fixtures/tags` rather than writing it by hand.
+
+`@readonly` is a promise you write down for the next reader; filter on it by
+hand with `--grep @readonly`.
+
+`@smoke` used to mean "also run against production", back when production ran
+almost nothing. It no longer decides anything about deployments — whether a test
+is fast has nothing to do with which deployment offers the feature it covers.
+
+### Workflows do not use the deployment tags
+
+A scan-config workflow test says where it runs in its fixture, not in a tag:
+
+```jsonc
+{ "activity": "build", "env": ["staging", "production"], ... }
+```
+
+An empty `env` means nowhere yet. Which deployments offer a workflow is a fact
+about the release rather than about the test, so it belongs with the fixture.
+See [scan-config-testing-plan.md](scan-config-testing-plan.md).
 
 ### No tool knows these words
 
@@ -101,10 +129,9 @@ same way. All the meaning comes from two files we wrote:
 [playwright.config.ts](../playwright.config.ts) and
 [.github/workflows/e2e.yml](../.github/workflows/e2e.yml).
 
-`@smoke` is still worth keeping: a _smoke test_ is standard industry vocabulary
-for a thin, fast check that a build is alive, and `@smoke` is the usual tag name
-for it. `@public`, `@private` and `@onboarding` are ours, named after our two
-test users.
+`@smoke` is still worth keeping for what the word actually means: a _smoke test_
+is standard vocabulary for a thin, fast check that a build is alive. `@public`,
+`@private` and `@onboarding` are ours, named after our two test users.
 
 ## So what does `{ tag: ['@private', '@readonly'] }` mean?
 
@@ -120,8 +147,10 @@ test users.
 Then:
 
 4. Does the test only read? → add **`@readonly`**
-5. Should it also guard production daily? → add **`@smoke`** — but only if it
-   creates nothing outside the QA lab and project.
+5. Does it launch something that costs credits? → use **`PRIVATE_SPENDS`**
+6. Does it belong to one deployment only? → add **`@staging`** or
+   **`@production`**. Leave both off unless you know it cannot run on the other,
+   because both is the right answer nearly every time.
 
 ## Running tests by tag
 
@@ -137,15 +166,23 @@ bun run test:smoke
 bun run test --grep-invert @onboarding
 ```
 
+The deployment a run targets comes from `E2E_BASE_URL`, or `E2E_ENV` where the
+host does not say. So this runs the production selection from your machine:
+
+```bash
+E2E_BASE_URL=https://www.openbraininstitute.org bun run test
+```
+
 `--grep` and the project's own filter both apply. `--grep @readonly` runs the
-read-only tests of every project, not a fourth project of its own.
+read-only tests of every project; it does not make a project of its own.
 
 ## Common mistakes
 
-| Mistake                           | What happens                              |
-| --------------------------------- | ----------------------------------------- |
-| No context tag                    | the test silently never runs              |
-| Tag written without `@`           | Playwright refuses to start               |
-| Tag only in `scenario.md`         | the test silently never runs              |
-| `@smoke` on a test that writes    | it creates data on production             |
-| `@readonly` on a test that writes | the label lies; the next reader trusts it |
+| Mistake                           | What happens                                                     |
+| --------------------------------- | ---------------------------------------------------------------- |
+| No context tag                    | the test silently never runs                                     |
+| Tag written without `@`           | Playwright refuses to start                                      |
+| Tag only in `scenario.md`         | the test silently never runs                                     |
+| `@staging` added out of caution   | the test never guards production again                           |
+| `@spends` missing on a launch     | it runs before the credit check, and fails when the lab is empty |
+| `@readonly` on a test that writes | the label lies; the next reader trusts it                        |

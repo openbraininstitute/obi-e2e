@@ -27,8 +27,13 @@ bun run test    # or a single spec while iterating
 - No `waitForTimeout`. Web-first assertions already retry.
 - Every test is independent and leaves no data behind outside the QA lab.
 - A test declares its context with a tag. `@public` runs signed out. `@private`
-  runs as the primary user inside its established lab. `@onboarding` runs as the
-  second user, which creates labs, projects and invites, and cleans up after itself.
+  runs as the primary user inside the project the run created for itself.
+  `@onboarding` runs as the second user, which creates labs, projects and
+  invites, and cleans up after itself. Add `@spends` when a test launches
+  something that costs credits.
+- Every test runs against staging and production. Add `@staging` or
+  `@production` only when a test cannot run on the other. A scan-config workflow
+  says where it runs in its fixture's `env` list, never with a tag.
 
 ## Generating and healing tests
 

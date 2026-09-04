@@ -122,20 +122,28 @@ at most forty projects, so a run creates one, works inside it, and deletes it at
 the end rather than everyone writing into the same place.
 
 A new project is empty and cannot pay for a simulation, so the run moves a budget
-into it first. `E2E_PROJECT_CREDITS` says how much, and defaults to 2000; the
-card at the end reports what the run actually spent, which is the number to
-correct it with.
+into it. `E2E_PROJECT_CREDITS` says how much, and defaults to 2000; the card at
+the end reports what the run actually spent, which is the number to correct it
+with.
 
-| What happens                         | What follows                                                          |
-| ------------------------------------ | --------------------------------------------------------------------- |
-| the lab holds less than a run needs  | the private suite does not run; public and onboarding still do        |
-| the lab already holds forty projects | the private suite does not run, naming leftover projects as the cause |
-| the transfer in fails                | the project is deleted again and the private suite does not run       |
-| the transfer back at the end fails   | reported, and the run stays green                                     |
-| the project cannot be deleted        | the run fails: it has taken one of the lab's forty for good           |
+Taking a project costs nothing, so a run takes one whatever the lab holds and
+everything that only reads runs either way. Only the tests tagged `@spends` need
+the money, and one check stands in front of them — so an empty lab stops those,
+once, instead of every launching test failing later for a reason that reads like
+a product bug.
+
+| What happens                         | What follows                                                       |
+| ------------------------------------ | ------------------------------------------------------------------ |
+| the lab holds less than a run needs  | `@spends` tests do not run; everything else does                   |
+| the transfer in fails                | the project is emptied and handed back; `@spends` tests do not run |
+| the lab already holds forty projects | the run stops, naming leftover projects as the cause               |
+| the transfer back at the end fails   | reported, and the run stays green                                  |
+| the project cannot be deleted        | the run fails: it has taken one of the lab's forty for good        |
 
 None of these are product bugs, so the card says so in its own words rather than
-leaving a list of failing tests to imply one. Set `TEAMS_ALERT_MENTIONS` to
+leaving a list of failing tests to imply one. What the run did with the money —
+spent, returned to the lab, or stranded because the transfer back failed — is
+reported as its own block and charted on the summary card. Set `TEAMS_ALERT_MENTIONS` to
 `Name <sign-in address>`, comma separated, and the people named are tagged when
 the lab cannot pay. Mentions render only when the webhook is a Power Automate
 flow posting the card.
@@ -206,13 +214,18 @@ the strings: a typo in a tag means the test never runs and nothing warns you.
 
 An environment is one URL plus the test users.
 
-| Variable                                              | Meaning                                      |
-| ----------------------------------------------------- | -------------------------------------------- |
-| `E2E_BASE_URL`                                        | the application under test                   |
-| `E2E_TEST_USERNAME` / `E2E_TEST_PASSWORD`             | the primary user                             |
-| `LAB_ID`                                              | the primary user's virtual lab               |
-| `E2E_PROJECT_CREDITS`                                 | what to move into that project, default 2000 |
-| `E2E_ONBOARDING_USERNAME` / `E2E_ONBOARDING_PASSWORD` | the onboarding user, optional                |
+| Variable                                              | Meaning                                               |
+| ----------------------------------------------------- | ----------------------------------------------------- |
+| `E2E_BASE_URL`                                        | the application under test                            |
+| `E2E_TEST_USERNAME` / `E2E_TEST_PASSWORD`             | the primary user                                      |
+| `LAB_ID`                                              | the primary user's virtual lab                        |
+| `E2E_PROJECT_CREDITS`                                 | what to move into that project, default 2000          |
+| `E2E_ONBOARDING_USERNAME` / `E2E_ONBOARDING_PASSWORD` | the onboarding user, optional                         |
+| `E2E_ENV`                                             | `staging` or `production`, when the host does not say |
+| `E2E_LOG_FORMAT` / `E2E_LOG_LEVEL`                    | how the run logs; see below                           |
+
+The project is not configured. Every run creates one, spends inside it, and
+deletes it at the end.
 
 There are two test users because a user may own only one virtual lab, and the
 suite is split by what each is responsible for.
