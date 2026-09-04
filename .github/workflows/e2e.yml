@@ -15,7 +15,7 @@ on:
         options: [staging, production]
         default: staging
       grep:
-        description: Only run tests matching this tag or title (e.g. @smoke)
+        description: Only run tests matching this tag or title (e.g. @readonly)
         type: string
         default: ''
   repository_dispatch:
@@ -71,14 +71,20 @@ jobs:
     env:
       CI: 'true'
       E2E_ENVIRONMENT: ${{ matrix.run.environment }}
-      E2E_BASE_URL: >-
-        ${{ matrix.run.base_url
-            || (matrix.run.environment == 'production' && vars.E2E_BASE_URL_PRODUCTION)
-            || vars.E2E_BASE_URL_STAGING }}
-      E2E_TEST_USERNAME: ${{ secrets.OBI_USERNAME }}
-      E2E_TEST_PASSWORD: ${{ secrets.OBI_PASSWORD }}
-      E2E_ONBOARDING_USERNAME: ${{ secrets.OBI_ONBOARDING_USERNAME }}
-      E2E_ONBOARDING_PASSWORD: ${{ secrets.OBI_ONBOARDING_PASSWORD }}
+      E2E_ENV: ${{ matrix.run.environment }}
+      E2E_BASE_URL: ${{ matrix.run.base_url }}
+      E2E_TEST_USERNAME: >-
+        ${{ matrix.run.environment == 'production' && secrets.OBI_USERNAME_PRODUCTION
+            || secrets.OBI_USERNAME_STAGING }}
+      E2E_TEST_PASSWORD: >-
+        ${{ matrix.run.environment == 'production' && secrets.OBI_PASSWORD_PRODUCTION
+            || secrets.OBI_PASSWORD_STAGING }}
+      E2E_ONBOARDING_USERNAME: >-
+        ${{ matrix.run.environment == 'production' && secrets.OBI_ONBOARDING_USERNAME_PRODUCTION
+            || secrets.OBI_ONBOARDING_USERNAME_STAGING }}
+      E2E_ONBOARDING_PASSWORD: >-
+        ${{ matrix.run.environment == 'production' && secrets.OBI_ONBOARDING_PASSWORD_PRODUCTION
+            || secrets.OBI_ONBOARDING_PASSWORD_STAGING }}
       LAB_ID: >-
         ${{ matrix.run.environment == 'production' && secrets.LAB_ID_PRODUCTION
             || secrets.LAB_ID_STAGING }}
@@ -102,17 +108,8 @@ jobs:
       - name: Install browsers
         run: bun run browsers
 
-      - name: Check required configuration
-        run: |
-          missing=()
-          [[ -n "$E2E_BASE_URL" ]] || missing+=(E2E_BASE_URL)
-          [[ -n "$E2E_TEST_USERNAME" ]] || missing+=(E2E_TEST_USERNAME)
-          [[ -n "$E2E_TEST_PASSWORD" ]] || missing+=(E2E_TEST_PASSWORD)
-          [[ -n "$LAB_ID" ]] || missing+=(LAB_ID)
-          if (( ${#missing[@]} )); then
-            echo "Missing configuration: ${missing[*]}" >&2
-            exit 1
-          fi
+      - name: Check configuration
+        run: bun run preflight
 
       - name: Run tests
         id: tests
