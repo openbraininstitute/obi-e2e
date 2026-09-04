@@ -60,4 +60,14 @@ Scenario: Every Circuit filter narrows the listing
   And a filter I type into gives no results for a value nothing matches
   And a range filter given a minimum above its maximum gives no results
   And clearing each filter brings the listing back
+
+@private @readonly
+Scenario: Switch between the flat and hierarchy views
+  Given I am on the Circuit listing
+  Then I see the "Subcircuits" column
+  When I switch the view
+  Then the "Subcircuits" column is gone
+  And I see the "Lifecycle status" column instead
+  When I switch back
+  Then I see the "Subcircuits" column again
 ```

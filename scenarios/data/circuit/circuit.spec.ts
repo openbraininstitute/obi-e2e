@@ -162,4 +162,25 @@ test.describe('Circuit listing', () => {
       await test.step(column, () => checkFilter(page, column));
     }
   });
+
+  test(
+    'switches between the flat and hierarchy views',
+    { tag: PRIVATE_READONLY },
+    async ({ page }) => {
+      const listing = entityListing(page);
+      const subcircuits = listing.columnHeader('Subcircuits');
+      const lifecycle = listing.columnHeader('Lifecycle status');
+
+      // Circuits nest, so the default view carries a Subcircuits column. The
+      // other view drops it and shows the lifecycle of each circuit instead.
+      await expect(subcircuits).toBeVisible();
+
+      await listing.viewToggle.click();
+      await expect(subcircuits).toBeHidden();
+      await expect(lifecycle).toBeVisible();
+
+      await listing.viewToggle.click();
+      await expect(subcircuits).toBeVisible();
+    }
+  );
 });
