@@ -6,6 +6,8 @@
  * Usage: TEAMS_WEBHOOK_URL=... bun scripts/ci/teams-card.ts test-results/summary.json
  */
 
+/** Loads the .env files. The webhook URL lives in the deployment's local one. */
+import '@fixtures/env';
 import type { CreditReport } from '@fixtures/credit-report';
 
 import {
@@ -22,6 +24,25 @@ import {
 
 type TextColor = 'Default' | 'Dark' | 'Light' | 'Accent' | 'Good' | 'Warning' | 'Attention';
 type ContainerStyle = 'default' | 'emphasis' | 'good' | 'attention' | 'warning' | 'accent';
+type BadgeStyle =
+  | 'Default'
+  | 'Subtle'
+  | 'Informative'
+  | 'Accent'
+  | 'Good'
+  | 'Attention'
+  | 'Warning';
+
+/** The card widths an element applies to. Teams picks one from the surface. */
+type TargetWidth =
+  | 'VeryNarrow'
+  | 'Narrow'
+  | 'Standard'
+  | 'Wide'
+  | `atLeast:${'VeryNarrow' | 'Narrow' | 'Standard' | 'Wide'}`
+  | `atMost:${'VeryNarrow' | 'Narrow' | 'Standard' | 'Wide'}`;
+
+const TITLE = 'Open Brain Institute Platform e2e';
 
 const STATUS: Record<
   ServiceSummary['status'] | ReturnType<typeof featureStatus>,
@@ -35,6 +56,13 @@ const STATUS: Record<
   flaky: { label: '● Flaky', color: 'Warning', style: 'warning' },
 };
 
+const OUTCOME: Record<ReturnType<typeof featureStatus>, { label: string; style: BadgeStyle }> = {
+  passed: { label: 'Passed', style: 'Good' },
+  failed: { label: 'Failed', style: 'Attention' },
+  flaky: { label: 'Flaky', style: 'Warning' },
+  skipped: { label: 'Skipped', style: 'Subtle' },
+};
+
 function text(
   value: string,
   options: {
@@ -43,6 +71,7 @@ function text(
     color?: TextColor;
     subtle?: boolean;
     spacing?: 'None' | 'Small' | 'Default' | 'Medium';
+    targetWidth?: TargetWidth;
   } = {}
 ) {
   return {
@@ -54,6 +83,38 @@ function text(
     weight: options.weight,
     color: options.color,
     isSubtle: options.subtle,
+    targetWidth: options.targetWidth,
+  };
+}
+
+/** A chip. Badge is Teams-only, so each one carries a text fallback. */
+function badge(
+  value: string,
+  options: { style?: BadgeStyle; appearance?: 'Filled' | 'Tint'; tooltip?: string } = {}
+) {
+  return {
+    type: 'Badge',
+    text: value,
+    style: options.style ?? 'Default',
+    appearance: options.appearance ?? 'Tint',
+    shape: 'Rounded',
+    tooltip: options.tooltip,
+    fallback: text(value, { size: 'Small', subtle: true }),
+  };
+}
+
+function panel(
+  items: unknown[],
+  options: { area?: string; spacing?: 'None' | 'Small' | 'Default' | 'Medium' } = {}
+) {
+  return {
+    type: 'Container',
+    showBorder: true,
+    roundedCorners: true,
+    verticalContentAlignment: 'Center',
+    spacing: options.spacing,
+    'grid.area': options.area,
+    items,
   };
 }
 
@@ -276,7 +337,6 @@ function outcomeChart(summary: Summary): unknown | null {
     title: 'Tests',
     // Standard Adaptive Cards fallback, understood even where the chart is not.
     fallback: 'drop',
-    spacing: 'Medium',
     data: slices,
   };
 }
@@ -521,40 +581,75 @@ export function buildCard(summary: Summary, detail: Detail = 'full', mentions = 
   const notice = creditNotice(summary.credits, summary.failed);
   const alert = notice && summary.credits?.problem ? mentionBlock(mentions) : null;
 
+  const outcome = OUTCOME[featureStatus(summary)];
+  const chart = outcomeChart(summary);
+
   const body: unknown[] = [
     {
       type: 'Container',
       style: ok ? 'good' : 'attention',
+      roundedCorners: true,
       items: [
-        text(ok ? 'E2E passed' : 'E2E failed', {
-          size: 'Large',
-          weight: 'Bolder',
-          color: ok ? 'Good' : 'Attention',
-        }),
-        text(`${summary.environment} · ${summary.browser} · ${summary.trigger ?? 'Local'}`, {
-          subtle: true,
+        text(TITLE, { size: 'Large', weight: 'Bolder' }),
+        {
+          type: 'Container',
           spacing: 'Small',
-        }),
+          layouts: [
+            {
+              type: 'Layout.Flow',
+              horizontalItemsAlignment: 'Left',
+              columnSpacing: 'Small',
+              rowSpacing: 'Small',
+            },
+          ],
+          items: [
+            badge(outcome.label, {
+              style: outcome.style,
+              appearance: 'Filled',
+              tooltip: 'How the run ended',
+            }),
+            badge(summary.environment, { style: 'Accent', tooltip: 'Deployment under test' }),
+            badge(summary.browser, { style: 'Informative', tooltip: 'Browser' }),
+            badge(summary.trigger ?? 'Local', { style: 'Subtle', tooltip: 'What started the run' }),
+          ],
+        },
       ],
     },
     {
-      type: 'FactSet',
+      type: 'Container',
       spacing: 'Medium',
-      facts: [
+      layouts: [
         {
-          title: 'Result',
-          value: `${summary.passed} passed · ${summary.failed} failed · ${summary.flaky} flaky · ${summary.skipped} skipped`,
+          type: 'Layout.AreaGrid',
+          targetWidth: 'atLeast:Standard',
+          columns: [70],
+          columnSpacing: 'Medium',
+          areas: [{ name: 'facts' }, { name: 'ring', column: 2 }],
         },
-        { title: 'Pass rate', value: passRate(summary) },
-        { title: 'Duration', value: formatDuration(summary.durationMs) },
-        ...(summary.baseUrl ? [fact('App', clamp(summary.baseUrl, MAX.baseUrl))] : []),
-        fact('Commit', summary.commit.slice(0, 8) || 'n/a'),
+      ],
+      items: [
+        panel(
+          [
+            {
+              type: 'FactSet',
+              facts: [
+                {
+                  title: 'Result',
+                  value: `${summary.passed} passed · ${summary.failed} failed · ${summary.flaky} flaky · ${summary.skipped} skipped`,
+                },
+                { title: 'Pass rate', value: passRate(summary) },
+                { title: 'Duration', value: formatDuration(summary.durationMs) },
+                ...(summary.baseUrl ? [fact('App', clamp(summary.baseUrl, MAX.baseUrl))] : []),
+                fact('Commit', summary.commit.slice(0, 8) || 'n/a'),
+              ],
+            },
+          ],
+          { area: 'facts' }
+        ),
+        ...(chart ? [panel([chart], { area: 'ring' })] : []),
       ],
     },
   ];
-
-  const chart = outcomeChart(summary);
-  if (chart) body.push(chart);
 
   if (notice) {
     body.push({
@@ -571,21 +666,27 @@ export function buildCard(summary: Summary, detail: Detail = 'full', mentions = 
 
   if (summary.credits?.assigned !== undefined) {
     const { assigned, spent, remaining } = summary.credits;
-    body.push({
-      type: 'FactSet',
-      spacing: 'Medium',
-      facts: [
-        fact('Credits assigned', String(assigned)),
-        fact('Credits spent', spent === undefined ? '—' : String(spent)),
-        fact('Credits left', remaining === undefined ? '—' : String(remaining)),
-        ...(summary.credits?.returned === undefined
-          ? []
-          : [fact('Returned to the lab', String(summary.credits.returned))]),
-      ],
-    });
-
     const bar = creditChart(summary.credits);
-    if (bar) body.push(bar);
+
+    body.push(
+      panel(
+        [
+          {
+            type: 'FactSet',
+            facts: [
+              fact('Credits assigned', String(assigned)),
+              fact('Credits spent', spent === undefined ? '—' : String(spent)),
+              fact('Credits left', remaining === undefined ? '—' : String(remaining)),
+              ...(summary.credits?.returned === undefined
+                ? []
+                : [fact('Returned to the lab', String(summary.credits.returned))]),
+            ],
+          },
+          ...(bar ? [bar] : []),
+        ],
+        { spacing: 'Medium' }
+      )
+    );
   }
 
   if (services.length > 0) {
@@ -630,6 +731,7 @@ export function buildCard(summary: Summary, detail: Detail = 'full', mentions = 
         text(`\`${clamp(failure.file, MAX.filePath)}:${failure.line}\``, {
           size: 'Small',
           subtle: true,
+          targetWidth: 'atLeast:Narrow',
         })
       );
     }

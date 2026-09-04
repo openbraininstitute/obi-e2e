@@ -15,6 +15,23 @@ One run produces a series of Adaptive Cards:
 | the first | outcome, counts, pass rate, duration, the service table, and the credit block |
 | the rest  | one per product section — Data, Workflows, Site — with a row per scenario     |
 
+The first card opens with the suite's name and a row of chips: how the run
+ended, then the deployment, the browser and what started it. The outcome chip is
+the only filled one, so the thing a reader needs at a glance is the loudest;
+the three behind it are tinted. `Badge` is a Teams and Copilot element rather
+than part of the Adaptive Cards schema, so each one carries a `TextBlock`
+fallback and Outlook draws the word instead of nothing. The chips sit in a
+`Layout.Flow` container, which lays them out as a row and wraps them onto a
+second line rather than giving each one a line of its own.
+
+Under the header, the counts and the donut sit side by side: a `Layout.AreaGrid`
+splits that container into a `facts` area and a `ring` area, and each panel
+claims one by name. The grid is claimed only `atLeast:Standard`, so a phone in
+portrait or a meeting side pane gets no matching layout and falls back to the
+default stack — the numbers first, the donut under them, both at full width.
+The file and line under each failing test are hidden below narrow for the same
+reason: they wrap over three lines there, and the title and the message do not.
+
 A section whose table would not fit one message is split across numbered parts,
 measured by real byte count rather than a guessed row count.
 

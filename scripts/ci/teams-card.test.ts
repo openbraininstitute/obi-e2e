@@ -90,7 +90,8 @@ describe('buildCard', () => {
     expect(found).toContain('● Skipped');
     expect(found).toContain('● Passed');
     expect(found).toContain('100%');
-    expect(found).toContain('E2E passed');
+    expect(found).toContain('Open Brain Institute Platform e2e');
+    expect(found).toContain('Passed');
     expect(found).toContain('▸ site');
     expect(found).toContain('▾ site');
     expect(found).toContain('↳ Home page');
@@ -129,7 +130,7 @@ describe('buildCard', () => {
 
     const found: string[] = [];
     walk(card, found);
-    expect(found).toContain('E2E failed');
+    expect(found).toContain('Failed');
     expect(found).toContain('**Home page › boom**');
     // The message is the part a reader acts on, so it belongs on the card.
     expect(found).toContain('timeout');
@@ -589,5 +590,75 @@ describe('the credits bar', () => {
       spentSummary({ required: 2000, assigned: 2000, spent: 800, remaining: 1200, returned: 1200 })
     );
     expect(barIn(card)?.fallback).toBe('drop');
+  });
+});
+
+describe('the header', () => {
+  const card = buildCard({
+    ...buildSummary({ suites: [], stats: {} }, [], {
+      E2E_ENVIRONMENT: 'production',
+      PLAYWRIGHT_BROWSER: 'firefox',
+      GITHUB_EVENT_NAME: 'schedule',
+    }),
+    passed: 4,
+    flaky: 1,
+  });
+
+  const badges = collect(card, (node) => node.type === 'Badge');
+
+  test('says what ran, where, and how it ended', () => {
+    expect(badges.map((item) => item.text)).toEqual([
+      'Flaky',
+      'production',
+      'firefox',
+      'Scheduled',
+    ]);
+  });
+
+  test('gives the outcome the loudest chip', () => {
+    expect(badges[0]).toMatchObject({ style: 'Warning', appearance: 'Filled' });
+    for (const item of badges.slice(1)) expect(item.appearance).toBe('Tint');
+  });
+
+  test('falls back to text where Badge is not an element', () => {
+    for (const item of badges) {
+      expect(item.fallback).toMatchObject({ type: 'TextBlock', text: item.text as string });
+    }
+  });
+
+  test('lays the chips out as a row that wraps', () => {
+    expect(collect(card, (node) => node.type === 'Layout.Flow')).toHaveLength(1);
+  });
+});
+
+describe('the overview grid', () => {
+  const card = buildCard({ ...buildSummary({ suites: [], stats: {} }), passed: 4 });
+  const [grid] = collect(card, (node) => node.type === 'Layout.AreaGrid');
+
+  test('puts the counts beside the donut once the card is wide enough', () => {
+    expect(grid).toMatchObject({
+      targetWidth: 'atLeast:Standard',
+      columns: [70],
+      areas: [{ name: 'facts' }, { name: 'ring', column: 2 }],
+    });
+  });
+
+  test('claims the layout only at standard and above', () => {
+    expect(collect(card, (node) => node.type === 'Layout.AreaGrid')).toHaveLength(1);
+  });
+
+  test('assigns each panel to an area the grid defines', () => {
+    const areas = ((grid?.areas ?? []) as { name: string }[]).map((area) => area.name);
+    const placed = collect(card, (node) => typeof node['grid.area'] === 'string').map(
+      (node) => node['grid.area'] as string
+    );
+
+    expect(placed).toEqual(['facts', 'ring']);
+    for (const area of placed) expect(areas).toContain(area);
+  });
+
+  test('leaves the ring area empty when the run produced no tests', () => {
+    const empty = buildCard(buildSummary({ suites: [], stats: {} }));
+    expect(collect(empty, (node) => node['grid.area'] === 'ring')).toHaveLength(0);
   });
 });
