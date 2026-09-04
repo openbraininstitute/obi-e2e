@@ -5,7 +5,7 @@ import {
   scanConfigModelPicker,
   scanConfigSweep,
   scanConfigSweepValues,
-  UI_ELEMENT_ATTRIBUTE,
+  uiElementOf,
 } from '@locators/scan-config';
 import { morphologyLocations, morphologyViewer } from '@locators/viewer';
 import { expect, type Locator, type Page } from '@playwright/test';
@@ -49,7 +49,7 @@ export class ScanConfigDriver {
       await this.editor.rootElement(rootElement).click();
 
       if (typeof value.type === 'string') {
-        await this.fillBlock(this.editor.block(rootElement), value, rootElement);
+        await this.fillBlock(this.editor.block(), value, rootElement);
         continue;
       }
 
@@ -67,24 +67,38 @@ export class ScanConfigDriver {
       }
 
       await this.editor.addEntry(rootElement).click();
-      await this.editor.variant(entry.type).click();
+
+      const title = typeof entry.$variant === 'string' ? entry.$variant : undefined;
+      const variant = this.editor.variant(entry.type, title);
+      const offered = await variant
+        .waitFor({ state: 'visible', timeout: 15_000 })
+        .then(() => true)
+        .catch(() => false);
+      if (!offered) {
+        throw new Error(
+          `The "${rootElement}" chooser offers no "${title ?? entry.type}". It offers: ` +
+            `${(await this.editor.variants.allInnerTexts()).join(', ')}. ` +
+            'Name the one to pick with "$variant" in the fixture.'
+        );
+      }
+      await variant.click();
 
       const created = await this.selectedEntryName(rootElement);
       this.entryNames.set(`${rootElement}/${key}`, created);
 
-      await this.fillBlock(this.editor.block(rootElement, created), entry, rootElement);
+      await this.fillBlock(this.editor.block(), entry, rootElement);
     }
   }
 
   /** The editor names a new entry itself and selects it; only that one mounts. */
   private async selectedEntryName(rootElement: string): Promise<string> {
-    const prefix = `scan-config-block-${rootElement}-`;
     let name = '';
 
     await expect(async () => {
-      const testId = await this.editor.anyBlockOf(rootElement).first().getAttribute('data-testid');
-      expect(testId).toContain(prefix);
-      name = (testId as string).slice(prefix.length);
+      const entries = this.editor.entriesOf(rootElement);
+      const count = await entries.count();
+      expect(count).toBeGreaterThan(0);
+      name = (await entries.nth(count - 1).innerText()).trim();
       expect(name).not.toBe('');
     }).toPass();
 
@@ -99,14 +113,21 @@ export class ScanConfigDriver {
     await expect(block).toBeVisible();
 
     for (const [key, value] of Object.entries(values)) {
-      if (key === 'type') continue;
+      if (key === 'type' || key === '$variant') continue;
 
       const field = scanConfigField(block, key);
       if ((await field.count()) === 0) {
-        throw new Error(`The editor renders no field "${key}" in block "${rootElement}".`);
+        const offered = await block
+          .locator('[title]')
+          .allInnerTexts()
+          .catch(() => []);
+        throw new Error(
+          `The editor renders no field "${key}" in block "${rootElement}". ` +
+            `It renders: ${offered.join(', ') || 'nothing'}.`
+        );
       }
 
-      const uiElement = await field.first().getAttribute(UI_ELEMENT_ATTRIBUTE);
+      const uiElement = await uiElementOf(field.first());
       await this.setField(field.first(), uiElement, value, `${rootElement}.${key}`);
     }
   }
@@ -123,7 +144,7 @@ export class ScanConfigDriver {
         return;
 
       case ScanConfigUiElement.BooleanInput: {
-        const checkbox = scanConfigControl(field);
+        const checkbox = field.getByRole('checkbox');
         if (value === true) await checkbox.check();
         else await checkbox.uncheck();
         return;
@@ -252,7 +273,7 @@ export class ScanConfigDriver {
     }
 
     const picker = scanConfigModelPicker(this.page);
-    await field.getByTestId('scan-config-select-model').click();
+    await field.getByRole('button', { name: /^Select / }).click();
 
     // The catalogue replaces the editor's middle column rather than opening a
     // dialog, and the editor's own table stays in the document, so everything
@@ -260,9 +281,7 @@ export class ScanConfigDriver {
     const catalogue = picker.panel;
     await expect(catalogue).toBeVisible();
 
-    // Searching narrows the catalogue to the one entity, which is what makes
-    // ticking it unambiguous below.
-    await catalogue.getByTestId('data-grid-search').fill(value.name);
+    await catalogue.getByRole('textbox', { name: 'Search' }).fill(value.name);
     await expect(
       catalogue.getByRole('row').filter({ hasText: value.name }).first(),
       `No "${value.name}" to pick for ${at}.`
@@ -275,7 +294,7 @@ export class ScanConfigDriver {
 
     await expect(picker.confirm).toBeEnabled();
     await picker.confirm.click();
-    await expect(picker.open).toHaveCount(0);
+    await expect(picker.overlay).toHaveCount(0);
   }
 
   /** An antd select: a wrapper that opens a list the control owns. */
@@ -284,20 +303,21 @@ export class ScanConfigDriver {
     if (option === null) return;
 
     const control = scanConfigControl(field);
-    await control.click();
 
-    // Scoped to the list this control owns, which it names through ARIA on its
-    // inner input: a dropdown that has just closed is still in the document and
-    // still fading out, so a page-wide lookup can land on a stale copy of the
-    // same option.
-    const listboxId = await control.getByRole('combobox').getAttribute('aria-controls');
-    if (!listboxId) throw new Error(`${at}: the dropdown did not open`);
+    await expect(async () => {
+      const choice = this.page
+        .getByTestId(`scan-config-option-${option}`)
+        .or(this.page.getByTitle(option, { exact: true }))
+        .filter({ visible: true })
+        .first();
 
-    await this.page
-      .locator(`#${listboxId}`)
-      .locator('xpath=..')
-      .getByTestId(`scan-config-option-${option}`)
-      .click();
+      if ((await choice.count()) === 0) {
+        await control.click({ timeout: 3_000 });
+        throw new Error(`${at}: the dropdown did not open`);
+      }
+
+      await choice.click({ force: true, timeout: 3_000 });
+    }).toPass({ timeout: 30_000 });
   }
 
   /**

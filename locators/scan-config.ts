@@ -1,5 +1,3 @@
-import type { Locator, Page } from '@playwright/test';
-
 /**
  * The scan-configuration editor, the form behind every
  * `/workflows/{activity}/configure/{type}` route.
@@ -11,69 +9,143 @@ import type { Locator, Page } from '@playwright/test';
  * are guarded by a unit test in core-web-app
  * (`src/__tests__/scan-config/block-field-testids.test.tsx`).
  */
+
+import type { Locator, Page } from '@playwright/test';
+
+/** Both attribute names: older deployments use the second, newer ones the first. */
+export const UI_ELEMENT_ATTRIBUTES = [
+  'data-scan-config-block-element-container-of',
+  'data-scan-config-block-element',
+] as const;
+
+const RENDERED_PART = UI_ELEMENT_ATTRIBUTES.map((name) => `[${name}]`).join(', ');
+
+/** The ui_element a part was rendered from. */
+export async function uiElementOf(part: Locator): Promise<string | null> {
+  for (const name of UI_ELEMENT_ATTRIBUTES) {
+    const value = await part.getAttribute(name);
+    if (value !== null) return value;
+  }
+  return null;
+}
+
+const ROOT_ELEMENT_LABELS: Record<string, string> = {
+  initialize: 'Initialization',
+};
+
+function rootElementLabel(key: string): string {
+  const label = ROOT_ELEMENT_LABELS[key] ?? key.replaceAll('_', ' ');
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+/** Letters and digits only, so a key and a label can be compared. */
+export function normalizeLabel(text: string): string {
+  return text.toLowerCase().replaceAll(/[^a-z0-9]/g, '');
+}
+
 export function scanConfigEditor(page: Page) {
+  const middle = page.locator('#scan-config-middle-content');
+
   return {
-    /** `configuration` or, once a campaign exists, `results`. */
-    tab: (id: string): Locator => page.getByTestId(`scan-config-tab-${id}`),
+    tab: (id: string): Locator =>
+      page
+        .getByTestId(`scan-config-tab-${id}`)
+        .or(page.getByRole('button', { name: id, exact: true })),
 
-    /** Launches the campaign. Named per activity, so read its text to assert. */
-    submit: page.getByTestId('scan-config-submit'),
+    submit: page.getByTestId('scan-config-submit').or(
+      page.locator('#scan-config-controls-left').getByRole('button', {
+        name: /^(Generate|Build|Run|Process)/,
+      })
+    ),
 
-    /** A root element in the left-hand list, keyed by its schema property. */
-    rootElement: (key: string): Locator => page.getByTestId(`scan-config-root-element-${key}`),
+    rootElement: (key: string): Locator =>
+      page
+        .getByTestId(`scan-config-root-element-${key}`)
+        .or(
+          page
+            .locator('[data-scan-config-menu="left-menu-top-item"]')
+            .filter({ hasText: rootElementLabel(key) })
+        )
+        .first(),
 
-    /** Adds one entry to a block dictionary. */
     addEntry: (rootElement: string): Locator =>
-      page.getByTestId(`scan-config-add-entry-${rootElement}`),
+      page
+        .getByTestId(`scan-config-add-entry-${rootElement}`)
+        .or(
+          page
+            .locator(`[data-scan-config-menu="${rootElement}-menu-block-dictionary-sub-entry"]`)
+            .getByRole('button', { name: /^Add\b/ })
+        )
+        .first(),
 
-    /** Picks which kind of block to add, keyed by its obi-one type. */
-    variant: (type: string): Locator => page.getByTestId(`scan-config-variant-${type}`),
+    variant: (type: string, title?: string): Locator =>
+      middle
+        .getByTestId(`scan-config-variant-${type}`)
+        .or(
+          middle
+            .locator('[data-scan-config-block-element-item="block_dictionary_item"] > span')
+            .filter({
+              hasText:
+                title === undefined
+                  ? variantPattern(type)
+                  : new RegExp(`^${title.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'),
+            })
+        )
+        .first(),
+
+    variants: middle.locator(
+      '[data-scan-config-block-element-item="block_dictionary_item"] > span'
+    ),
 
     /** One entry of a block dictionary, in the left-hand list. */
     entry: (rootElement: string, name: string): Locator =>
-      page.getByTestId(`scan-config-entry-${rootElement}-${name}`),
+      page
+        .getByTestId(`scan-config-entry-${rootElement}-${name}`)
+        .or(
+          page
+            .locator(`#${rootElement}-menu-block-dictionary-sub-entry__container`)
+            .getByRole('button', { name, exact: true })
+        )
+        .first(),
 
-    /**
-     * The fields of one block. A dictionary mounts only the selected entry, so
-     * the entry name is part of the id.
-     */
-    block: (rootElement: string, entry?: string): Locator =>
-      page.getByTestId(
-        entry === undefined
-          ? `scan-config-block-${rootElement}`
-          : `scan-config-block-${rootElement}-${entry}`
-      ),
+    entriesOf: (rootElement: string): Locator =>
+      page
+        .locator(`#${rootElement}-menu-block-dictionary-sub-entry__container`)
+        .getByRole('button'),
 
-    /**
-     * One choice in a dropdown, keyed by the value it writes into the
-     * configuration rather than the text it shows.
-     */
-    option: (value: string): Locator => page.getByTestId(`scan-config-option-${value}`),
+    block: (): Locator => middle.locator('[data-scan-config-block="block_single"]'),
 
-    /** Any mounted block of a dictionary, whichever entry is selected. */
-    anyBlockOf: (rootElement: string): Locator =>
-      page.locator(`[data-testid^="scan-config-block-${rootElement}-"]`),
+    option: (value: string): Locator =>
+      page
+        .getByTestId(`scan-config-option-${value}`)
+        .or(page.getByRole('option', { name: value, exact: true }))
+        .first(),
   };
 }
 
-/**
- * The results of a launched campaign: one coordinate per combination of swept
- * values, the configuration each was generated from, and the control that runs
- * them.
- */
+function variantPattern(type: string): RegExp {
+  const words = type.replaceAll(/([a-z0-9])([A-Z])/g, '$1 $2');
+  return new RegExp(`^${words.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+}
+
 export function scanConfigResults(page: Page) {
+  const results = page.locator('#scan-config-results');
+  const mini = page.getByTestId('mini-viewer');
+  const view = page
+    .getByTestId('scan-config-file-view')
+    .or(page.locator('#scan-config-results-right-column'))
+    .first();
+
   return {
     /** One card per coordinate in the campaign grid. */
     coordinates: page.locator('[data-testid^="scan-config-coordinate-"]'),
 
-    /** A coordinate's execution status: `created` until it is launched. */
-    status: page.getByTestId('scan-config-status'),
+    status: results.getByRole('status'),
 
-    /** Runs the selected coordinates. Opens a cost confirmation first. */
-    launch: page.getByTestId('scan-config-launch'),
+    launch: results.getByRole('button', { name: /^Launch/ }),
 
-    costConfirm: page.getByTestId('scan-config-cost-confirm'),
-    costCancel: page.getByTestId('scan-config-cost-cancel'),
+    costConfirm: page.getByRole('dialog').getByRole('button', { name: /^(Launch|Confirm|Yes)/ }),
+    costCancel: page.getByRole('dialog').getByRole('button', { name: /^(Cancel|No)/ }),
 
     /** The files a coordinate was generated from. */
     inputs: page.getByTestId('scan-config-inputs'),
@@ -84,22 +156,22 @@ export function scanConfigResults(page: Page) {
     /** One input or output file, by the name the panel shows. */
     file: (name: string): Locator => page.locator(`[data-file-name="${name}"]`),
 
-    /** The pane showing whichever file is open. */
-    fileView: page.getByTestId('scan-config-file-view'),
+    fileView: view,
 
-    /** The task's log stream, shown for the log file. */
-    logs: page.getByTestId('scan-config-logs'),
+    logs: view,
 
     /** What the right-hand pane shows for the file that is open. */
     preview: {
       /** A registered entity: its name, what it is, and what can be done with it. */
       entity: {
-        card: page.getByTestId('mini-viewer'),
-        name: page.getByTestId('mini-detail-name'),
-        viewDetails: page.getByTestId('mini-detail-view-details'),
-        download: page.getByTestId('mini-detail-download'),
-        /** One labelled property of the entity. */
-        properties: page.locator('[data-testid^="mini-detail-property-"]'),
+        card: mini,
+        name: mini.getByRole('heading', { level: 1 }),
+        viewDetails: mini.getByTitle('Go to details page'),
+        download: mini.getByTitle('download'),
+        property: (label: string): Locator =>
+          mini
+            .getByText(new RegExp(`^${label.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'))
+            .locator('..'),
       },
     },
   };
@@ -110,20 +182,28 @@ export function scanConfigResults(page: Page) {
  * than a dropdown, because choosing a model is choosing from a catalogue.
  */
 export function scanConfigModelPicker(page: Page) {
+  const overlay = page.locator('#scan-config-model-selection-overlay');
+
   return {
-    open: page.getByTestId('scan-config-select-model'),
-    /**
-     * The catalogue replaces the editor's middle column rather than opening a
-     * dialog, so it is scoped by its own id and not by role.
-     */
-    panel: page.getByTestId('scan-config-model-picker'),
-    confirm: page.getByTestId('scan-config-confirm-model'),
+    open: page.getByRole('button', { name: /^Select / }),
+    overlay,
+    panel: overlay.getByTestId('data-table-container'),
+    confirm: overlay.getByRole('button', { name: /^Confirm/ }),
+    cancel: overlay.getByRole('button', { name: 'Cancel' }),
   };
 }
 
 /** One field inside a block. A property key is only unique within its block. */
 export function scanConfigField(block: Locator, key: string): Locator {
-  return block.getByTestId(`scan-config-field-${key}`);
+  return block
+    .getByTestId(`scan-config-field-${key}`)
+    .or(block.locator(RENDERED_PART).filter({ hasText: fieldPattern(key) }))
+    .first();
+}
+
+function fieldPattern(key: string): RegExp {
+  const parts = key.match(/[a-z]+|[0-9]+/gi) ?? [key];
+  return new RegExp(`^${parts.join('[^a-z0-9]*')}`, 'i');
 }
 
 /**
@@ -131,7 +211,7 @@ export function scanConfigField(block: Locator, key: string): Locator {
  * trigger. Which of those it is follows from the field's `ui_element`.
  */
 export function scanConfigControl(field: Locator): Locator {
-  return field.getByTestId('scan-config-control');
+  return field.getByTestId('scan-config-control').or(field.locator(RENDERED_PART)).last();
 }
 
 /**
@@ -139,20 +219,24 @@ export function scanConfigControl(field: Locator): Locator {
  * number, and one per value once it scans over several.
  */
 export function scanConfigSweepValues(field: Locator): Locator {
-  return field.getByTestId('scan-config-sweep-value');
+  const marked = field.getByTestId('scan-config-sweep-value');
+  return marked.or(field.getByRole('spinbutton'));
 }
 
 /** The controls that turn one value into a list of them, and back. */
 export function scanConfigSweep(field: Locator) {
   return {
-    expand: field.getByTestId('scan-config-sweep-expand'),
-    add: field.getByTestId('scan-config-sweep-add'),
-    remove: field.getByTestId('scan-config-sweep-remove'),
+    expand: field
+      .getByTestId('scan-config-sweep-expand')
+      .or(field.getByRole('button', { name: 'Scan over several values' }))
+      .first(),
+    add: field
+      .getByTestId('scan-config-sweep-add')
+      .or(field.getByRole('button', { name: /^Add/ }))
+      .first(),
+    remove: field
+      .getByTestId('scan-config-sweep-remove')
+      .or(field.getByRole('button', { name: /^Remove/ }))
+      .first(),
   };
 }
-
-/**
- * The `ui_element` the field was rendered from. The editor records it on the
- * field wrapper, so a test dispatches on the same value the application did.
- */
-export const UI_ELEMENT_ATTRIBUTE = 'data-scan-config-block-element-container-of';

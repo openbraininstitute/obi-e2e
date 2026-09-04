@@ -56,15 +56,12 @@ export async function openWorkflowsHub(page: Page, workspace: Workspace): Promis
  */
 export type WorkflowUnavailable = string | null;
 
-/**
- * Starts a workflow from the hub.
- *
- * Whether a deployment offers the workflow at all is the fixture's to declare,
- * through its `env` list, and the caller has already skipped on it. So a
- * workflow missing here is a failure and not a second skip: the deployment was
- * said to have it.
- */
-export async function startWorkflow(page: Page, activity: string, type: string): Promise<void> {
+/** Opens a workflow from the hub. */
+export async function startWorkflow(
+  page: Page,
+  activity: string,
+  workflow: { label: string; type: string }
+): Promise<void> {
   const hub = workflowsHub(page);
 
   await expect(hub.category(activity), `The hub offers no ${activity} workflows.`).toBeVisible();
@@ -77,14 +74,14 @@ export async function startWorkflow(page: Page, activity: string, type: string):
     await expect(hub.typeMenu(activity)).toBeVisible({ timeout: 2_000 });
   }).toPass();
 
-  const card = hub.type(type);
-  await expect(card, `The ${activity} workflows do not include "${type}".`).toBeVisible();
+  const card = hub.type(activity, workflow.label);
+  await expect(card, `The ${activity} workflows do not include "${workflow.label}".`).toBeVisible();
 
   // A workflow behind a feature flag renders disabled until the flag is on, so
   // this also catches a test that forgot to set it.
   await expect(
     card,
-    `"${type}" is disabled, so it cannot be started. A workflow behind a feature ` +
+    `"${workflow.label}" is disabled, so it cannot be started. A workflow behind a feature ` +
       'flag needs that flag set before the page loads.'
   ).not.toHaveAttribute('aria-disabled', 'true');
 

@@ -2,38 +2,45 @@ import type { Locator, Page } from '@playwright/test';
 
 /** The notice the application shows when a project has no credits to spend. */
 export function lowCredits(page: Page) {
+  const notice = page.getByRole('alert').filter({ hasText: /credit/i });
+
   return {
-    notice: page.getByTestId('low-credits-notice'),
-    /** Offers to top the project up. Only a virtual lab admin sees it. */
-    action: page.getByTestId('low-credits-action'),
+    notice,
+    action: notice.getByRole('button'),
   };
 }
 
 /** The workspace navigation, above every page inside a project. */
 export function workspaceNav(page: Page) {
   return {
-    workflows: page.getByTestId('workspace-workflows'),
-    data: page.getByTestId('workspace-explore-data'),
-    notebooks: page.getByTestId('workspace-notebooks'),
+    workflows: page.getByRole('link', { name: /^Workflows/ }),
+    data: page.getByRole('link', { name: /^Data/ }),
+    notebooks: page.getByRole('link', { name: /^Notebooks/ }),
   };
 }
 
-/** The workflows hub: an activity, then a type, then the workflow itself. */
+function categoryLabel(activity: string): string {
+  return activity === 'process' ? 'Process data' : activity;
+}
+
 export function workflowsHub(page: Page) {
   return {
     categoryMenu: page.getByTestId('workflow-category-menu'),
 
-    /** An activity card, keyed by the activity in the `?activity=` parameter. */
-    category: (activity: string): Locator => page.getByTestId(`workflow-category-${activity}`),
+    category: (activity: string): Locator =>
+      page.getByTestId('workflow-category-menu').getByRole('button', {
+        name: new RegExp(`^${categoryLabel(activity)}\\b`, 'i'),
+      }),
 
     typeMenu: (activity: string): Locator => page.getByTestId(`workflow-types-menu-${activity}`),
 
-    /**
-     * A type card, keyed by the campaign type in its configure URL. A card the
-     * deployment does not offer is absent; one behind a feature flag renders
-     * disabled.
-     */
-    type: (type: string): Locator => page.getByTestId(`workflow-type-${type}`),
+    type: (activity: string, label: string): Locator =>
+      page
+        .getByTestId(`workflow-types-menu-${activity}`)
+        .getByRole('button')
+        .filter({
+          hasText: new RegExp(`${label.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')}(Start|$)`),
+        }),
   };
 }
 
@@ -53,10 +60,11 @@ export function workflowBrowse(page: Page) {
      * narrowed to prerequisites and then found by the name the fixture uses.
      */
     prerequisite: (name: string): Locator =>
-      page.locator('[data-testid^="workflow-prerequisite-"]').filter({ hasText: name }).first(),
+      page.getByRole('button').filter({ hasText: name }).first(),
 
-    /** One entity, confirmed from its preview panel. */
-    useModel: page.getByTestId('workflow-use-model'),
+    useModel: page
+      .getByRole('button', { name: 'Use model' })
+      .or(page.getByRole('link', { name: 'Use model' })),
 
     /** Several entities, confirmed from the table footer. */
     useSelection: page.getByTestId('workflow-browse-use-selection').getByRole('button', {

@@ -84,6 +84,6 @@ export async function checkCompletedOutput(
   await expect(results.preview.entity.download).toBeVisible();
 
   for (const [label, shown] of Object.entries(built.properties)) {
-    await expect(results.preview.entity.properties.filter({ hasText: label })).toContainText(shown);
+    await expect(results.preview.entity.property(label)).toContainText(shown);
   }
 }

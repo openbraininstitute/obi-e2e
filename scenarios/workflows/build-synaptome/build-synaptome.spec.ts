@@ -35,7 +35,7 @@ test.describe.configure({ timeout: RUN_TIMEOUT + 120_000 });
 async function openEditor(page: Page, workspace: { labId: string; projectId: string }) {
   await openWorkflowsHub(page, workspace);
 
-  await startWorkflow(page, fixture.activity, fixture.workflow.type);
+  await startWorkflow(page, fixture.activity, fixture.workflow);
 
   const missing = await chooseEntities(page, fixture.selection);
   test.skip(missing !== null, missing ?? '');

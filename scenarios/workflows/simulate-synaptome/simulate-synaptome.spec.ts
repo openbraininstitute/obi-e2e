@@ -11,9 +11,7 @@ import { expect, test } from '@fixtures/test';
 import { chooseEntities, openWorkflowsHub, startWorkflow } from '@fixtures/workflows';
 import { scanConfigEditor, scanConfigResults } from '@locators/scan-config';
 
-// A simulation runs on the launch system, which takes minutes. The default test
-// timeout is far shorter, so these tests set their own.
-const RUN_TIMEOUT = 300_000; // 5 minutes
+const RUN_TIMEOUT = 300_000;
 
 // Scenario: scenarios/workflows/simulate-synaptome/scenario.md
 const fixture = loadScanConfigFixture('simulate-synaptome.json');
@@ -29,7 +27,7 @@ test.describe('Synaptome simulation', () => {
   test.beforeEach(async ({ page, workspace }) => {
     await openWorkflowsHub(page, workspace);
 
-    await startWorkflow(page, fixture.activity, fixture.workflow.type);
+    await startWorkflow(page, fixture.activity, fixture.workflow);
 
     const missing = await chooseEntities(page, fixture.selection);
     test.skip(missing !== null, missing ?? '');

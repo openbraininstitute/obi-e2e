@@ -35,7 +35,7 @@ test.describe('Electron microscopy circuit build', () => {
 
       await openWorkflowsHub(page, workspace);
 
-      await startWorkflow(page, fixture.activity, fixture.workflow.type);
+      await startWorkflow(page, fixture.activity, fixture.workflow);
 
       // The morphologies come from an electron microscopy dense reconstruction
       // dataset, which a project without that data does not have.

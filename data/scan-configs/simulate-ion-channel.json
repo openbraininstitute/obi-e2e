@@ -31,6 +31,7 @@
         "stimuli": {
           "voltage_clamp": {
             "type": "SEClampSomaticStimulus",
+            "$variant": "Single Electrode Voltage Clamp 3 Levels Somatic Stimulus",
             "level1_duration": 50,
             "level1_voltage": -80,
             "level2_duration": 100,
@@ -42,6 +43,7 @@
         "recordings": {
           "soma_voltage": {
             "type": "SomaVoltageRecording",
+            "$variant": "Soma Voltage Recording (Full Experiment)",
             "dt": 0.1
           }
         },

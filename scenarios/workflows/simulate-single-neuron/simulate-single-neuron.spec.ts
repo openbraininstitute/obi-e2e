@@ -29,7 +29,7 @@ test.describe('Single neuron simulation', () => {
   test.beforeEach(async ({ page, workspace }) => {
     await openWorkflowsHub(page, workspace);
 
-    await startWorkflow(page, fixture.activity, fixture.workflow.type);
+    await startWorkflow(page, fixture.activity, fixture.workflow);
 
     const missing = await chooseEntities(page, fixture.selection);
     test.skip(missing !== null, missing ?? '');
