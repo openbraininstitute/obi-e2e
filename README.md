@@ -17,18 +17,64 @@ prefer `bun run test` over calling Playwright directly.
 ```bash
 bun install
 bunx playwright install --with-deps chromium
-cp .env.example .env   # fill in the QA user, lab and project
+cp .env.local.example .env.staging.local   # fill in the QA user, lab, webhook
 bun run test
 ```
+
+### Environment files
+
+A deployment is not only a URL: staging and production keep separate realms, so
+an account good on one cannot sign in to the other. What differs by deployment
+lives in the deployment's own file, and what is secret lives beside it in a file
+that is never committed.
+
+| Read | File                      | Committed | Holds                                           |
+| ---- | ------------------------- | --------- | ----------------------------------------------- |
+| 1    | the environment           | —         | anything exported, or given on the command line |
+| 2    | `.env.<deployment>.local` | no        | the users, `LAB_ID`, the Teams webhook          |
+| 3    | `.env.<deployment>`       | yes       | the base URL, the backend hosts                 |
+| 4    | `.env`                    | yes       | workers, log level, the report layout           |
+
+First value wins, and an empty value counts as no value. The deployment is read
+from the base URL's host, or named outright with `E2E_ENV`, which is also what a
+preview build of the production release needs:
+
+```bash
+bun run test                       # staging:    .env.staging.local, .env.staging, .env
+E2E_ENV=production bun run test    # production: .env.production.local, .env.production, .env
+```
+
+A locally served app is not a third deployment. It is staging — same users, same
+lab, same backend — with the application somewhere else, so it needs no file of
+its own and picks up `.env.staging.local` like any staging run:
+
+```bash
+bun run test:local                 # app on localhost:3001, staging behind it
+bun run test:local:production      # the same app against production
+```
+
+Anything else the suite reads from the deployment it belongs to. `local` as a
+deployment would not work: every workflow fixture names the deployments it runs
+on, and the `@staging` and `@production` tags filter on the same value, so a
+third name would skip every workflow.
+
+Only the two `.local` files are secret, so they are the only ones GitHub needs
+as secrets. Everything else CI reads from the checkout, which is why the
+workflow sets `E2E_ENV` and the accounts and nothing more.
+
+A deployment-specific value left in `.env` reaches both runs, which is the one
+mistake this layout exists to prevent.
 
 Useful commands:
 
 ```bash
-bun run test              # full suite
+bun run test              # full suite, staging
+bun run test:local        # the app on localhost:3001, staging users and backend
 bun run auth              # sign in only, writes .e2e-runs/live/auth/
-bun run test:smoke        # only @smoke
 bun run test:ui           # interactive UI mode
 bun run report            # open the last HTML report
+bun run preflight         # what a run would resolve to, and the machine's size
+bun run reclaim           # give back what a killed run kept
 bun run check            # format check + lint + typecheck
 ```
 
@@ -257,9 +303,6 @@ skips the same tests CI does.
 Workflows do not use those tags. A scan-config fixture's `env` list is the only
 thing that decides where its workflow runs, because which deployments offer a
 workflow is a fact about the release rather than about the test.
-
-`@smoke` no longer decides anything about deployments. It marks a short subset
-for a quick check, `bun run test:smoke`.
 
 ## When tests run
 
