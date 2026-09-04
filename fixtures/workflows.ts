@@ -51,37 +51,23 @@ export async function openWorkflowsHub(page: Page, workspace: Workspace): Promis
 }
 
 /**
- * Why a workflow could not be started, in the words a skip should use.
- * `null` means it started.
+ * Why a step could not be reached, in the words a skip should use.
+ * `null` means it was.
  */
 export type WorkflowUnavailable = string | null;
 
 /**
  * Starts a workflow from the hub.
  *
- * @returns `null` once the workflow is open, or why it could not be started:
- * a workflow behind a feature flag renders disabled, and one a deployment does
- * not have — because it predates the workflow, or the test ids that address it
- * — is absent altogether. Either is a skip for the caller, not a failure.
+ * Whether a deployment offers the workflow at all is the fixture's to declare,
+ * through its `env` list, and the caller has already skipped on it. So a
+ * workflow missing here is a failure and not a second skip: the deployment was
+ * said to have it.
  */
-export async function startWorkflow(
-  page: Page,
-  activity: string,
-  type: string
-): Promise<WorkflowUnavailable> {
+export async function startWorkflow(page: Page, activity: string, type: string): Promise<void> {
   const hub = workflowsHub(page);
 
-  // These tests address the hub by test ids that ship with the scan-config
-  // change. A deployment without them cannot be driven at all, which is a
-  // different thing from a workflow it chooses not to offer. Both look like an
-  // absent element, so each waits: an element that is merely still rendering
-  // must not be read as one that will never arrive.
-  if (!(await appears(hub.category(activity)))) {
-    return (
-      'This deployment predates the workflow test ids these tests address ' +
-      `(no workflow-category-${activity}).`
-    );
-  }
+  await expect(hub.category(activity), `The hub offers no ${activity} workflows.`).toBeVisible();
 
   // The hub renders before React attaches its handlers, so a first click can
   // land on nothing. Retry until the choice takes effect rather than waiting a
@@ -92,19 +78,20 @@ export async function startWorkflow(
   }).toPass();
 
   const card = hub.type(type);
-  if (!(await appears(card))) {
-    return `"${type}" is not among the ${activity} workflows this deployment offers.`;
-  }
-  if ((await card.getAttribute('aria-disabled')) === 'true') {
-    return `"${type}" is disabled in this deployment, so it cannot be started.`;
-  }
+  await expect(card, `The ${activity} workflows do not include "${type}".`).toBeVisible();
+
+  // A workflow behind a feature flag renders disabled until the flag is on, so
+  // this also catches a test that forgot to set it.
+  await expect(
+    card,
+    `"${type}" is disabled, so it cannot be started. A workflow behind a feature ` +
+      'flag needs that flag set before the page loads.'
+  ).not.toHaveAttribute('aria-disabled', 'true');
 
   await expect(async () => {
     await card.click();
     await expect(page).toHaveURL(new RegExp(`/workflows/${activity}/new/`), { timeout: 5_000 });
   }).toPass();
-
-  return null;
 }
 
 /**

@@ -24,6 +24,11 @@ export type ScanConfigFixture = {
    * release, not something a test can read off the page: a card that is absent
    * and one that has not rendered yet look the same, so a run elsewhere skips on
    * what the fixture declares rather than on what a probe guessed.
+   *
+   * Empty means nowhere yet: a fixture written against something that does not
+   * exist to test against, which skips everywhere until it does. The field is
+   * still required, so a fixture that never runs says so on purpose rather than
+   * by having forgotten to say anything.
    */
   env: DeploymentEnv[];
   /** How the workflow is reached from the workflows hub. */
@@ -127,6 +132,10 @@ export function runsOnThisDeployment(fixture: ScanConfigFixture): boolean {
 
 /** Why the fixture does not run here, in the words a skip should use. */
 export function notDeployedHere(fixture: ScanConfigFixture): string {
+  if (fixture.env.length === 0) {
+    return `"${fixture.workflow.label}" runs on no deployment yet: its fixture names none.`;
+  }
+
   return (
     `"${fixture.workflow.label}" is not offered on ${deploymentEnv()}: ` +
     `the fixture declares ${fixture.env.join(', ')}.`
@@ -174,8 +183,11 @@ export function parseScanConfigFixture(value: unknown, source: string): ScanConf
   }
 
   const envs = root.env;
-  if (!Array.isArray(envs) || envs.length === 0) {
-    fail(`env must list at least one of ${DEPLOYMENT_ENVS.join(', ')}`);
+  if (!Array.isArray(envs)) {
+    fail(
+      `env must be a list of ${DEPLOYMENT_ENVS.join(' or ')}, empty if the workflow ` +
+        'runs nowhere yet'
+    );
   }
   for (const [index, name] of (envs as unknown[]).entries()) {
     if (!DEPLOYMENT_ENVS.includes(name as DeploymentEnv)) {

@@ -4,6 +4,48 @@ export const isCI = Boolean(process.env.CI);
 
 export const baseURL = process.env.E2E_BASE_URL ?? 'https://staging.openbraininstitute.org';
 
+/** The deployments the suite knows how to run against. */
+export const DEPLOYMENT_ENVS = ['staging', 'production'] as const;
+export type DeploymentEnv = (typeof DEPLOYMENT_ENVS)[number];
+
+/**
+ * Which deployment this run is pointed at.
+ *
+ * Everything that differs between deployments hangs off this: which workflows
+ * exist, and which host serves the backend. It is derived from the one URL a
+ * run is already given rather than configured a second time, so the two cannot
+ * disagree. `E2E_ENV` names it outright for a host this cannot read, such as a
+ * preview build of the production release.
+ *
+ * @throws Error when `E2E_ENV` names a deployment that does not exist.
+ */
+export function deploymentEnv(): DeploymentEnv {
+  const declared = process.env.E2E_ENV;
+  if (declared) {
+    if (!DEPLOYMENT_ENVS.includes(declared as DeploymentEnv)) {
+      throw new Error(`E2E_ENV must be one of ${DEPLOYMENT_ENVS.join(', ')}, got "${declared}".`);
+    }
+    return declared as DeploymentEnv;
+  }
+
+  // Production is the only host without a prefix. Staging, a preview build and
+  // a local application are all the same thing to a test: not production.
+  const host = new URL(baseURL).hostname;
+  return host === 'openbraininstitute.org' || host === 'www.openbraininstitute.org'
+    ? 'production'
+    : 'staging';
+}
+
+/**
+ * Where the backend services answer, which is not where the application does.
+ * Production serves them from its own host; staging keeps them on a cell.
+ */
+export function cellApiUrl(): string {
+  return deploymentEnv() === 'production'
+    ? 'https://www.openbraininstitute.org/api'
+    : 'https://staging.cell-a.openbraininstitute.org/api';
+}
+
 /** The virtual lab manager sits on a different host from the application. */
 export function virtualLabApiUrl(): string {
   const url = process.env.VIRTUAL_LAB_API_URL;

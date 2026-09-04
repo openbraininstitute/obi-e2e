@@ -1,7 +1,7 @@
 {
   "name": "Electron microscopy circuit build from one MICrONS morphology",
   "activity": "build",
-  "env": ["staging", "production"],
+  "env": [],
   "workflow": {
     "label": "Electron microscopy circuit",
     "type": "em-synapse-mapping-campaign"

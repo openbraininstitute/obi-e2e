@@ -121,7 +121,12 @@ Two rules keep this maintainable. The `initialize` model field is set by the
 browse step, so the fixture names the entity under `selection` rather than
 pinning an id it does not own. Fixtures never contain credentials.
 
-`env` lists the deployments that offer the workflow. A run is pointed at one
+`env` lists the deployments that offer the workflow. An empty list means nowhere
+yet — a fixture written against something there is nothing to test with, which
+skips everywhere until there is. The field is required either way, so a fixture
+that never runs says so on purpose rather than by having forgotten to.
+
+`env` otherwise lists the deployments that offer the workflow. A run is pointed at one
 deployment — `E2E_BASE_URL`, or `E2E_ENV` where the host does not say — and a
 fixture that does not name it skips the whole spec. Which deployments have a
 workflow is a fact about the release, and looking for its card cannot establish

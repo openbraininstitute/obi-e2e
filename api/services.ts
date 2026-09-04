@@ -1,3 +1,5 @@
+import { cellApiUrl } from '@fixtures/env';
+
 /**
  * The backend services the application talks to.
  *
@@ -19,7 +21,8 @@ type Definition = {
   key: string;
   label: string;
   envVar: string;
-  fallback: string;
+  /** Where the service sits under the deployment's API host. */
+  path: string;
   /** Appended to the base URL. Verified against staging. */
   health?: string;
   version?: string;
@@ -28,59 +31,57 @@ type Definition = {
   healthBase?: (baseUrl: string) => string;
 };
 
-const CELL = 'https://staging.cell-a.openbraininstitute.org/api';
-
 const DEFINITIONS: Definition[] = [
   {
     key: 'entitycore',
     label: 'Entity core',
     envVar: 'ENTITY_CORE_URL',
-    fallback: `${CELL}/entitycore`,
+    path: '/entitycore',
     version: '/version',
   },
   {
     key: 'virtual-lab',
     label: 'Virtual lab manager',
     envVar: 'VIRTUAL_LAB_API_URL',
-    fallback: `${CELL}/virtual-lab-manager`,
+    path: '/virtual-lab-manager',
   },
   {
     key: 'obi-one',
     label: 'OBI One',
     envVar: 'OBI_ONE_URL',
-    fallback: `${CELL}/obi-one`,
+    path: '/obi-one',
     version: '/version',
   },
   {
     key: 'circuit',
     label: 'Circuit',
     envVar: 'CELL_API_URL',
-    fallback: `${CELL}/circuit`,
+    path: '/circuit',
     version: '/version',
   },
   {
     key: 'notebook',
     label: 'Notebook service',
     envVar: 'NOTEBOOK_API_URL',
-    fallback: `${CELL}/notebook_service`,
+    path: '/notebook_service',
   },
   {
     key: 'thumbnail',
     label: 'Thumbnail generation',
     envVar: 'THUMBNAIL_API_URL',
-    fallback: `${CELL}/thumbnail-generation`,
+    path: '/thumbnail-generation',
   },
   {
     key: 'simulator',
     label: 'Small scale simulator',
     envVar: 'SMALL_SCALE_SIMULATOR_URL',
-    fallback: `${CELL}/small-scale-simulator`,
+    path: '/small-scale-simulator',
   },
   {
     key: 'ai-agent',
     label: 'AI agent',
     envVar: 'AI_AGENT_URL',
-    fallback: `${CELL}/agent-ts/api`,
+    path: '/agent-ts/api',
     // This one answers on /healthz; /health is a 404.
     health: '/healthz',
     version: '/version',
@@ -89,7 +90,7 @@ const DEFINITIONS: Definition[] = [
     key: 'auth-manager',
     label: 'Auth manager',
     envVar: 'AUTH_MANAGER_URL',
-    fallback: `${CELL}/auth-manager/v1`,
+    path: '/auth-manager/v1',
     // Health sits above the versioned path.
     healthBase: (baseUrl) => baseUrl.replace(/\/v\d+$/, ''),
   },
@@ -97,7 +98,7 @@ const DEFINITIONS: Definition[] = [
     key: 'launch-system',
     label: 'Launch system',
     envVar: 'LAUNCH_SYSTEM_URL',
-    fallback: `${CELL}/launch-system`,
+    path: '/launch-system',
     // From outside the VPC the load balancer redirects to the web application,
     // which answers 200 with HTML. That is not a health signal, so skip it.
     vpcOnly: true,
@@ -105,8 +106,13 @@ const DEFINITIONS: Definition[] = [
 ];
 
 export function services(): Service[] {
+  // Read once per call rather than at module load, so a run that sets the
+  // deployment from a fixture or the config still gets the right host.
+  const apiUrl = cellApiUrl();
+
   return DEFINITIONS.map((definition) => {
-    const baseUrl = (process.env[definition.envVar] ?? definition.fallback).replace(/\/$/, '');
+    const fallback = `${apiUrl}${definition.path}`;
+    const baseUrl = (process.env[definition.envVar] ?? fallback).replace(/\/$/, '');
     const healthBase = definition.healthBase ? definition.healthBase(baseUrl) : baseUrl;
 
     return {

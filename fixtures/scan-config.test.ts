@@ -2,6 +2,7 @@ import { expect, test } from 'bun:test';
 
 import {
   loadScanConfigFixture,
+  notDeployedHere,
   parseScanConfigFixture,
   scanConfigFixtureFiles,
 } from './scan-config';
@@ -15,7 +16,6 @@ test('every scan-config fixture has a valid envelope', () => {
   for (const file of files) {
     const fixture = loadScanConfigFixture(file);
     expect(fixture.name).not.toBe('');
-    expect(fixture.env.length).toBeGreaterThan(0);
     expect(fixture.cases.length).toBeGreaterThan(0);
 
     for (const configuration of fixture.cases) {
@@ -73,7 +73,7 @@ test('a fixture still using a single config is rejected with a pointer', () => {
   expect(() => parseScanConfigFixture(fixture, 'old.json')).toThrow(/config moved inside cases/);
 });
 
-test('a fixture naming no deployment is rejected', () => {
+test('a fixture that declares no env at all is rejected', () => {
   const fixture = {
     name: 'nowhere',
     activity: 'build',
@@ -83,7 +83,25 @@ test('a fixture naming no deployment is rejected', () => {
     cases: [{ name: 'one', config: { info: {} }, expect: { coordinateCount: 1 } }],
   };
 
-  expect(() => parseScanConfigFixture(fixture, 'bad.json')).toThrow(/env must list/);
+  expect(() => parseScanConfigFixture(fixture, 'bad.json')).toThrow(/env must be a list/);
+});
+
+// A workflow with nothing to test against yet is a real state, and saying so
+// outright is better than deleting the fixture or letting it fail everywhere.
+test('an empty env is allowed, and means the fixture runs nowhere', () => {
+  const fixture = {
+    name: 'not ready',
+    activity: 'build',
+    env: [],
+    workflow: { label: 'Synaptome', type: 'build-synaptome-campaign' },
+    schemaName: 'MEModelSynapticModelPlacementScanConfig',
+    selection: { mode: 'single', entities: ['a'] },
+    cases: [{ name: 'one', config: { info: {} }, expect: { coordinateCount: 1 } }],
+  };
+
+  const parsed = parseScanConfigFixture(fixture, 'ok.json');
+  expect(parsed.env).toEqual([]);
+  expect(notDeployedHere(parsed)).toContain('no deployment yet');
 });
 
 test('a fixture naming a deployment that does not exist is rejected', () => {
