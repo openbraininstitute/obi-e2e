@@ -21,7 +21,9 @@ measured by real byte count rather than a guessed row count.
 The first card also draws two charts:
 
 - a **donut** of the outcome — passed, failed, flaky and skipped, in the same
-  colours the status pills use, with any status the run never produced left out;
+  colours the status pills use. All four are always drawn, including the ones at
+  zero, so the legend reads the same from run to run and a run with no failures
+  says so rather than leaving it to be inferred;
 - a **stacked bar** of the budget, where spent and left stack to exactly what
   the project was given, so the width of the green says how much headroom the
   run finished with.

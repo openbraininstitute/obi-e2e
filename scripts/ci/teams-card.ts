@@ -254,8 +254,12 @@ function featureTables(sections: Section[], expandable: boolean): unknown[] {
  * client — is told to drop the element outright. The same counts sit in the
  * FactSet above it, so nothing is lost, and dropping beats rendering a hole.
  *
- * Zero slices are left out: a legend entry for a status the run never produced
- * is noise, and an all-zero run has no chart to draw at all.
+ * All four statuses are always drawn, including the ones at zero. The legend is
+ * then the same from run to run, which is what makes two runs comparable at a
+ * glance, and a run with no failures says so outright rather than leaving it to
+ * be inferred from an entry that is not there.
+ *
+ * A run that produced no tests at all is the one case with nothing to draw.
  */
 function outcomeChart(summary: Summary): unknown | null {
   const slices = [
@@ -263,9 +267,9 @@ function outcomeChart(summary: Summary): unknown | null {
     { legend: 'Failed', value: summary.failed, color: 'attention' },
     { legend: 'Flaky', value: summary.flaky, color: 'warning' },
     { legend: 'Skipped', value: summary.skipped, color: 'neutral' },
-  ].filter((slice) => slice.value > 0);
+  ];
 
-  if (slices.length === 0) return null;
+  if (slices.every((slice) => slice.value === 0)) return null;
 
   return {
     type: 'Chart.Donut',

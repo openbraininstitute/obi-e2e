@@ -451,10 +451,16 @@ describe('the outcome donut', () => {
     ]);
   });
 
-  // A legend entry for a status that never happened is noise.
-  test('leaves out the statuses with nothing in them', () => {
+  // The same four entries every run is what makes two runs comparable, and a
+  // run with no failures should say so rather than leave the entry out.
+  test('keeps the statuses at zero, so the legend never changes shape', () => {
     const card = buildCard({ ...buildSummary({ suites: [], stats: {} }), passed: 9 });
-    expect(chartIn(card)?.data).toEqual([{ legend: 'Passed', value: 9, color: 'good' }]);
+    expect(chartIn(card)?.data).toEqual([
+      { legend: 'Passed', value: 9, color: 'good' },
+      { legend: 'Failed', value: 0, color: 'attention' },
+      { legend: 'Flaky', value: 0, color: 'warning' },
+      { legend: 'Skipped', value: 0, color: 'neutral' },
+    ]);
   });
 
   test('draws nothing when the run produced no tests at all', () => {
