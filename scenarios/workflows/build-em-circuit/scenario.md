@@ -1,45 +1,78 @@
 # Electron microscopy circuit build
 
 The Electron microscopy circuit build workflow, under Build on the Workflows
-page. It is driven by a scan configuration, from
-`data/scan-configs/em-synapse-mapping.json`, and starts from a morphology that
-was derived from an electron microscopy dense reconstruction dataset.
+page. obi-one describes the form, and the seed fills it in, starting from a
+morphology derived from an electron microscopy dense reconstruction dataset.
 
 Those morphologies belong to a project rather than being public, so the browse
-step opens the "Project" tab.
+step opens the "Project" tab, picks the dataset first and the morphology under
+it.
 
-That fixture names no deployment in its `env` list, so the workflow runs nowhere
-yet and the suite skips these scenarios on staging and on production both.
-Naming a deployment in `env` is what turns them on.
+The seed names no deployment, so the workflow runs nowhere yet and this file is
+skipped on staging and on production both. Naming a deployment in the seed is
+what turns it on.
 
-The fixture says nothing about the files a finished coordinate holds, so the run
-is only asked to have produced something.
+The seed says nothing about the files a finished coordinate holds, so the run is
+only asked to have produced something.
 
-```gherkin
-Feature: Electron microscopy circuit build
+Launching prices the build first: the estimate is shown and has to be confirmed
+before anything starts.
 
-@private @spends
-Scenario: Generate a build campaign from a scan configuration
-  Given I am logged in
-  And I am inside my project
-  When I start the "Build" workflow for "Electron microscopy circuit"
-  And I look at my project's own entities
-  And I choose the electron microscopy dense reconstruction dataset
-  And I choose the morphology the fixture names
-  And I fill the configuration from the fixture
-  And I press "Generate build(s)"
-  Then the "Results" tab opens
-  And the button offers a new campaign instead
-  And I see one coordinate for each combination of swept values
-  And that coordinate is "created"
-  And I see the configuration it was generated from
+User: lab member, spending credits
+Seed: seed.json
 
-@private @spends
-Scenario: Launch the build and let it finish
-  Given I have generated an electron microscopy circuit campaign
-  When I press "Launch builds"
-  And I confirm what it will cost
-  Then the coordinate leaves "created"
-  And it reaches "done"
-  And it has produced something
-```
+## Generate a build campaign and launch it
+
+For each: configuration in the seed
+
+Precondition:
+
+1. Inside my project, on the Workflows page
+
+Steps:
+
+1. Start the "Build" workflow for "Electron microscopy circuit"
+2. Look at the project's own entities, and choose the dataset and the morphology the seed names
+3. Fill the form from the configuration in the seed
+
+Expected:
+
+- The button reads "Generate build(s)"
+- The button is enabled
+
+Steps:
+
+1. Press "Generate build(s)"
+
+Expected:
+
+- The results tab is enabled
+- The button now reads "New build campaign"
+
+Steps:
+
+1. Open the results tab
+
+Expected:
+
+- There are as many coordinates as the seed says
+- The first coordinate reads "created"
+- The configuration it was generated from is among its inputs
+
+Steps:
+
+1. Press "Launch builds"
+
+Expected:
+
+- An estimated cost breakdown is shown, with a "Confirm" to press
+
+Steps:
+
+1. Press "Confirm"
+
+Expected:
+
+- The coordinate leaves "created"
+- The coordinate reaches "done" (within 5 minutes)
+- It has produced something

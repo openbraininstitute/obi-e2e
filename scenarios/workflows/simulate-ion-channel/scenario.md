@@ -1,48 +1,106 @@
 # Ion channel simulation
 
-The Ion channel simulation workflow, under Simulate on the Workflows page. It is
-driven by a scan configuration from
-`data/scan-configs/simulate-ion-channel.json`, following obi-one's own ion
-channel example: the channel given a conductance, held at three voltages in
+The Ion channel simulation workflow, under Simulate on the Workflows page.
+obi-one describes the form, and the seed fills it in, following obi-one's own
+ion channel example: the channel given a conductance, held at three voltages in
 turn, and recorded.
 
 Unlike the other workflows, this one browses for nothing first. It opens straight
-into the configuration, and the ion channel model is picked from a field inside
-it while the rest of the form is filled.
+into the form, and the ion channel model is picked from a field inside it while
+the rest is filled.
 
-```gherkin
-Feature: Ion channel simulation
+The seed also says which deployments the workflow runs on, so no line here does.
 
-@private @spends
-Scenario: The configuration is not launchable until it is complete
-  Given I am logged in
-  And I am inside my project
-  When I start the "Simulate" workflow for "Ion channel"
-  Then the configuration opens, with nothing to browse for first
-  And "Generate simulation(s)" is disabled
+Launching prices the simulation first: the estimate is shown and has to be
+confirmed before anything starts.
 
-@private @spends
-Scenario: Generate a simulation campaign from a scan configuration
-  Given I have started the Ion channel simulation workflow
-  When I fill the configuration from the fixture, ion channel model included
-  And I press "Generate simulation(s)"
-  Then the "Simulations" tab opens
-  And the button offers a new campaign instead
-  And I see one coordinate for each combination of swept values
-  And that coordinate is "created"
-  And its inputs are "node_sets.json", "obi_one_coordinate.json" and "simulation_config.json"
-  And it has produced nothing yet
+User: lab member, spending credits
+Seed: seed.json
 
-@private @spends
-Scenario: Launch the simulation and read what it recorded
-  Given I have generated an ion channel simulation campaign
-  When I press "Launch simulations"
-  And I confirm what it will cost
-  Then the coordinate leaves "created"
-  And it reaches "done"
-  And its outputs are "Recording 0.h5" and "spikes.h5"
-  When I open "Recording 0.h5"
-  Then I see the trace, against "Time (ms)" and "Voltage (mV)"
-  When I open "spikes.h5"
-  Then I see the spikes of "PopulationAll"
-```
+## The form will not launch until it is complete
+
+Precondition:
+
+1. Inside my project, on the Workflows page
+
+Steps:
+
+1. Start the "Simulate" workflow for "Ion channel"
+
+Expected:
+
+- The form opens, with nothing to browse for first
+- "Generate simulation(s)" is disabled
+
+## Generate a simulation campaign and launch it
+
+For each: configuration in the seed
+
+Precondition:
+
+1. The Ion channel simulation form is open
+
+Steps:
+
+1. Fill the form from the configuration in the seed, the ion channel model included
+
+Expected:
+
+- The button reads "Generate simulation(s)"
+- The button is enabled
+
+Steps:
+
+1. Press "Generate simulation(s)"
+
+Expected:
+
+- The simulations tab is enabled
+- The button now reads "New simulation campaign"
+
+Steps:
+
+1. Open the simulations tab
+
+Expected:
+
+- There are as many coordinates as the seed says
+- The first coordinate reads "created"
+- Its inputs are exactly:
+  "node_sets.json", "obi_one_coordinate.json" and "simulation_config.json"
+- It has produced no outputs yet
+- The launch button reads "Launch simulations"
+
+Steps:
+
+1. Press "Launch simulations"
+
+Expected:
+
+- An estimated cost breakdown is shown, with a "Confirm" to press
+
+Steps:
+
+1. Press "Confirm"
+
+Expected:
+
+- The coordinate leaves "created"
+- The coordinate reaches "done" (within 5 minutes)
+- Its outputs are exactly: "Recording 0.h5" and "spikes.h5"
+
+Steps:
+
+1. Open "Recording 0.h5"
+
+Expected:
+
+- The trace is drawn against "Time (ms)" and "Voltage (mV)"
+
+Steps:
+
+1. Open "spikes.h5"
+
+Expected:
+
+- The spikes of "PopulationAll" are shown

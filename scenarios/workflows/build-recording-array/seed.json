@@ -39,7 +39,11 @@
         }
       },
       "expect": {
-        "coordinateCount": 1
+        "coordinateCount": 1,
+        "generated": {
+          "inputs": ["obi_one_coordinate.json"],
+          "outputs": []
+        }
       }
     }
   ]

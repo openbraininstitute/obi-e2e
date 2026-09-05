@@ -1,10 +1,6 @@
-import { checkCompletedOutput } from '@fixtures/check-campaign-output';
+import { checkCompletedOutput, checkGeneratedFiles } from '@fixtures/check-campaign-output';
 import { enableFeature } from '@fixtures/feature-flags';
-import {
-  loadScanConfigFixture,
-  notDeployedHere,
-  runsOnThisDeployment,
-} from '@fixtures/scan-config';
+import { loadSeed, notDeployedHere, runsOnThisDeployment } from '@fixtures/scan-config';
 import { scanConfigWords } from '@fixtures/scan-config-activities';
 import { ScanConfigDriver } from '@fixtures/scan-config-driver';
 import { PRIVATE_SPENDS } from '@fixtures/tags';
@@ -14,7 +10,7 @@ import { scanConfigEditor, scanConfigResults } from '@locators/scan-config';
 
 const RUN_TIMEOUT = 300_000;
 
-const fixture = loadScanConfigFixture('extracellular-recording-array.json');
+const fixture = loadSeed(import.meta.dir);
 const words = scanConfigWords[fixture.activity];
 
 test.skip(!runsOnThisDeployment(fixture), notDeployedHere(fixture));
@@ -24,7 +20,7 @@ test.describe.configure({ timeout: RUN_TIMEOUT + 120_000 });
 test.describe('Extracellular recording array build', () => {
   for (const configuration of fixture.cases) {
     test(
-      `builds: ${configuration.name}`,
+      `Generate a build campaign and launch it: ${configuration.name}`,
       { tag: PRIVATE_SPENDS },
       async ({ page, context, workspace, baseURL }) => {
         const editor = scanConfigEditor(page);
@@ -46,25 +42,29 @@ test.describe('Extracellular recording array build', () => {
 
         await expect(editor.submit).toHaveText(words.generate);
         await expect(editor.submit).toBeEnabled();
+
         await editor.submit.click();
 
         await expect(editor.tab(words.resultsTab)).toBeEnabled();
         await expect(editor.submit).toHaveText(words.newCampaign);
+
         await editor.tab(words.resultsTab).click();
 
         await expect(results.coordinates).toHaveCount(configuration.expect.coordinateCount);
-        await expect(results.inputs.locator('[data-file-name]')).not.toHaveCount(0);
 
+        // The scenario reads the first coordinate, whatever the campaign holds.
         const status = results.coordinates.first().getByTestId('scan-config-status');
         await expect(status).toHaveText(/^created$/i);
+
+        await checkGeneratedFiles(page, configuration);
 
         await results.launch.click();
 
         await expect(results.costConfirm).toBeVisible();
+
         await results.costConfirm.click();
 
         await expect(status).not.toHaveText(/^created$/i);
-
         await expect(status).toHaveText(/^done$/i, { timeout: RUN_TIMEOUT });
 
         await checkCompletedOutput(page, configuration);

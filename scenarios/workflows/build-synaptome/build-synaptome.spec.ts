@@ -1,10 +1,6 @@
 import { checkCompletedOutput, checkGeneratedFiles } from '@fixtures/check-campaign-output';
 import { pretendNoCredits } from '@fixtures/credits';
-import {
-  loadScanConfigFixture,
-  notDeployedHere,
-  runsOnThisDeployment,
-} from '@fixtures/scan-config';
+import { loadSeed, notDeployedHere, runsOnThisDeployment } from '@fixtures/scan-config';
 import { scanConfigWords } from '@fixtures/scan-config-activities';
 import { addLocationsFromViewer, ScanConfigDriver } from '@fixtures/scan-config-driver';
 import { PRIVATE_SPENDS } from '@fixtures/tags';
@@ -15,9 +11,9 @@ import { morphologyLocations, morphologyViewer } from '@locators/viewer';
 import { lowCredits } from '@locators/workflows';
 import type { Page } from '@playwright/test';
 
-const RUN_TIMEOUT = 300_000;
+const RUN_TIMEOUT = 300_000; // 5 minutes
 
-const fixture = loadScanConfigFixture('build-synaptome.json');
+const fixture = loadSeed(import.meta.dir);
 const words = scanConfigWords[fixture.activity];
 const simpleCase = firstCase(fixture);
 
@@ -25,9 +21,8 @@ test.skip(!runsOnThisDeployment(fixture), notDeployedHere(fixture));
 
 test.describe.configure({ timeout: RUN_TIMEOUT + 120_000 });
 
-async function openEditor(page: Page, workspace: { labId: string; projectId: string }) {
-  await openWorkflowsHub(page, workspace);
-
+/** Starts the workflow and picks the ME-model, leaving the form open. */
+async function openEditor(page: Page): Promise<void> {
   await startWorkflow(page, fixture.activity, fixture.workflow);
 
   const missing = await chooseEntities(page, fixture.selection);
@@ -36,29 +31,50 @@ async function openEditor(page: Page, workspace: { labId: string; projectId: str
   await expect(page).toHaveURL(new RegExp(`/configure/${fixture.workflow.type}/`));
 }
 
+/** Adds an Explicit Morphology Locations strategy, so its panel shows. */
+async function addExplicitLocations(page: Page): Promise<void> {
+  const editor = scanConfigEditor(page);
+
+  await editor.rootElement('morphology_locations').click();
+  await editor.addEntry('morphology_locations').click();
+  await editor.variant('ExplicitMorphologyLocations').click();
+
+  await expect(morphologyLocations(page).panel).toBeVisible();
+}
+
 test.describe('Synaptome build', () => {
   test.beforeEach(async ({ page, workspace }) => {
-    await openEditor(page, workspace);
-  });
-
-  test('will not launch an incomplete configuration', { tag: PRIVATE_SPENDS }, async ({ page }) => {
-    await expect(scanConfigEditor(page).submit).toBeDisabled();
+    await openWorkflowsHub(page, workspace);
   });
 
   test(
-    'refuses to generate a campaign with no credits',
+    'The form will not launch until it is complete',
+    { tag: PRIVATE_SPENDS },
+    async ({ page }) => {
+      await openEditor(page);
+
+      await expect(scanConfigEditor(page).submit).toHaveText(words.generate);
+      await expect(scanConfigEditor(page).submit).toBeDisabled();
+    }
+  );
+
+  test(
+    'A project with no credits cannot generate a campaign',
     { tag: PRIVATE_SPENDS },
     async ({ page, workspace }) => {
       const editor = scanConfigEditor(page);
 
+      await openEditor(page);
       await pretendNoCredits(page, workspace.projectId);
       await page.reload({ waitUntil: 'domcontentloaded' });
+
       await expect(editor.submit).toBeVisible();
 
       await new ScanConfigDriver(page).apply(simpleCase);
 
       await expect(editor.submit).toHaveText(words.generate);
       await expect(editor.submit).toBeEnabled();
+
       await editor.submit.click();
 
       await expect(lowCredits(page).notice).toBeVisible();
@@ -68,68 +84,72 @@ test.describe('Synaptome build', () => {
   );
 
   for (const configuration of fixture.cases) {
-    test(`builds: ${configuration.name}`, { tag: PRIVATE_SPENDS }, async ({ page }) => {
-      const editor = scanConfigEditor(page);
-      const results = scanConfigResults(page);
+    test(
+      `Generate a build campaign and launch it: ${configuration.name}`,
+      { tag: PRIVATE_SPENDS },
+      async ({ page }) => {
+        const editor = scanConfigEditor(page);
+        const results = scanConfigResults(page);
 
-      await new ScanConfigDriver(page).apply(configuration);
+        await openEditor(page);
 
-      await expect(editor.submit).toHaveText(words.generate);
-      await expect(editor.submit).toBeEnabled();
-      await editor.submit.click();
+        await new ScanConfigDriver(page).apply(configuration);
 
-      await expect(editor.tab(words.resultsTab)).toBeEnabled();
-      await expect(editor.submit).toHaveText(words.newCampaign);
-      await editor.tab(words.resultsTab).click();
+        await expect(editor.submit).toHaveText(words.generate);
+        await expect(editor.submit).toBeEnabled();
 
-      await expect(results.coordinates).toHaveCount(configuration.expect.coordinateCount);
+        await editor.submit.click();
 
-      const status = results.coordinates.first().getByTestId('scan-config-status');
-      await expect(status).toHaveText(/^created$/i);
+        await expect(editor.tab(words.resultsTab)).toBeEnabled();
+        await expect(editor.submit).toHaveText(words.newCampaign);
 
-      await checkGeneratedFiles(page, configuration);
+        await editor.tab(words.resultsTab).click();
 
-      await expect(results.launch).toContainText(words.launch);
-      await results.launch.click();
+        await expect(results.coordinates).toHaveCount(configuration.expect.coordinateCount);
 
-      if (fixture.workflow.confirmsCost) {
+        // The scenario reads the first coordinate, whatever the campaign holds.
+        const status = results.coordinates.first().getByTestId('scan-config-status');
+        await expect(status).toHaveText(/^created$/i);
+
+        await checkGeneratedFiles(page, configuration);
+
+        await expect(results.launch).toContainText(words.launch);
+
+        await results.launch.click();
+
         await expect(results.costConfirm).toBeVisible();
+
         await results.costConfirm.click();
+
+        await expect(status).not.toHaveText(/^created$/i);
+        await expect(status).toHaveText(/^done$/i, { timeout: RUN_TIMEOUT });
+
+        await checkCompletedOutput(page, configuration);
       }
-
-      await expect(status).not.toHaveText(/^created$/i);
-      await expect(status).toHaveText(/^done$/i, { timeout: RUN_TIMEOUT });
-
-      await checkCompletedOutput(page, configuration);
-    });
+    );
   }
-});
 
-test.describe('Synaptome build, picking locations on the morphology', () => {
-  test.beforeEach(async ({ page, workspace }) => {
-    await openEditor(page, workspace);
-
-    const editor = scanConfigEditor(page);
-    await editor.rootElement('morphology_locations').click();
-    await editor.addEntry('morphology_locations').click();
-    await editor.variant('ExplicitMorphologyLocations').click();
-    await expect(morphologyLocations(page).panel).toBeVisible();
-  });
-
-  test('adds a location for each click on a neurite', { tag: PRIVATE_SPENDS }, async ({ page }) => {
+  test('Clicking a neurite adds a location', { tag: PRIVATE_SPENDS }, async ({ page }) => {
     const locations = morphologyLocations(page);
 
-    await expect(locations.rows).toHaveCount(0);
-    await addLocationsFromViewer(page, 2);
-    await expect(locations.rows).toHaveCount(2);
+    await openEditor(page);
+    await addExplicitLocations(page);
 
+    await expect(locations.rows).toHaveCount(0);
+
+    await addLocationsFromViewer(page, 2);
+
+    await expect(locations.rows).toHaveCount(2);
     await expect(locations.sectionId(0)).not.toHaveValue('');
     await expect(locations.sectionId(0)).toBeDisabled();
     await expect(locations.offset(0)).toBeEnabled();
   });
 
-  test('keeps the offset within its section', { tag: PRIVATE_SPENDS }, async ({ page }) => {
+  test('An offset stays inside its section', { tag: PRIVATE_SPENDS }, async ({ page }) => {
     const locations = morphologyLocations(page);
+
+    await openEditor(page);
+    await addExplicitLocations(page);
     await addLocationsFromViewer(page, 1);
 
     await locations.offset(0).fill('0.5');
@@ -145,78 +165,99 @@ test.describe('Synaptome build, picking locations on the morphology', () => {
     await expect(locations.offset(0)).toHaveValue('0.00');
   });
 
-  test('removes a location, and keeps the last one', { tag: PRIVATE_SPENDS }, async ({ page }) => {
+  test('A synapse group keeps its last location', { tag: PRIVATE_SPENDS }, async ({ page }) => {
     const locations = morphologyLocations(page);
+
+    await openEditor(page);
+    await addExplicitLocations(page);
     await addLocationsFromViewer(page, 2);
 
     await locations.remove(0).click();
+
     await expect(locations.rows).toHaveCount(1);
-
     await expect(locations.remove(0)).toHaveCount(0);
-  });
-});
-
-test.describe('The morphology viewer', () => {
-  test.beforeEach(async ({ page, workspace }) => {
-    await openEditor(page, workspace);
-    await expect(morphologyViewer(page).scene).toBeVisible();
   });
 
   test(
-    'draws the morphology as a dendrogram and back',
+    'Look at the morphology as a dendrogram and back',
     { tag: PRIVATE_SPENDS },
     async ({ page }) => {
       const viewer = morphologyViewer(page);
+
+      await openEditor(page);
+      await expect(viewer.scene).toBeVisible();
 
       await expect(viewer.mode.visualization).toHaveAttribute('aria-pressed', 'true');
       await expect(viewer.mode.dendrogram).toHaveAttribute('aria-pressed', 'false');
 
       await viewer.mode.dendrogram.click();
+
       await expect(viewer.mode.dendrogram).toHaveAttribute('aria-pressed', 'true');
       await expect(viewer.mode.visualization).toHaveAttribute('aria-pressed', 'false');
 
       await viewer.mode.visualization.click();
+
       await expect(viewer.mode.visualization).toHaveAttribute('aria-pressed', 'true');
     }
   );
 
-  test('turns the axons on and off', { tag: PRIVATE_SPENDS }, async ({ page }) => {
+  test('Turn the axon on and off', { tag: PRIVATE_SPENDS }, async ({ page }) => {
     const viewer = morphologyViewer(page);
 
-    await viewer.settings.click();
-    await expect(viewer.toggle.axons).toBeVisible();
+    await openEditor(page);
+    await expect(viewer.scene).toBeVisible();
 
+    await viewer.settings.click();
+
+    await expect(viewer.toggle.axons).toBeVisible();
     await expect(viewer.toggle.axons).not.toBeChecked();
+
     await viewer.toggle.axons.click();
+
     await expect(viewer.toggle.axons).toBeChecked();
 
     await viewer.toggle.axons.click();
+
     await expect(viewer.toggle.axons).not.toBeChecked();
   });
 
-  test('puts a zoom slider on the scene when asked', { tag: PRIVATE_SPENDS }, async ({ page }) => {
+  test('Add a zoom slider to the viewer', { tag: PRIVATE_SPENDS }, async ({ page }) => {
     const viewer = morphologyViewer(page);
+
+    await openEditor(page);
+    await expect(viewer.scene).toBeVisible();
 
     await expect(viewer.zoomSlider).toHaveCount(0);
 
     await viewer.settings.click();
-    await expect(viewer.toggle.zoomSlider).not.toBeChecked();
-    await viewer.toggle.zoomSlider.click();
-    await expect(viewer.toggle.zoomSlider).toBeChecked();
 
+    await expect(viewer.toggle.zoomSlider).not.toBeChecked();
+
+    await viewer.toggle.zoomSlider.click();
+
+    await expect(viewer.toggle.zoomSlider).toBeChecked();
     await expect(viewer.zoomSlider).toBeVisible();
 
     await viewer.toggle.zoomSlider.click();
+
     await expect(viewer.zoomSlider).toHaveCount(0);
   });
 
-  test('keeps the scale bar and the neuron opacity', { tag: PRIVATE_SPENDS }, async ({ page }) => {
-    const viewer = morphologyViewer(page);
+  test(
+    'The viewer opens with a scale bar and a solid neuron',
+    { tag: PRIVATE_SPENDS },
+    async ({ page }) => {
+      const viewer = morphologyViewer(page);
 
-    await viewer.settings.click();
-    await expect(viewer.toggle.scaleBar).toBeChecked();
-    await expect(viewer.slider.neuronOpacity).toContainText('100%');
-  });
+      await openEditor(page);
+      await expect(viewer.scene).toBeVisible();
+
+      await viewer.settings.click();
+
+      await expect(viewer.toggle.scaleBar).toBeChecked();
+      await expect(viewer.slider.neuronOpacity).toContainText('100%');
+    }
+  );
 });
 
 function firstCase(loaded: typeof fixture) {

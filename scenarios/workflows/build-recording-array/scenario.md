@@ -1,40 +1,79 @@
 # Extracellular recording array build
 
 The Extracellular recording array build workflow, under Build on the Workflows
-page. It is driven by a scan configuration, from
-`data/scan-configs/extracellular-recording-array.json`, and places one probe over
-a circuit.
+page. obi-one describes the form, and the seed fills it in, placing one probe
+over a circuit.
 
-The workflow sits behind a feature flag, which the fixture names. The flag is set
+The workflow sits behind a feature flag, which the seed names. The flag is set
 before the page loads, because the hub renders the card disabled otherwise.
 
-The fixture says nothing about the files a finished coordinate holds, so the run
-is only asked to have produced something.
+The seed says what a coordinate holds the moment it is generated. It says
+nothing about the finished one: the array it builds is named after the circuit
+it came from, and that name is different on every deployment. So the finished
+run is only asked to have produced something.
 
-```gherkin
-Feature: Extracellular recording array build
+The seed also says which deployments the workflow runs on, so no line here does.
 
-@private @spends
-Scenario: Generate a build campaign from a scan configuration
-  Given I am logged in
-  And I am inside my project
-  And I have turned on the "Extracellular recording array" experimental feature
-  When I start the "Build" workflow for "Extracellular recording array"
-  And I choose the circuit the fixture names
-  And I fill the configuration from the fixture
-  And I press "Generate build(s)"
-  Then the "Results" tab opens
-  And the button offers a new campaign instead
-  And I see one coordinate for each combination of swept values
-  And that coordinate is "created"
-  And I see the configuration it was generated from
+Launching prices the build first: the estimate is shown and has to be confirmed
+before anything starts.
 
-@private @spends
-Scenario: Launch the build and let it finish
-  Given I have generated a recording array campaign
-  When I press "Launch builds"
-  And I confirm what it will cost
-  Then the coordinate leaves "created"
-  And it reaches "done"
-  And it has produced something
-```
+User: lab member, spending credits
+Seed: seed.json
+
+## Generate a build campaign and launch it
+
+For each: configuration in the seed
+
+Precondition:
+
+1. The feature the seed names is turned on
+2. Inside my project, on the Workflows page
+
+Steps:
+
+1. Start the "Build" workflow for "Extracellular recording array"
+2. Choose the circuit the seed names
+3. Fill the form from the configuration in the seed
+
+Expected:
+
+- The button reads "Generate build(s)"
+- The button is enabled
+
+Steps:
+
+1. Press "Generate build(s)"
+
+Expected:
+
+- The results tab is enabled
+- The button now reads "New build campaign"
+
+Steps:
+
+1. Open the results tab
+
+Expected:
+
+- There are as many coordinates as the seed says
+- The first coordinate reads "created"
+- Its inputs are exactly: "obi_one_coordinate.json"
+- It has produced no outputs yet
+
+Steps:
+
+1. Press "Launch builds"
+
+Expected:
+
+- An estimated cost breakdown is shown, with a "Confirm" to press
+
+Steps:
+
+1. Press "Confirm"
+
+Expected:
+
+- The coordinate leaves "created"
+- The coordinate reaches "done" (within 5 minutes)
+- It has produced something

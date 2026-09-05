@@ -48,8 +48,9 @@ export function workflowBrowse(page: Page) {
   return {
     scope: (name: 'public' | 'project'): Locator => page.getByTestId(`scope-selector-tab-${name}`),
 
+    // A prerequisite is a card, and different workflows draw it as a radio or a button.
     prerequisite: (name: string): Locator =>
-      page.getByRole('button').filter({ hasText: name }).first(),
+      page.getByRole('radio').or(page.getByRole('button')).filter({ hasText: name }).first(),
 
     useModel: page
       .getByRole('button', { name: 'Use model' })

@@ -1,18 +1,13 @@
 import { expect, test } from 'bun:test';
 
-import {
-  loadScanConfigFixture,
-  notDeployedHere,
-  parseScanConfigFixture,
-  scanConfigFixtureFiles,
-} from './scan-config';
+import { loadSeed, notDeployedHere, parseScanConfigFixture, seedFolders } from './scan-config';
 
 test('every scan-config fixture has a valid envelope', () => {
-  const files = scanConfigFixtureFiles();
+  const files = seedFolders();
   expect(files.length).toBeGreaterThan(0);
 
   for (const file of files) {
-    const fixture = loadScanConfigFixture(file);
+    const fixture = loadSeed(file);
     expect(fixture.name).not.toBe('');
     expect(fixture.cases.length).toBeGreaterThan(0);
 

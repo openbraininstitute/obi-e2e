@@ -1,59 +1,97 @@
 # Single neuron simulation
 
-The Single neuron simulation workflow, under Simulate on the Workflows page. It
-is driven by a scan configuration from
-`data/scan-configs/simulate-single-neuron.json`, whose configurations follow
-obi-one's own ME-model simulation example.
+The Single neuron simulation workflow, under Simulate on the Workflows page.
+obi-one describes the form, and the seed fills it in.
 
-An ME-model campaign has no cost estimator behind it, so it launches straight
-away rather than asking what it will cost first.
+The seed holds two configurations, and each one becomes a test of its own. One
+clamps the soma once; the other gives the same clamp two amplitudes, so the
+campaign comes out as a grid of two coordinates. The seed also says which
+deployments the workflow runs on, so no line here does.
 
-The fixture holds a second configuration that sweeps the clamp amplitude. It runs
-through the same steps, and the only thing it expects of its coordinates is that
-the first one finishes having produced something.
+An ME-model campaign has no cost estimator behind it, so launching starts the
+simulation straight away rather than asking what it will cost first.
 
-```gherkin
-Feature: Single neuron simulation
+User: lab member, spending credits
+Seed: seed.json
 
-@private @spends
-Scenario: The configuration is not launchable until it is complete
-  Given I am logged in
-  And I am inside my project
-  When I start the "Simulate" workflow for "Single neuron"
-  And I choose the ME-model the fixture names
-  Then "Generate simulation(s)" is disabled
+## The form will not launch until it is complete
 
-@private @spends
-Scenario: Generate a simulation campaign from a scan configuration
-  Given I have started the Single neuron simulation workflow
-  When I fill the configuration from the fixture
-  And I press "Generate simulation(s)"
-  Then the "Simulations" tab opens
-  And the button offers a new campaign instead
-  And I see one coordinate for each combination of swept values
-  And that coordinate is "created"
-  And its inputs are "node_sets.json", "obi_one_coordinate.json" and "simulation_config.json"
-  And it has produced nothing yet
+Precondition:
 
-@private @spends
-Scenario: Launch the simulation and read what it recorded
-  Given I have generated a single neuron simulation campaign
-  When I press "Launch simulations"
-  Then the coordinate leaves "created"
-  And it reaches "done"
-  And its outputs are "Recording 0.h5" and "spikes.h5"
-  When I open "Recording 0.h5"
-  Then I see the trace, against "Time (ms)" and "Voltage (mV)"
-  When I open "spikes.h5"
-  Then I see the spikes of "PopulationAll"
+1. Inside my project, on the Workflows page
 
-@private @spends
-Scenario: A swept amplitude makes a grid
-  Given I have started the Single neuron simulation workflow
-  When I give the current clamp two amplitudes
-  And I press "Generate simulation(s)"
-  Then the campaign holds two coordinates, one per amplitude
-  When I launch it
-  Then the first coordinate reaches "done"
-  And it has produced something
-```
+Steps:
+
+1. Start the "Simulate" workflow for "Single neuron"
+2. Choose the ME-model the seed names
+
+Expected:
+
+- "Generate simulation(s)" is disabled
+
+## Generate a simulation campaign and launch it
+
+Both configurations produce the same two files, so both are read the same way.
+
+For each: configuration in the seed
+
+Precondition:
+
+1. The Single neuron simulation form is open, with the ME-model the seed names chosen
+
+Steps:
+
+1. Fill the form from the configuration in the seed
+
+Expected:
+
+- The button reads "Generate simulation(s)"
+- The button is enabled
+
+Steps:
+
+1. Press "Generate simulation(s)"
+
+Expected:
+
+- The simulations tab is enabled
+- The button now reads "New simulation campaign"
+
+Steps:
+
+1. Open the simulations tab
+
+Expected:
+
+- There are as many coordinates as the seed says
+- The first coordinate reads "created"
+- Its inputs are exactly:
+  "node_sets.json", "obi_one_coordinate.json" and "simulation_config.json"
+- It has produced no outputs yet
+- The launch button reads "Launch simulations"
+
+Steps:
+
+1. Press "Launch simulations"
+
+Expected:
+
+- The coordinate leaves "created"
+- The coordinate reaches "done" (within 5 minutes)
+- Its outputs are exactly: "Recording 0.h5" and "spikes.h5"
+
+Steps:
+
+1. Open "Recording 0.h5"
+
+Expected:
+
+- The trace is drawn against "Time (ms)" and "Voltage (mV)"
+
+Steps:
+
+1. Open "spikes.h5"
+
+Expected:
+
+- The spikes of "PopulationAll" are shown

@@ -1,4 +1,4 @@
-/** The scan config fixtures in data/scan-configs, read and checked. */
+/** The seed each scenario keeps beside its spec, read and checked. */
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -59,7 +59,10 @@ export type ScanConfigSelection =
 export const SCAN_CONFIG_ACTIVITIES = ['build', 'simulate', 'extract', 'process'] as const;
 export type ScanConfigActivity = (typeof SCAN_CONFIG_ACTIVITIES)[number];
 
-export const SCAN_CONFIG_DIR = path.resolve(import.meta.dirname, '..', 'data', 'scan-configs');
+/** A scenario folder keeps its seed beside its spec, under this name. */
+export const SEED_NAME = 'seed.json';
+
+const SCENARIOS_DIR = path.resolve(import.meta.dirname, '..', 'scenarios');
 
 /** Whether this workflow runs on the deployment under test. */
 export function runsOnThisDeployment(fixture: ScanConfigFixture): boolean {
@@ -78,17 +81,23 @@ export function notDeployedHere(fixture: ScanConfigFixture): string {
   );
 }
 
-export function scanConfigFixtureFiles(): string[] {
+/** Every scenario folder that carries a seed, at any depth. */
+export function seedFolders(): string[] {
   return fs
-    .readdirSync(SCAN_CONFIG_DIR)
-    .filter((entry) => entry.endsWith('.json'))
+    .readdirSync(SCENARIOS_DIR, { recursive: true })
+    .flatMap((entry) => {
+      const relative = String(entry);
+      if (path.basename(relative) !== SEED_NAME) return [];
+      return [path.join(SCENARIOS_DIR, path.dirname(relative))];
+    })
     .toSorted();
 }
 
-export function loadScanConfigFixture(fileName: string): ScanConfigFixture {
-  const file = path.join(SCAN_CONFIG_DIR, fileName);
+/** The seed beside a spec. A spec passes its own `import.meta.dir`. */
+export function loadSeed(folder: string): ScanConfigFixture {
+  const file = path.join(folder, SEED_NAME);
   const raw: unknown = JSON.parse(fs.readFileSync(file, 'utf8'));
-  return parseScanConfigFixture(raw, fileName);
+  return parseScanConfigFixture(raw, path.relative(process.cwd(), file));
 }
 
 /** Reads a fixture, and fails naming the field that is wrong. */
