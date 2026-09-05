@@ -18,13 +18,14 @@
     "browsers": "bunx playwright install --with-deps chromium",
     "summarize": "bun scripts/ci/summarize-results.ts test-results/results.json test-results",
     "notify": "bun run summarize && bun scripts/ci/teams-card.ts test-results/summary.json",
-    "test:unit": "bun test ./scripts ./fixtures",
+    "test:unit": "bun test ./scripts ./fixtures ./tools",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "typecheck": "tsc --noEmit",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
-    "check": "bun run format:check && bun run lint && bun run typecheck && bun run test:unit"
+    "check": "bun run format:check && bun run lint && bun run typecheck && bun run test:unit",
+    "casebook": "bun tools/casebook/validator/cli.ts"
   },
   "dependencies": {
     "better-result": "^3.0.1",
@@ -35,6 +36,7 @@
   "devDependencies": {
     "@playwright/test": "1.62.1",
     "@types/bun": "1.4.0",
+    "oxc-parser": "^0.148.0",
     "oxfmt": "0.66.0",
     "oxlint": "1.81.0",
     "typescript": "7.0.2"

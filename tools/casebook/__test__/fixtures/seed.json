@@ -1,0 +1,1 @@
+{ "name": "a seed the tests can find", "env": ["staging"] }
