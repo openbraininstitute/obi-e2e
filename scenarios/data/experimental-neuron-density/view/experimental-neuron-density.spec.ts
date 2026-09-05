@@ -1,4 +1,5 @@
 import { showAllSpecies } from '@fixtures/choose-species';
+import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
 import { routes } from '@fixtures/routes';
 import { PRIVATE_READONLY } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
@@ -6,7 +7,7 @@ import { WIDE_VIEWPORT } from '@fixtures/viewport';
 import { dataView } from '@locators/data-view';
 import { entityListing } from '@locators/listing';
 
-const SLUG = 'experimental-neuron-density';
+const SLUG = entitySlug(Type.ExperimentalNeuronDensity);
 
 const PROPERTIES = ['brain_region', 'mtype', 'species', 'etype', 'license', 'lifecycle_status'];
 

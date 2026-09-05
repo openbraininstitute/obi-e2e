@@ -1,4 +1,5 @@
 import { showAllSpecies } from '@fixtures/choose-species';
+import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
 import { routes } from '@fixtures/routes';
 import { PRIVATE_READONLY } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
@@ -6,7 +7,7 @@ import { WIDE_VIEWPORT } from '@fixtures/viewport';
 import { dataView } from '@locators/data-view';
 import { entityListing } from '@locators/listing';
 
-const SLUG = 'microcircuit-simulation';
+const SLUG = entitySlug(Type.MicrocircuitSimulation);
 
 const PROPERTIES = ['circuit_name', 'legacy_activity_status', 'creation_date', 'lifecycle_status'];
 
