@@ -1,146 +1,86 @@
 # Reporting a run to a Teams channel
 
-How to point this suite at a Teams channel, and what arrives when it does.
-
-Everything on this side is already built. What a new channel needs is a Power
-Automate workflow to receive the run and post it, which is what most of this
-page is about.
+Everything on this side is built. What a new channel needs is a Power Automate
+workflow to receive the run and post it. That is what this page sets up.
 
 ## What gets posted
 
 One run produces a series of Adaptive Cards:
 
-| Card      | Holds                                                                         |
-| --------- | ----------------------------------------------------------------------------- |
-| the first | outcome, counts, pass rate, duration, the service table, and the credit block |
-| the rest  | one per product section — Data, Workflows, Site — with a row per scenario     |
-
-The first card opens with the suite's name and a row of chips: how the run
-ended, then the deployment, the browser and what started it. The outcome chip is
-the only filled one, so the thing a reader needs at a glance is the loudest;
-the three behind it are tinted. `Badge` is a Teams and Copilot element rather
-than part of the Adaptive Cards schema, so each one carries a `TextBlock`
-fallback and Outlook draws the word instead of nothing. The chips sit in a
-`Layout.Flow` container, which lays them out as a row and wraps them onto a
-second line rather than giving each one a line of its own.
-
-Under the header, the counts and the donut sit side by side: a `Layout.AreaGrid`
-splits that container into a `facts` area and a `ring` area, and each panel
-claims one by name. The grid is claimed only `atLeast:Standard`, so a phone in
-portrait or a meeting side pane gets no matching layout and falls back to the
-default stack — the numbers first, the donut under them, both at full width.
-The file and line under each failing test are hidden below narrow for the same
-reason: they wrap over three lines there, and the title and the message do not.
-
-A section whose table would not fit one message is split across numbered parts,
-measured by real byte count rather than a guessed row count.
+| Card      | Holds                                                             |
+| --------- | ----------------------------------------------------------------- |
+| the first | outcome, counts, pass rate, duration, services, credits, 2 charts |
+| the rest  | one per section — Data, Workflows, Site — a row per scenario      |
 
 The first card carries two buttons: **Open the run**, and **Download the full
-report** — the Playwright HTML report, which CI uploads as an artefact and links
-directly. That is the one to hand someone: every test, its trace and its
-screenshots, openable on their own machine. A local run has no link, because the
-report is already on the machine that produced it (`bun run report`).
+report**. The second is the one to hand someone: every test, its trace and its
+screenshots. A local run has no link, because the report is already on your
+machine (`bun run report`).
 
-The first card also draws two charts:
-
-- a **donut** of the outcome — passed, failed, flaky and skipped, in the same
-  colours the status pills use. All four are always drawn, including the ones at
-  zero, so the legend reads the same from run to run and a run with no failures
-  says so rather than leaving it to be inferred;
-- a **stacked bar** of the budget. The three parts add up to exactly what the
-  project was given, and each is a different fate for a credit: **spent** by the
-  run, **returned to the lab** by the teardown, or **stranded** — neither, and
-  gone with the deleted project. All three are drawn even at zero, so a run that
-  stranded nothing says so.
-
-`Chart.Donut` and `Chart.HorizontalBar.Stacked` are Teams extensions rather than
-part of the Adaptive Cards schema, so both carry `fallback: "drop"`. A host that
-cannot draw them — Teams mobile, Outlook, an older client — leaves them out
-instead of rendering a hole, and the same numbers sit in the fact lists beside
-them either way.
+Charts are a Teams extension, so they are dropped on clients that cannot draw
+them. Every figure they show is also written out beside them, so nothing is
+lost.
 
 ## Choosing a layout
 
-`TEAMS_LAYOUT` decides how those cards reach the channel.
+`TEAMS_LAYOUT` decides how the cards reach the channel.
 
-| Value    | What happens                                                 | Threaded |
-| -------- | ------------------------------------------------------------ | -------- |
-| unset    | one message with everything                                  | n/a      |
-| `split`  | one request per card, each its own channel message           | no       |
-| `thread` | every card in one request, for a flow that posts and replies | yes      |
+| Value    | What happens                                          | Threaded |
+| -------- | ----------------------------------------------------- | -------- |
+| unset    | one message with everything                           | n/a      |
+| `split`  | one request per card, each its own message            | no       |
+| `thread` | every card in one request; the flow posts and replies | yes      |
 
-Only `thread` gives you a summary with the sections as replies underneath it.
-The reason is worth knowing, because it explains the whole shape of the flow
-below: **the webhook answers `202 Accepted` with an empty body and no message
-id**. Nothing in this repo ever learns the id of the message it just created, so
-nothing here can reply to it. The flow is the only thing that sees the id, so
-the flow has to do the threading.
+Only `thread` gives a summary with the sections as replies underneath.
 
-That is why `thread` sends `{ "cards": [ … ] }` in a single request rather than
-one request per card. The flow posts `cards[0]`, keeps its message id, and
-replies with the rest.
+**Why the flow has to do the threading:** the webhook answers `202 Accepted`
+with an empty body and no message id. Nothing in this repo ever learns the id of
+the message it just created, so nothing here can reply to it. The flow is the
+only thing that sees the id.
 
 ## Setting up a channel
 
-Follow these in order. Each step says exactly what to click.
-
 You need permission to create a workflow, and the channel must be **standard or
-shared**. Posting as a flow bot in a **private** channel is not supported yet.
+shared** — a flow bot cannot post in a private channel.
 
-**One thing to know before you start.** Some fields take an _expression_ — a
-small piece of code, not text you type into the box. When a step below says
-"use the Expression tab", it means: click the field, wait for the little panel
-to open, click the tab named **Expression**, type the code there, then click
-**OK**. Typing the code straight into the field stores it as plain words and the
-flow does nothing.
+**One thing to know first.** Some fields take an _expression_, which is code,
+not text. When a step says "use the Expression tab", it means: click the field,
+wait for the panel, click the **Expression** tab, type the code there, click
+**OK**. Typing it straight into the field saves it as plain words and the flow
+does nothing.
 
 ### 1. Create the workflow
 
-In Teams, go to the channel → **⋯** → **Workflows** → **Build from scratch**.
+Teams → the channel → **⋯** → **Workflows** → **Build from scratch**.
 
-If the builder inside Teams will not let you add an **Apply to each** or type an
-expression, build the same flow at [make.powerautomate.com](https://make.powerautomate.com)
-→ **Create** → **Instant cloud flow**. It is the same flow, and the Teams
-Workflows app lists it either way.
+If that builder will not let you add an **Apply to each** or type an expression,
+build the same flow at [make.powerautomate.com](https://make.powerautomate.com)
+→ **Create** → **Instant cloud flow**. The Teams Workflows app lists it either
+way.
 
 ### 2. Add the trigger
 
-Search for and pick **When a Teams webhook request is received**.
+Pick **When a Teams webhook request is received**, and set **Who can trigger
+the flow?** to **Anyone**. Without that, CI cannot send anything.
 
-Set **Who can trigger the flow?** to **Anyone**. Without this, CI cannot send
-anything.
-
-The **HTTP POST URL** is empty for now. It appears after the first save, and a
-flow cannot be saved until it has at least one action — so it shows up at the
-end of step 3, not here.
-
-This trigger has no box for a JSON schema. That is why every field below uses an
-expression instead of picking `cards` from a list.
+The **HTTP POST URL** appears only after the first save, and a flow cannot be
+saved without an action — so it shows up at the end of step 3.
 
 ### 3. Post the summary card
 
-Click **+ New step**. Search `post card`. Pick **Post card in a chat or
-channel**.
+**+ New step** → search `post card` → **Post card in a chat or channel**.
 
-| Field         | Value             |
-| ------------- | ----------------- |
-| Post as       | Flow bot          |
-| Post in       | Channel           |
-| Team          | your team         |
-| Channel       | your channel      |
-| Adaptive Card | expression, below |
+| Field         | Value                                                |
+| ------------- | ---------------------------------------------------- |
+| Post as       | Flow bot                                             |
+| Post in       | Channel                                              |
+| Team          | your team                                            |
+| Channel       | your channel                                         |
+| Adaptive Card | Expression tab: `string(triggerBody()?['cards'][0])` |
 
-For **Adaptive Card**, use the Expression tab:
+**Save.** The trigger's **HTTP POST URL** now exists — copy it.
 
-```
-string(triggerBody()?['cards'][0])
-```
-
-Click **Save**. The trigger's **HTTP POST URL** now exists — copy it.
-
-### 4. Check that much works before going on
-
-Write a tiny test payload:
+### 4. Check that much works
 
 ```bash
 cat > /tmp/probe.json <<'JSON'
@@ -153,70 +93,50 @@ cat > /tmp/probe.json <<'JSON'
 JSON
 ```
 
-Send it:
-
 ```bash
 curl -s -X POST -H 'content-type: application/json' --data @/tmp/probe.json '<HTTP POST URL>'
 ```
 
-A message saying **probe 1 — parent** should appear in the channel.
-
-If nothing appears, stop here and fix it before adding more steps. See
-[when something goes wrong](#when-something-goes-wrong). Note that `202` only
-means the request arrived — it does not mean anything was posted.
+**probe 1 — parent** should appear in the channel. If it does not, fix that
+before adding more steps. A `202` only means the request arrived.
 
 ### 5. Loop over the remaining cards
 
-Click **+ New step**. Search `apply to each`. Pick **Apply to each**.
-
-For its input, use the Expression tab. This is every card except the first,
-which step 3 already posted:
+**+ New step** → **Apply to each**. For its input, use the Expression tab:
 
 ```
 skip(triggerBody()?['cards'], 1)
 ```
 
-Do not leave whatever the designer filled in by itself. It often prefills
-something else, and the run then fails with _property 'attachments' doesn't
-exist_.
+Do not leave whatever the designer prefilled — the run then fails with
+_property 'attachments' doesn't exist_.
 
-Then click **⋯** on the Apply to each box → **Settings** → make sure
-**Concurrency Control** is **off**. With it on, the sections arrive shuffled.
+Then **⋯** on the Apply to each box → **Settings** → turn **Concurrency
+Control** off, or the sections arrive shuffled.
 
 ### 6. Reply with each section
 
-Inside the Apply to each box, click **Add an action**. Search `reply`. Pick
-**Reply with an adaptive card in a channel**.
+Inside the loop: **Add an action** → **Reply with an adaptive card in a
+channel**.
 
-| Field         | Value                                                  |
-| ------------- | ------------------------------------------------------ |
-| Team          | the same team as step 3                                |
-| Channel       | the same channel as step 3                             |
-| Message ID    | **Dynamic content** tab → **Message ID** (from step 3) |
-| Adaptive Card | expression, below                                      |
+| Field         | Value                                              |
+| ------------- | -------------------------------------------------- |
+| Team, Channel | the same as step 3                                 |
+| Message ID    | **Dynamic content** → **Message ID** (from step 3) |
+| Adaptive Card | Expression tab: `string(items('Apply_to_each'))`   |
 
-For **Adaptive Card**, use the Expression tab:
-
-```
-string(items('Apply_to_each'))
-```
-
-If you renamed the loop, the name inside `items()` changes with it: it is the
-action's name with spaces replaced by underscores.
-
-Click **Save**.
+If you rename the loop, the name inside `items()` changes with it: the action's
+name, spaces replaced by underscores. **Save.**
 
 ### 7. Check the whole thing
 
-Send the probe from step 4 again. You should now see:
-
-- one message: **probe 1 — parent**
-- one reply underneath it: **probe 2 — reply**
+Send the probe again. You should now see **probe 1 — parent** with **probe 2 —
+reply** underneath it.
 
 ### 8. Point the suite at it
 
-Store the webhook URL as the repository secret `MS_TEAMS_NEW_WEBHOOK_URI`, then
-set the layout on the notify step in `.github/workflows/e2e.yml`:
+Store the URL as the repository secret `MS_TEAMS_NEW_WEBHOOK_URI`, then set the
+layout in `.github/workflows/e2e.yml`:
 
 ```yaml
 - name: Post Teams card
@@ -227,107 +147,66 @@ set the layout on the notify step in `.github/workflows/e2e.yml`:
   run: bun scripts/ci/teams-card.ts test-results/summary.json
 ```
 
-Locally, put both in `.env`:
-
-```
-TEAMS_WEBHOOK_URL=<HTTP POST URL>
-TEAMS_LAYOUT=thread
-```
-
-`TEAMS_LAYOUT=thread` matters. Without it the suite sends a different shape,
-one this flow cannot read, and nothing is posted.
-
-### 9. Post a real run
+Locally, put both in `.env`. **`TEAMS_LAYOUT=thread` matters** — without it the
+suite sends a shape this flow cannot read, and nothing is posted.
 
 ```bash
-bun run test          # or any subset, such as --project=public
+bun run test
 bun run notify
 ```
 
 ## Tagging people when a run cannot be paid for
 
-A run that stops because the virtual lab has no credits has not found a bug, and
-a card that says only "failed" sends people looking for one. So the card says so
-in its own words, and can pull the right people into the channel.
-
-Set `TEAMS_ALERT_MENTIONS` to `Name <sign-in address>`, comma separated:
+A run that stops because the lab has no credits has not found a bug, and a card
+saying only "failed" sends people looking for one. Set `TEAMS_ALERT_MENTIONS` to
+`Name <sign-in address>`, comma separated:
 
 ```
 TEAMS_ALERT_MENTIONS=Ada Lovelace <ada@example.org>, Alan Turing <alan@example.org>
 ```
 
-Those people are mentioned **only** when the lab itself cannot pay — not when a
-run merely spent its budget, and not for ordinary test failures. The mention
-rides on the first card, so in a thread it fires once, on the parent.
-
-Mentions render only when a flow posts the card. A legacy incoming webhook drops
-the mention entities and shows the bare name as written.
+Those people are mentioned **only** when the lab itself cannot pay — never for
+ordinary failures. Mentions render only when a flow posts the card.
 
 ## Limits worth knowing
 
-- **28 KB per message.** Teams rejects anything larger. Every card this repo
-  builds is kept under 25 KB, so each individual post is safely inside it.
-- **The combined request is not.** `thread` sends every card at once. Measured
-  against a synthetic run the size of this suite — 34 features over three
-  sections — that request was about 32 KB:
-
-  | Card               | Bytes  |
-  | ------------------ | ------ |
-  | summary + services | 824    |
-  | Data               | 22,434 |
-  | Workflows          | 5,608  |
-  | Site               | 3,975  |
-  | one request        | 32,444 |
-
-  Whether that matters depends on the endpoint. A legacy Microsoft 365 connector
-  webhook enforces 28 KB on the request and would reject it. The Workflows-app
-  trigger is a Power Automate HTTP endpoint whose limits are far higher, so it
-  passes. Since [connectors are being retired][retirement], the Workflows path is
-  the one to be on anyway.
-
-  Nothing guards the combined size today. If a run ever grows enough to be
-  refused, the fix is to drop passing scenarios from the section tables and keep
-  only failures and flaky ones, which would remove most of that 22 KB.
-
-- **Four requests per second.** `split` sleeps between posts for this reason.
-  `thread` sends one request and lets the flow pace the replies.
-- **Charts need a desktop client.** Teams mobile reliably renders Adaptive Cards
-  up to v1.2, so the two charts drop there. Nothing else about the card changes,
-  because every figure they draw is also written out beside them.
+- **28 KB per message.** Every card this repo builds stays under 25 KB.
+- **The combined request is bigger.** `thread` sends every card at once — about
+  32 KB for a suite this size. A legacy Microsoft 365 connector webhook enforces
+  28 KB on the request and would reject that; the Workflows-app trigger is a
+  Power Automate endpoint whose limit is far higher. [Connectors are being
+  retired][retirement] anyway, so Workflows is the path to be on.
+- **Four requests per second.** `split` sleeps between posts. `thread` sends one
+  request and lets the flow pace the replies.
+- **Charts need a desktop client.** They drop on mobile; the numbers stay.
 
 ## When something goes wrong
 
-Read the flow's **run history** first: Power Automate → **My flows** → your flow
-→ the newest run at the bottom. A red step names its own problem, and the table
-below covers the ones that are easy to misread.
+Read the flow's run history first: Power Automate → **My flows** → your flow →
+the newest run.
 
-| What you see                                                             | What it means                                                                                                                                 |
-| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Save is greyed out in the designer                                       | A flow needs at least one action. Add step 3 first.                                                                                           |
-| `property 'attachments' doesn't exist, available properties are 'cards'` | The **Apply to each** input is whatever the designer prefilled. Replace it with `skip(triggerBody()?['cards'], 1)`.                           |
-| The command says it sent, but the channel is empty                       | Sending is not posting: the endpoint accepts the request before the flow runs, so `202` proves nothing. Read the run history.                 |
-| Nothing arrives, and the run history is empty                            | The requests are not reaching this flow. Wrong URL, or the URL belongs to a different flow. Check the flow is switched on, too.               |
-| The flow runs green but the card is blank                                | The expression was typed into the field instead of the **Expression** tab, so it was saved as words. Clear it and enter it again on that tab. |
-| Only the summary posts, no replies                                       | The loop input is wrong. It must be `skip(triggerBody()?['cards'], 1)`.                                                                       |
-| Sections arrive out of order                                             | Concurrency Control is on for the **Apply to each**. Turn it off.                                                                             |
-| Every card posts as its own message, none threaded                       | `TEAMS_LAYOUT` is unset, or the reply action is posting rather than replying.                                                                 |
-| A `413`, or a rejected request                                           | The combined payload exceeded the endpoint's limit. See the limits above.                                                                     |
-| Nothing posts and the command says nothing                               | `TEAMS_WEBHOOK_URL` is unset. The script logs that and exits cleanly.                                                                         |
-| Names show as `<at>Ada</at>`                                             | Posted through a legacy webhook rather than a flow.                                                                                           |
+| What you see                              | What it means                                                        |
+| ----------------------------------------- | -------------------------------------------------------------------- |
+| Save is greyed out                        | A flow needs an action. Add step 3 first.                            |
+| `property 'attachments' doesn't exist`    | The loop input is the designer's default. Use `skip(…, 1)`.          |
+| It says it sent, but the channel is empty | `202` proves nothing. Read the run history.                          |
+| Nothing arrives, run history empty        | Wrong URL, or the flow is switched off.                              |
+| The flow runs green but the card is blank | The expression was typed into the field, not the **Expression** tab. |
+| Only the summary posts, no replies        | The loop input is wrong.                                             |
+| Sections arrive out of order              | Concurrency Control is on. Turn it off.                              |
+| Nothing threaded                          | `TEAMS_LAYOUT` is unset.                                             |
+| A `413`                                   | The payload exceeded the endpoint's limit. See the limits above.     |
+| Nothing posts, and no output              | `TEAMS_WEBHOOK_URL` is unset. The script says so and exits cleanly.  |
+| Names show as `<at>Ada</at>`              | Posted through a legacy webhook rather than a flow.                  |
 
-## The other two layouts
+## The other layouts
 
-`split` needs no flow at all: point `TEAMS_WEBHOOK_URL` at any endpoint that
-accepts an Adaptive Card message and set `TEAMS_LAYOUT=split`. Cards arrive as
-separate channel messages, in order but unthreaded.
+`split` needs no flow: point `TEAMS_WEBHOOK_URL` at anything that accepts an
+Adaptive Card message. Cards arrive as separate messages, in order, unthreaded.
+Leaving `TEAMS_LAYOUT` unset posts one message with everything.
 
-Leaving `TEAMS_LAYOUT` unset posts one message with everything, dropping detail
-a level at a time if it would otherwise exceed the limit.
-
-## The alternative to a flow
-
-Microsoft Graph (`POST /teams/{id}/channels/{id}/messages/{id}/replies`) threads
-properly and needs no Power Automate. It costs an app registration and the
-`ChannelMessage.Send` permission, which is why the flow is the default here.
+Microsoft Graph threads properly and needs no Power Automate, but it costs an
+app registration and the `ChannelMessage.Send` permission. That is why the flow
+is the default here.
 
 [retirement]: https://devblogs.microsoft.com/microsoft365dev/retirement-of-office-365-connectors-within-microsoft-teams/

@@ -80,16 +80,15 @@ bun run check            # format check + lint + typecheck
 
 ## Layout
 
-| Path          | What lives there                                                                                     |
-| ------------- | ---------------------------------------------------------------------------------------------------- |
-| `scenarios/`  | grouped by product section, then one folder per scenario with its text, locators, test and artifacts |
-| `data/`       | fixtures a test feeds to the application, such as the scan configurations under `data/scan-configs/` |
-| `locators/`   | locators shared by more than one scenario                                                            |
-| `fixtures/`   | environment config, sign-in, and the extended `test` object                                          |
-| `setup/`      | one sign-in per user, saved for every later test                                                     |
-| `api/`        | HTTP helpers for arranging test data                                                                 |
-| `prompts/`    | what the AI does for `/e2e-generate` and `/e2e-heal`                                                 |
-| `scripts/ci/` | result summary and Teams card                                                                        |
+| Path          | What lives there                                                                                |
+| ------------- | ----------------------------------------------------------------------------------------------- |
+| `scenarios/`  | grouped by product section, then one folder per scenario with its text, seed, locators and test |
+| `locators/`   | locators shared by more than one scenario                                                       |
+| `fixtures/`   | environment config, sign-in, and the extended `test` object                                     |
+| `setup/`      | one sign-in per user, saved for every later test                                                |
+| `api/`        | HTTP helpers for arranging test data                                                            |
+| `prompts/`    | what the AI does for `/e2e-generate` and `/e2e-heal`                                            |
+| `scripts/ci/` | result summary and Teams card                                                                   |
 
 Tests select their context by tag rather than by folder, so one scenario can run
 signed out and signed in. See `scenarios/README.md`, and `docs/scenario-tags.md`
@@ -236,10 +235,79 @@ them, so a slug is never written down twice.
 `fixtures/tags.ts` holds the tag combinations. Import one rather than retyping
 the strings: a typo in a tag means the test never runs and nothing warns you.
 
+## The commands
+
+### Everyday scripts
+
+| Command               | What it does                                    | When you use it                              |
+| --------------------- | ----------------------------------------------- | -------------------------------------------- |
+| `bun run test`        | Runs the whole suite against staging.           | The normal run.                              |
+| `bun run test:local`  | Same, against `http://localhost:3001`.          | You are running the app on your own machine. |
+| `bun run test:headed` | Same, with a visible browser.                   | You want to watch it click.                  |
+| `bun run test:debug`  | Same, stopping so you can step through.         | A test fails and you cannot see why.         |
+| `bun run check`       | Formatting, linting, types, and the unit tests. | Always, before you commit.                   |
+| `bun run report`      | Opens the HTML report of the last run.          | To read a failure in detail.                 |
+
+### Checking and generating scenarios
+
+`casebook` is the tool that keeps a scenario and its test in step.
+
+| Command                                                         | What it does                                                                                                                                                                                                                                   | When you use it                                                    |
+| --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `bun run casebook`                                              | Checks every `scenario.md` under `scenarios/`. Says what is wrong, and on which line.                                                                                                                                                          | Before you commit. In CI.                                          |
+| `bun run casebook scenarios/workflows`                          | The same check, on that folder only. A section, one scenario, or one `.md` file all work.                                                                                                                                                      | While writing one scenario. Faster, less noise.                    |
+| `bun run casebook skeleton scenarios/workflows/build-synaptome` | Writes `build-synaptome.spec.ts` from the scenario: one `test.describe`, one `test.fixme` per case, the English kept inside as comments. Run it again later and it adds only the cases that have no test, and names any test that has no case. | Right after you write or change a scenario.                        |
+| `bun run casebook run scenarios/workflows/build-synaptome`      | Runs that folder's tests through Playwright. A `.spec.ts` path runs one file. Any flag it does not know (`--headed`, `--grep`, `--list`) is passed to Playwright.                                                                              | To see whether the tests pass.                                     |
+| `bun run casebook --json`                                       | The same check, as JSON.                                                                                                                                                                                                                       | For a tool, not a person.                                          |
+| `bun run casebook --github`                                     | The same check, one line per problem, in GitHub's format.                                                                                                                                                                                      | In CI, so each problem shows on the pull request next to its line. |
+| `bun run casebook --no-seeds`                                   | Skips the check that every `Seed:` file really exists.                                                                                                                                                                                         | Rare. Only while a seed is still missing on purpose.               |
+| `bun run casebook --help`                                       | Prints all of the above.                                                                                                                                                                                                                       | When you forget.                                                   |
+
+### The two AI commands
+
+These are not shell commands. You type them in Claude Code.
+
+| Command                                             | What it does                                                                                                                                                                                                                     | When you use it                                                  |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `/e2e-generate scenarios/workflows/build-synaptome` | Checks the scenario, writes the skeleton, then fills every `test.fixme` with real Playwright code, reusing the fixtures and locators already in the repo. Add a case title in quotes to do one case only.                        | You have a scenario and no tests yet.                            |
+| `/e2e-heal scenarios/workflows/build-synaptome`     | Runs the skeleton to see what moved. A new case gets written. A renamed case gets its test renamed. A changed line gets its assertion changed. Then it runs the tests and repairs how they find things — never what they expect. | The scenario changed, or the app changed, and the tests are red. |
+
+### Who runs what
+
+A researcher writing a scenario needs one command:
+
+```bash
+bun run casebook scenarios/workflows/build-synaptome
+```
+
+Green means the scenario is well formed. Red names the line and the fix.
+
+An engineer with a new scenario:
+
+```bash
+/e2e-generate scenarios/workflows/build-synaptome
+bun run casebook run scenarios/workflows/build-synaptome
+bun run check
+```
+
+An engineer with a red test:
+
+```bash
+/e2e-heal scenarios/workflows/build-synaptome
+```
+
+### One rule holds it together
+
+A test is tied to its case by **title**, and by nothing else. `## The form will
+not launch` in the scenario is `test('The form will not launch', …)` in the
+spec. Keep the two exactly equal, and `skeleton` can always tell you what is new
+and what is gone. Rename one side only, and the link is lost.
+
 ## Writing a test
 
-1. Write the scenario in `specs/`. See `specs/README.md` for the format.
-2. In Claude Code, run `/e2e-generate specs/<file>.md "<Scenario name>"`.
+1. Write the scenario in `scenarios/`. See `scenarios/README.md` for the format,
+   and `tools/casebook/README.md` for every line it may contain.
+2. In Claude Code, run `/e2e-generate scenarios/<section>/<name>`.
 3. The AI opens the real application, writes the test, runs it, and fixes it
    until it passes.
 4. Read the test name and its `Then` checks. Confirm they match your scenario.
@@ -249,7 +317,7 @@ the strings: a typo in a tag means the test never runs and nothing warns you.
 
 1. Open the failing test from the Teams card.
 2. Ask one question: **did the product behaviour change on purpose?**
-   - Yes → update the scenario text, then run `/e2e-heal tests/<file>.spec.ts`.
+   - Yes → update the scenario text, then run `/e2e-heal scenarios/<section>/<name>`.
    - No → the product is broken. Open a bug. Do not touch the test.
 3. Review the fix and merge.
 

@@ -23,10 +23,13 @@ Sections follow the product: `data`, `workflows`, `notebooks`, `reports`,
 `workspace` for the lab and project shell, and `site` for the public pages a
 visitor sees. A section folder appears when its first scenario does.
 
-A scenario that is driven by a file keeps that file under `data/`, not beside
-the spec, when more than one scenario could use it. The build workflows read
-their configuration from `data/scan-configs/`; see
-[docs/scan-config-testing-plan.md](../docs/scan-config-testing-plan.md).
+A scenario driven by a file keeps that file beside its spec, named `seed.json`.
+Nothing is shared between folders, so a scenario can be read, moved or split on
+its own. The workflow scenarios all work this way; see
+[docs/workflow-tests.md](../docs/workflow-tests.md).
+
+A feature can hold more than one scenario folder — one per group of tests, each
+with its own `scenario.md`, `seed.json` and spec.
 
 ## Skipping what a deployment does not have
 
