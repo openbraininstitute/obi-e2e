@@ -19,31 +19,39 @@ test.describe('Species and brain regions', () => {
     });
 
     for (const species of SPECIES_WITH_ATLAS) {
-      test(`${species} has an atlas`, { tag: PRIVATE_READONLY }, async ({ page }) => {
-        const controls = atlas(page);
-        const counter = dataPage(page).typeCounter('cell_morphology');
-        const before = await counter.innerText();
+      test(
+        `Choose a species with an atlas: ${species}`,
+        { tag: PRIVATE_READONLY },
+        async ({ page }) => {
+          const controls = atlas(page);
+          const counter = dataPage(page).typeCounter('cell_morphology');
+          const before = await counter.innerText();
 
-        await chooseSpecies(page, species);
+          await chooseSpecies(page, species);
 
-        await expect(controls.viewer).toBeVisible();
-        await expect.poll(() => controls.regionNodes.count()).toBeGreaterThan(1);
-        await expect.poll(() => counter.innerText()).not.toBe(before);
-      });
+          await expect(controls.viewer).toBeVisible();
+          await expect.poll(() => controls.regionNodes.count()).toBeGreaterThan(1);
+          await expect.poll(() => counter.innerText()).not.toBe(before);
+        }
+      );
     }
 
     for (const species of SPECIES_WITHOUT_ATLAS) {
-      test(`${species} has no atlas`, { tag: PRIVATE_READONLY }, async ({ page }) => {
-        const controls = atlas(page);
+      test(
+        `Choose a species without an atlas: ${species}`,
+        { tag: PRIVATE_READONLY },
+        async ({ page }) => {
+          const controls = atlas(page);
 
-        await chooseSpecies(page, species);
+          await chooseSpecies(page, species);
 
-        await expect(controls.viewer).toBeVisible();
-        await expect.poll(() => controls.regionNodes.count()).toBe(1);
-      });
+          await expect(controls.viewer).toBeVisible();
+          await expect.poll(() => controls.regionNodes.count()).toBe(1);
+        }
+      );
     }
 
-    test('offers every species', { tag: PRIVATE_READONLY }, async ({ page }) => {
+    test('Every species can be chosen', { tag: PRIVATE_READONLY }, async ({ page }) => {
       const controls = atlas(page);
 
       await expect(controls.speciesCards).toHaveCount(9);
@@ -60,7 +68,7 @@ test.describe('Species and brain regions', () => {
       await expect(entityListing(page).cells.first()).toBeVisible();
     });
 
-    test('narrows by species', { tag: PRIVATE_READONLY }, async ({ page }) => {
+    test('Change the species on a listing', { tag: PRIVATE_READONLY }, async ({ page }) => {
       const listing = entityListing(page);
       const before = await listing.resultCount.innerText();
 
@@ -69,7 +77,7 @@ test.describe('Species and brain regions', () => {
       await expect.poll(() => listing.resultCount.innerText()).not.toBe(before);
     });
 
-    test('narrows by brain region', { tag: PRIVATE_READONLY }, async ({ page }) => {
+    test('Change the brain region on a listing', { tag: PRIVATE_READONLY }, async ({ page }) => {
       const listing = entityListing(page);
       const controls = atlas(page);
 

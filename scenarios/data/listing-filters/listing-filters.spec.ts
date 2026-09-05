@@ -12,7 +12,7 @@ test.describe('Filtering a listing', () => {
     await expect(entityListing(page).cells.first()).toBeVisible();
   });
 
-  test('search narrows the results', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('Search narrows the results', { tag: PRIVATE_READONLY }, async ({ page }) => {
     const listing = entityListing(page);
     const before = await listing.resultCount.innerText();
 
@@ -22,7 +22,7 @@ test.describe('Filtering a listing', () => {
     await expect(listing.cells.first()).toBeVisible();
   });
 
-  test('clearing the search restores it', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('Clearing the search restores the results', { tag: PRIVATE_READONLY }, async ({ page }) => {
     const listing = entityListing(page);
     const before = await listing.resultCount.innerText();
 
@@ -34,7 +34,7 @@ test.describe('Filtering a listing', () => {
     await expect(listing.resultCount).toHaveText(before);
   });
 
-  test('a search that matches nothing', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('A search that matches nothing', { tag: PRIVATE_READONLY }, async ({ page }) => {
     const listing = entityListing(page);
 
     await listing.search.fill('zzzz-no-such-entity');
@@ -42,7 +42,7 @@ test.describe('Filtering a listing', () => {
     await expect(listing.resultCount).toHaveText(/^0 results/);
   });
 
-  test('offers the additional filters', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('The additional filters are offered', { tag: PRIVATE_READONLY }, async ({ page }) => {
     const listing = entityListing(page);
 
     await listing.filters.click();
@@ -55,7 +55,7 @@ test.describe('Filtering a listing', () => {
     }
   });
 
-  test('opening a filter reveals its control', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('Opening a filter shows its control', { tag: PRIVATE_READONLY }, async ({ page }) => {
     const listing = entityListing(page);
 
     await listing.filters.click();

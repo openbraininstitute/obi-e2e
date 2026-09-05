@@ -5,24 +5,49 @@ Opening one Microcircuit from its listing, under the simulations section.
 A row opens a small panel beside the listing. That panel has a way through to
 the full page, which is where the whole record lives.
 
-```gherkin
-Feature: Microcircuit details
+User: lab member
 
-@private @readonly
-Scenario: Open one Microcircuit beside the listing
-  Given I am on the Microcircuit listing
-  When I click a result
-  Then I see its name
-  And I see these properties:
-    "circuit_name", "legacy_activity_status", "creation_date"
-    "lifecycle_status"
-  And I can download it
-  And I can open its full details
+## Open one Microcircuit beside the listing
 
-@private @readonly
-Scenario: Open the full Microcircuit page
-  Given I have opened one Microcircuit beside the listing
-  When I choose to see its details
-  Then I land on that Microcircuit's own page
-  And the page opens, though it shows nothing of its own yet
-```
+Precondition:
+
+1. On the Microcircuit listing
+
+Steps:
+
+1. Click a result
+
+Expected:
+
+- Its name is showing
+- These properties are showing:
+  "circuit_name", "legacy_activity_status", "creation_date"
+  "lifecycle_status"
+- It offers a download
+- It offers a way through to its full details
+
+## Open the full Microcircuit page
+
+Precondition:
+
+1. One Microcircuit is open beside the listing
+
+Steps:
+
+1. Choose to see its details
+
+Expected:
+
+- The Microcircuit's own page is showing
+- The "Configuration" and "Simulations" tabs are showing
+
+Steps:
+
+1. Open the "Configuration" tab
+
+Expected:
+
+- These form sections are showing:
+  "Info", "Initialization", "Neuron sets", "Morphology locations",
+  "Stimuli", "Recordings", "Distributions", "Neuronal manipulations",
+  "Synaptic manipulations" and "Timestamps"

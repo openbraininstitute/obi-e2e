@@ -2,59 +2,105 @@
 
 The Synapse per connection listing, under the experimental section of the Data page.
 
-```gherkin
-Feature: Synapse per connection listing
+User: lab member
 
-@private @readonly
-Scenario: See the Synapse per connection table
-  Given I am logged in
-  And I am inside my project
-  When I open the Synapse per connection listing
-  Then I see the table
-  And I see these columns:
-    "Brain Region [From]", "Brain Region [To]", "Cell Type [From]"
-    "Cell Type [To]", "Mean ± STD [µm⁻¹]", "Species"
-    "Age", "Contributors", "Lifecycle status"
+## See the Synapse per connection table
 
-@private @readonly
-Scenario: See the Synapse per connection results
-  Given I am on the Synapse per connection listing
-  Then I see how many results there are
-  And I see at least one result
+Precondition:
 
-@private @readonly
-Scenario: Search the Synapse per connection listing
-  Given I am on the Synapse per connection listing
-  When I search for something no entity matches
-  Then I see no results
-  And clearing the search brings them all back
+1. Inside my project
 
-@private @readonly
-Scenario: Add a hidden column to the Synapse per connection table
-  Given I am on the Synapse per connection listing
-  When I open the column chooser
-  And I turn on a column that is off:
-    "Name", "Brain region", "Brain region acronym"
-    "Strain", "Subject name"
-  Then that column appears in the table
-  And turning it back off removes it
+Steps:
 
-@private @readonly
-Scenario: The Synapse per connection table offers no columns beyond these
-  Given I am on the Synapse per connection listing
-  When I open the column chooser
-  Then 9 columns are on and 5 are off
-  And no other column is on offer
+1. Open the Synapse per connection listing
 
-@private @readonly
-Scenario: Every Synapse per connection filter narrows the listing
-  Given I am on the Synapse per connection listing
-  When I filter by each of these columns in turn:
-    "Brain Region [From]", "Brain Region [To]", "Cell Type [From]"
-    "Cell Type [To]", "Species", "Contributors"
-    "Lifecycle status"
-  Then a filter offering a list of values gives exactly the count it promised
-  And a filter I type into gives no results for a value nothing matches
-  And a range filter given a minimum above its maximum gives no results
-  And clearing each filter brings the listing back
-```
+Expected:
+
+- The table is showing
+- These columns are showing:
+  "Brain Region [From]", "Brain Region [To]", "Cell Type [From]"
+  "Cell Type [To]", "Mean ± STD [µm⁻¹]", "Species"
+  "Age", "Contributors", "Lifecycle status"
+
+## See the Synapse per connection results
+
+Precondition:
+
+1. Inside my project
+
+Steps:
+
+1. Open the Synapse per connection listing
+
+Expected:
+
+- The number of results is showing
+- There is at least one result
+
+## Search the Synapse per connection listing
+
+Precondition:
+
+1. On the Synapse per connection listing
+
+Steps:
+
+1. Search for something no entity matches
+
+Expected:
+
+- No results are showing
+- Clearing the search brings them all back
+
+## Add a hidden column to the Synapse per connection table
+
+Precondition:
+
+1. On the Synapse per connection listing
+
+Steps:
+
+1. Open the column chooser
+2. Turn on each column that starts off:
+   "Name", "Brain region", "Brain region acronym"
+   "Strain", "Subject name"
+
+Expected:
+
+- That column appears in the table
+- Turning it back off removes it
+
+## The Synapse per connection table offers no columns beyond these
+
+Precondition:
+
+1. On the Synapse per connection listing
+
+Steps:
+
+1. Open the column chooser
+
+Expected:
+
+- 9 columns are on and 5 are off
+- No other column is on offer
+
+## Every Synapse per connection filter narrows the listing
+
+Precondition:
+
+1. On the Synapse per connection listing
+
+Steps:
+
+1. Filter by each of these columns in turn:
+   "Brain Region [From]", "Brain Region [To]", "Cell Type [From]"
+   "Cell Type [To]", "Species", "Contributors"
+   "Lifecycle status"
+
+Expected:
+
+- A filter offering a list of values gives exactly the count it promised
+- A filter typed into gives no results for a value nothing matches
+- A range filter given a minimum above its maximum gives no results
+- Clearing each filter brings the listing back

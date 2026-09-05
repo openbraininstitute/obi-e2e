@@ -2,48 +2,86 @@
 
 The Single neuron listing, under the simulations section of the Data page.
 
-```gherkin
-Feature: Single neuron listing
+User: lab member
 
-@private @readonly
-Scenario: See the Single neuron table
-  Given I am logged in
-  And I am inside my project
-  When I open the Single neuron listing
-  Then I see the table
-  And I see these columns:
-    "Name", "Description", "ME-model"
-    "Created by", "Species", "Registration date"
-    "Status", "Lifecycle status"
+## See the Single neuron table
 
-@private @readonly
-Scenario: See the Single neuron results
-  Given I am on the Single neuron listing
-  Then I see how many results there are
-  And I see at least one result
+Precondition:
 
-@private @readonly
-Scenario: Search the Single neuron listing
-  Given I am on the Single neuron listing
-  When I search for something no entity matches
-  Then I see no results
-  And clearing the search brings them all back
+1. Inside my project
 
-@private @readonly
-Scenario: The Single neuron table offers no columns beyond these
-  Given I am on the Single neuron listing
-  When I open the column chooser
-  Then 8 columns are on and 0 are off
-  And no other column is on offer
+Steps:
 
-@private @readonly
-Scenario: Every Single neuron filter narrows the listing
-  Given I am on the Single neuron listing
-  When I filter by each of these columns in turn:
-    "Name", "ME-model", "Created by"
-    "Registration date", "Lifecycle status"
-  Then a filter offering a list of values gives exactly the count it promised
-  And a filter I type into gives no results for a value nothing matches
-  And a range filter given a minimum above its maximum gives no results
-  And clearing each filter brings the listing back
-```
+1. Open the Single neuron listing
+
+Expected:
+
+- The table is showing
+- These columns are showing:
+  "Name", "Description", "ME-model"
+  "Created by", "Species", "Registration date"
+  "Status", "Lifecycle status"
+
+## See the Single neuron results
+
+Precondition:
+
+1. Inside my project
+
+Steps:
+
+1. Open the Single neuron listing
+
+Expected:
+
+- The number of results is showing
+- There is at least one result
+
+## Search the Single neuron listing
+
+Precondition:
+
+1. On the Single neuron listing
+
+Steps:
+
+1. Search for something no entity matches
+
+Expected:
+
+- No results are showing
+- Clearing the search brings them all back
+
+## The Single neuron table offers no columns beyond these
+
+Precondition:
+
+1. On the Single neuron listing
+
+Steps:
+
+1. Open the column chooser
+
+Expected:
+
+- 8 columns are on and 0 are off
+- No other column is on offer
+
+## Every Single neuron filter narrows the listing
+
+Precondition:
+
+1. On the Single neuron listing
+
+Steps:
+
+1. Filter by each of these columns in turn:
+   "Name", "ME-model", "Created by"
+   "Registration date", "Lifecycle status"
+
+Expected:
+
+- A filter offering a list of values gives exactly the count it promised
+- A filter typed into gives no results for a value nothing matches
+- A range filter given a minimum above its maximum gives no results
+- Clearing each filter brings the listing back

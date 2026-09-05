@@ -2,58 +2,104 @@
 
 The Synaptome (legacy) listing, under the models section of the Data page.
 
-```gherkin
-Feature: Synaptome (legacy) listing
+User: lab member
 
-@private @readonly
-Scenario: See the Synaptome (legacy) table
-  Given I am logged in
-  And I am inside my project
-  When I open the Synaptome (legacy) listing
-  Then I see the table
-  And I see these columns:
-    "Name", "Description", "ME-model"
-    "M-type", "E-type", "Brain region"
-    "Species", "Created by", "Registration date"
+## See the Synaptome (legacy) table
 
-@private @readonly
-Scenario: See the Synaptome (legacy) results
-  Given I am on the Synaptome (legacy) listing
-  Then I see how many results there are
-  And I see at least one result
+Precondition:
 
-@private @readonly
-Scenario: Search the Synaptome (legacy) listing
-  Given I am on the Synaptome (legacy) listing
-  When I search for something no entity matches
-  Then I see no results
-  And clearing the search brings them all back
+1. Inside my project
 
-@private @readonly
-Scenario: Add a hidden column to the Synaptome (legacy) table
-  Given I am on the Synaptome (legacy) listing
-  When I open the column chooser
-  And I turn on a column that is off:
-    "ME-model validation status", "Contributors"
-  Then that column appears in the table
-  And turning it back off removes it
+Steps:
 
-@private @readonly
-Scenario: The Synaptome (legacy) table offers no columns beyond these
-  Given I am on the Synaptome (legacy) listing
-  When I open the column chooser
-  Then 10 columns are on and 2 are off
-  And no other column is on offer
+1. Open the Synaptome (legacy) listing
 
-@private @readonly
-Scenario: Every Synaptome (legacy) filter narrows the listing
-  Given I am on the Synaptome (legacy) listing
-  When I filter by each of these columns in turn:
-    "Name", "ME-model", "M-type"
-    "E-type", "Brain region", "Species"
-    "Created by", "Registration date", "Lifecycle status"
-  Then a filter offering a list of values gives exactly the count it promised
-  And a filter I type into gives no results for a value nothing matches
-  And a range filter given a minimum above its maximum gives no results
-  And clearing each filter brings the listing back
-```
+Expected:
+
+- The table is showing
+- These columns are showing:
+  "Name", "Description", "ME-model"
+  "M-type", "E-type", "Brain region"
+  "Species", "Created by", "Registration date"
+
+## See the Synaptome (legacy) results
+
+Precondition:
+
+1. Inside my project
+
+Steps:
+
+1. Open the Synaptome (legacy) listing
+
+Expected:
+
+- The number of results is showing
+- There is at least one result
+
+## Search the Synaptome (legacy) listing
+
+Precondition:
+
+1. On the Synaptome (legacy) listing
+
+Steps:
+
+1. Search for something no entity matches
+
+Expected:
+
+- No results are showing
+- Clearing the search brings them all back
+
+## Add a hidden column to the Synaptome (legacy) table
+
+Precondition:
+
+1. On the Synaptome (legacy) listing
+
+Steps:
+
+1. Open the column chooser
+2. Turn on each column that starts off:
+   "ME-model validation status", "Contributors"
+
+Expected:
+
+- That column appears in the table
+- Turning it back off removes it
+
+## The Synaptome (legacy) table offers no columns beyond these
+
+Precondition:
+
+1. On the Synaptome (legacy) listing
+
+Steps:
+
+1. Open the column chooser
+
+Expected:
+
+- 10 columns are on and 2 are off
+- No other column is on offer
+
+## Every Synaptome (legacy) filter narrows the listing
+
+Precondition:
+
+1. On the Synaptome (legacy) listing
+
+Steps:
+
+1. Filter by each of these columns in turn:
+   "Name", "ME-model", "M-type"
+   "E-type", "Brain region", "Species"
+   "Created by", "Registration date", "Lifecycle status"
+
+Expected:
+
+- A filter offering a list of values gives exactly the count it promised
+- A filter typed into gives no results for a value nothing matches
+- A range filter given a minimum above its maximum gives no results
+- Clearing each filter brings the listing back

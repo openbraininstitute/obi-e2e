@@ -2,70 +2,130 @@
 
 The Ion channel model listing, under the models section of the Data page.
 
-```gherkin
-Feature: Ion channel model listing
+User: lab member
 
-@private @readonly
-Scenario: See the Ion channel model table
-  Given I am logged in
-  And I am inside my project
-  When I open the Ion channel model listing
-  Then I see the table
-  And I see these columns:
-    "Preview", "Name", "Brain region"
-    "Species", "Temperature [°C]", "Temperature dependent"
-    "LJP corrected", "Registration date", "Lifecycle status"
+## See the Ion channel model table
 
-@private @readonly
-Scenario: See the Ion channel model results
-  Given I am on the Ion channel model listing
-  Then I see how many results there are
-  And I see at least one result
+Precondition:
 
-@private @readonly
-Scenario: Search the Ion channel model listing
-  Given I am on the Ion channel model listing
-  When I search for something no entity matches
-  Then I see no results
-  And clearing the search brings them all back
+1. Inside my project
 
-@private @readonly
-Scenario: Add a hidden column to the Ion channel model table
-  Given I am on the Ion channel model listing
-  When I open the column chooser
-  And I turn on a column that is off:
-    "NMODL suffix", "Conductance name", "Max permeability name"
-    "Stochastic", "Strain", "Subject name"
-    "Contributors"
-  Then that column appears in the table
-  And turning it back off removes it
+Steps:
 
-@private @readonly
-Scenario: The Ion channel model table offers no columns beyond these
-  Given I am on the Ion channel model listing
-  When I open the column chooser
-  Then 9 columns are on and 7 are off
-  And no other column is on offer
+1. Open the Ion channel model listing
 
-@private @readonly
-Scenario: Every Ion channel model filter narrows the listing
-  Given I am on the Ion channel model listing
-  When I filter by each of these columns in turn:
-    "Name", "Brain region", "Species"
-    "Temperature", "Temperature dependent", "LJP corrected"
-    "Registration date", "Lifecycle status"
-  Then a filter offering a list of values gives exactly the count it promised
-  And a filter I type into gives no results for a value nothing matches
-  And a range filter given a minimum above its maximum gives no results
-  And clearing each filter brings the listing back
+Expected:
 
-@private @readonly
-Scenario: Page through the Ion channel model listing
-  Given I am on the Ion channel model listing
-  And there is more than one page of results
-  When I go to page 2
-  Then I see different results
-  And the total number of results does not change
-  When I go back to page 1
-  Then I see the results I saw first
-```
+- The table is showing
+- These columns are showing:
+  "Preview", "Name", "Brain region"
+  "Species", "Temperature [°C]", "Temperature dependent"
+  "LJP corrected", "Registration date", "Lifecycle status"
+
+## See the Ion channel model results
+
+Precondition:
+
+1. Inside my project
+
+Steps:
+
+1. Open the Ion channel model listing
+
+Expected:
+
+- The number of results is showing
+- There is at least one result
+
+## Search the Ion channel model listing
+
+Precondition:
+
+1. On the Ion channel model listing
+
+Steps:
+
+1. Search for something no entity matches
+
+Expected:
+
+- No results are showing
+- Clearing the search brings them all back
+
+## Add a hidden column to the Ion channel model table
+
+Precondition:
+
+1. On the Ion channel model listing
+
+Steps:
+
+1. Open the column chooser
+2. Turn on each column that starts off:
+   "NMODL suffix", "Conductance name", "Max permeability name"
+   "Stochastic", "Strain", "Subject name"
+   "Contributors"
+
+Expected:
+
+- That column appears in the table
+- Turning it back off removes it
+
+## The Ion channel model table offers no columns beyond these
+
+Precondition:
+
+1. On the Ion channel model listing
+
+Steps:
+
+1. Open the column chooser
+
+Expected:
+
+- 9 columns are on and 7 are off
+- No other column is on offer
+
+## Every Ion channel model filter narrows the listing
+
+Precondition:
+
+1. On the Ion channel model listing
+
+Steps:
+
+1. Filter by each of these columns in turn:
+   "Name", "Brain region", "Species"
+   "Temperature", "Temperature dependent", "LJP corrected"
+   "Registration date", "Lifecycle status"
+
+Expected:
+
+- A filter offering a list of values gives exactly the count it promised
+- A filter typed into gives no results for a value nothing matches
+- A range filter given a minimum above its maximum gives no results
+- Clearing each filter brings the listing back
+
+## Page through the Ion channel model listing
+
+Precondition:
+
+1. On the Ion channel model listing
+2. There is more than one page of results
+
+Steps:
+
+1. Go to page 2
+
+Expected:
+
+- The results are different
+- The total number of results does not change
+
+Steps:
+
+1. Go back to page 1
+
+Expected:
+
+- The first results are showing again

@@ -44,18 +44,22 @@ test.describe('What the listing remembers', () => {
     return filtered;
   }
 
-  test('the close button brings it back as it was', { tag: PRIVATE_READONLY }, async ({ page }) => {
-    const listing = entityListing(page);
-    const filtered = await searchAndOpenOne(page);
+  test(
+    'The close button brings the listing back as it was',
+    { tag: PRIVATE_READONLY },
+    async ({ page }) => {
+      const listing = entityListing(page);
+      const filtered = await searchAndOpenOne(page);
 
-    await dataView(page).close.click();
-    await page.waitForURL(/browse\/entity/);
+      await dataView(page).close.click();
+      await page.waitForURL(/browse\/entity/);
 
-    await expect(listing.search).toHaveValue(SEARCH);
-    await expect(listing.resultCount).toHaveText(filtered);
-  });
+      await expect(listing.search).toHaveValue(SEARCH);
+      await expect(listing.resultCount).toHaveText(filtered);
+    }
+  );
 
-  test('the breadcrumb starts it fresh', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('The breadcrumb starts the listing fresh', { tag: PRIVATE_READONLY }, async ({ page }) => {
     const listing = entityListing(page);
     await searchAndOpenOne(page);
 
@@ -66,21 +70,25 @@ test.describe('What the listing remembers', () => {
     await expect(listing.resultCount).toHaveText(/^6,225 results/);
   });
 
-  test('leaving the section keeps it', { tag: PRIVATE_READONLY }, async ({ page, workspace }) => {
-    const listing = entityListing(page);
+  test(
+    'Leaving the section keeps the listing as it was',
+    { tag: PRIVATE_READONLY },
+    async ({ page, workspace }) => {
+      const listing = entityListing(page);
 
-    await listing.search.fill(SEARCH);
-    await expect(listing.resultCount).not.toHaveText(/^6,225 results/);
-    const filtered = await listing.resultCount.innerText();
+      await listing.search.fill(SEARCH);
+      await expect(listing.resultCount).not.toHaveText(/^6,225 results/);
+      const filtered = await listing.resultCount.innerText();
 
-    await page.goto(`/app/virtual-lab/${workspace.labId}/${workspace.projectId}/workflows`);
-    await page.goto(routes.dataEntity(workspace.labId, workspace.projectId, SLUG));
+      await page.goto(`/app/virtual-lab/${workspace.labId}/${workspace.projectId}/workflows`);
+      await page.goto(routes.dataEntity(workspace.labId, workspace.projectId, SLUG));
 
-    await expect(listing.search).toHaveValue(SEARCH);
-    await expect(listing.resultCount).toHaveText(filtered);
-  });
+      await expect(listing.search).toHaveValue(SEARCH);
+      await expect(listing.resultCount).toHaveText(filtered);
+    }
+  );
 
-  test('the column layout outlives a fresh start', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('The column layout outlives a fresh start', { tag: PRIVATE_READONLY }, async ({ page }) => {
     const listing = entityListing(page);
     const column = 'Contributors';
 

@@ -13,18 +13,22 @@ test.describe('Data types', () => {
   });
 
   for (const section of Object.keys(DATA_TYPES) as DataSectionName[]) {
-    test(`lists every ${section} data type`, { tag: PRIVATE_READONLY }, async ({ page }) => {
-      const data = dataPage(page);
+    test(
+      `See the data types of each section: ${section}`,
+      { tag: PRIVATE_READONLY },
+      async ({ page }) => {
+        const data = dataPage(page);
 
-      await data.section(section).click();
-      await expect(data.section(section)).toHaveAttribute('aria-selected', 'true');
+        await data.section(section).click();
+        await expect(data.section(section)).toHaveAttribute('aria-selected', 'true');
 
-      for (const type of DATA_TYPES[section]) {
-        const link = data.typeLink(type.slug);
+        for (const type of DATA_TYPES[section]) {
+          const link = data.typeLink(type.slug);
 
-        await expect(link).toBeVisible();
-        await expect(link).toContainText(type.label);
+          await expect(link).toBeVisible();
+          await expect(link).toContainText(type.label);
+        }
       }
-    });
+    );
   }
 });

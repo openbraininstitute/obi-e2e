@@ -1,39 +1,74 @@
 # Filtering a listing
 
-```gherkin
-Feature: Filtering a listing
+Searching and filtering on one listing. The Morphology listing stands in for
+them all, because every listing shares the same search box and filter panel.
 
-@private @readonly
-Scenario: Search narrows the results
-  Given I am on the "Morphology" listing
-  And I note how many results there are
-  When I search for "Sst-IRES"
-  Then I see fewer results than before
-  And every result still belongs to the morphology listing
+User: lab member
 
-@private @readonly
-Scenario: Clearing the search restores the results
-  Given I have searched the "Morphology" listing
-  When I clear the search box
-  Then I see the original number of results
+## Search narrows the results
 
-@private @readonly
-Scenario: A search that matches nothing
-  Given I am on the "Morphology" listing
-  When I search for "zzzz-no-such-entity"
-  Then I see no results
+Precondition:
 
-@private @readonly
-Scenario: The additional filters are offered
-  Given I am on the "Morphology" listing
-  When I open the filters
-  Then I see the additional filters, including "Generation type" and "Strain"
+1. On the "Morphology" listing
 
-@private @readonly
-Scenario: Opening a filter shows its control
-  Given I have opened the filters on the "Morphology" listing
-  When I choose the "ID" filter
-  Then I see a box to type a value into
-```
+Steps:
 
-Not covered: the funnel beside each column header. See the note in the spec.
+1. Note how many results there are
+2. Search for "Sst-IRES"
+
+Expected:
+
+- There are fewer results than noted
+- Every result still belongs to the Morphology listing
+
+## Clearing the search restores the results
+
+After: Search narrows the results
+
+Steps:
+
+1. Clear the search box
+
+Expected:
+
+- The number of results is the same as noted
+
+## A search that matches nothing
+
+Precondition:
+
+1. On the "Morphology" listing
+
+Steps:
+
+1. Search for a value no entity matches
+
+Expected:
+
+- No results are showing
+
+## The additional filters are offered
+
+Precondition:
+
+1. On the "Morphology" listing
+
+Steps:
+
+1. Open the filters
+
+Expected:
+
+- The additional filters are showing, including "Generation type" and "Strain"
+
+## Opening a filter shows its control
+
+After: The additional filters are offered
+
+Steps:
+
+1. Choose the "ID" filter
+
+Expected:
+
+- A box to type a value into is showing

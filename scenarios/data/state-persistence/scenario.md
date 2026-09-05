@@ -6,41 +6,71 @@ on and the search box are kept for the tab. The column layout is kept for good.
 Leaving a listing to look at one row and coming back is the interesting case,
 because the two ways back behave differently on purpose.
 
-```gherkin
-Feature: What the listing remembers
+User: lab member
 
-@private @readonly
-Scenario: The close button brings the listing back as it was
-  Given I am on the "Morphology" listing
-  And I have searched for "Sst-IRES"
-  And I have opened one result
-  When I close the details page
-  Then I see my search still in the box
-  And I see the same number of results as before
+## The close button brings the listing back as it was
 
-@private @readonly
-Scenario: The breadcrumb starts the listing fresh
-  Given I am on the "Morphology" listing
-  And I have searched for "Sst-IRES"
-  And I have opened one result
-  When I go back through the breadcrumb
-  Then the search box is empty
-  And I see every result again
+Precondition:
 
-@private @readonly
-Scenario: Leaving the section keeps the listing as it was
-  Given I am on the "Morphology" listing
-  And I have searched for "Sst-IRES"
-  When I go to Workflows and come back
-  Then I see my search still in the box
-  And I see the same number of results as before
+1. On the "Morphology" listing
 
-@private @readonly
-Scenario: The column layout outlives a fresh start
-  Given I am on the "Morphology" listing
-  And I have turned off the "Contributors" column
-  And I have opened one result
-  When I go back through the breadcrumb
-  Then the search is cleared
-  But the "Contributors" column is still off
-```
+Steps:
+
+1. Search for "Sst-IRES", and note how many results it leaves
+2. Open one result, and go through to its details page
+3. Close the details page
+
+Expected:
+
+- The search box still reads "Sst-IRES"
+- The number of results is the same as noted
+
+## The breadcrumb starts the listing fresh
+
+Precondition:
+
+1. On the "Morphology" listing
+
+Steps:
+
+1. Search for "Sst-IRES"
+2. Open one result, and go through to its details page
+3. Go back through the breadcrumb
+
+Expected:
+
+- The search box is empty
+- Every result is showing again
+
+## Leaving the section keeps the listing as it was
+
+Precondition:
+
+1. On the "Morphology" listing
+
+Steps:
+
+1. Search for "Sst-IRES", and note how many results it leaves
+2. Go to Workflows and come back
+
+Expected:
+
+- The search box still reads "Sst-IRES"
+- The number of results is the same as noted
+
+## The column layout outlives a fresh start
+
+Precondition:
+
+1. On the "Morphology" listing
+
+Steps:
+
+1. Turn off the "Contributors" column
+2. Open one result, and go through to its details page
+3. Go back through the breadcrumb
+
+Expected:
+
+- The search box is empty
+- The "Contributors" column is still off

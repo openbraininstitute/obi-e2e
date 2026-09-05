@@ -2,48 +2,86 @@
 
 The Small microcircuit listing, under the simulations section of the Data page.
 
-```gherkin
-Feature: Small microcircuit listing
+User: lab member
 
-@private @readonly
-Scenario: See the Small microcircuit table
-  Given I am logged in
-  And I am inside my project
-  When I open the Small microcircuit listing
-  Then I see the table
-  And I see these columns:
-    "Name", "Description", "Circuit"
-    "Created by", "Registration date", "Status"
-    "Lifecycle status"
+## See the Small microcircuit table
 
-@private @readonly
-Scenario: See the Small microcircuit results
-  Given I am on the Small microcircuit listing
-  Then I see how many results there are
-  And I see at least one result
+Precondition:
 
-@private @readonly
-Scenario: Search the Small microcircuit listing
-  Given I am on the Small microcircuit listing
-  When I search for something no entity matches
-  Then I see no results
-  And clearing the search brings them all back
+1. Inside my project
 
-@private @readonly
-Scenario: The Small microcircuit table offers no columns beyond these
-  Given I am on the Small microcircuit listing
-  When I open the column chooser
-  Then 7 columns are on and 0 are off
-  And no other column is on offer
+Steps:
 
-@private @readonly
-Scenario: Every Small microcircuit filter narrows the listing
-  Given I am on the Small microcircuit listing
-  When I filter by each of these columns in turn:
-    "Name", "Circuit", "Created by"
-    "Registration date", "Lifecycle status"
-  Then a filter offering a list of values gives exactly the count it promised
-  And a filter I type into gives no results for a value nothing matches
-  And a range filter given a minimum above its maximum gives no results
-  And clearing each filter brings the listing back
-```
+1. Open the Small microcircuit listing
+
+Expected:
+
+- The table is showing
+- These columns are showing:
+  "Name", "Description", "Circuit"
+  "Created by", "Registration date", "Status"
+  "Lifecycle status"
+
+## See the Small microcircuit results
+
+Precondition:
+
+1. Inside my project
+
+Steps:
+
+1. Open the Small microcircuit listing
+
+Expected:
+
+- The number of results is showing
+- There is at least one result
+
+## Search the Small microcircuit listing
+
+Precondition:
+
+1. On the Small microcircuit listing
+
+Steps:
+
+1. Search for something no entity matches
+
+Expected:
+
+- No results are showing
+- Clearing the search brings them all back
+
+## The Small microcircuit table offers no columns beyond these
+
+Precondition:
+
+1. On the Small microcircuit listing
+
+Steps:
+
+1. Open the column chooser
+
+Expected:
+
+- 7 columns are on and 0 are off
+- No other column is on offer
+
+## Every Small microcircuit filter narrows the listing
+
+Precondition:
+
+1. On the Small microcircuit listing
+
+Steps:
+
+1. Filter by each of these columns in turn:
+   "Name", "Circuit", "Created by"
+   "Registration date", "Lifecycle status"
+
+Expected:
+
+- A filter offering a list of values gives exactly the count it promised
+- A filter typed into gives no results for a value nothing matches
+- A range filter given a minimum above its maximum gives no results
+- Clearing each filter brings the listing back

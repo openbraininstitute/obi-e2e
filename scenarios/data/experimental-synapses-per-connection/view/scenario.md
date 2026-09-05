@@ -5,26 +5,40 @@ Opening one Synapse per connection from its listing, under the experimental sect
 A row opens a small panel beside the listing. That panel has a way through to
 the full page, which is where the whole record lives.
 
-```gherkin
-Feature: Synapse per connection details
+User: lab member
 
-@private @readonly
-Scenario: Open one Synapse per connection beside the listing
-  Given I am on the Synapse per connection listing
-  When I click a result
-  Then I see its name
-  And I see these properties:
-    "pre_region", "post_region", "pre_mtype"
-    "post_mtype", "species", "subject_age"
-    "license", "lifecycle_status"
-  And I can download it
-  And I can open its full details
+## Open one Synapse per connection beside the listing
 
-@private @readonly
-Scenario: Open the full Synapse per connection page
-  Given I have opened one Synapse per connection beside the listing
-  When I choose to see its details
-  Then I land on that Synapse per connection's own page
-  And I see these parts of the page:
-    "metadata-grid", "subject-details"
-```
+Precondition:
+
+1. On the Synapse per connection listing
+
+Steps:
+
+1. Click a result
+
+Expected:
+
+- Its name is showing
+- These properties are showing:
+  "pre_region", "post_region", "pre_mtype"
+  "post_mtype", "species", "subject_age"
+  "license", "lifecycle_status"
+- It offers a download
+- It offers a way through to its full details
+
+## Open the full Synapse per connection page
+
+Precondition:
+
+1. One Synapse per connection is open beside the listing
+
+Steps:
+
+1. Choose to see its details
+
+Expected:
+
+- The Synapse per connection's own page is showing
+- These parts of the page are showing:
+  "metadata-grid", "subject-details"

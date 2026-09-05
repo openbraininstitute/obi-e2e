@@ -2,29 +2,28 @@
 
 Every section of the Data page offers its own list of data types.
 
-```gherkin
-Feature: Data types
+User: lab member
 
-@private @readonly
-Scenario: See the experimental data types
-  Given I am on the Data page
-  When I choose the "Experimental" section
-  Then I see "Morphology", "Single cell electrophysiology",
-    "Ion channel electrophysiology", "Neuron density", "Bouton density",
-    "Synapse per connection" and "EM mesh"
+## See the data types of each section
 
-@private @readonly
-Scenario: See the model data types
-  Given I am on the Data page
-  When I choose the "Model" section
-  Then I see "Ion channel model", "Synthesized morphology", "E-model",
-    "ME-model", "Synaptome", "Circuit" and "Synaptome (legacy)"
+One test per section, checking that section's own list.
 
-@private @readonly
-Scenario: See the simulation data types
-  Given I am on the Data page
-  When I choose the "Simulations" section
-  Then I see "Ion channel", "Single neuron", "Synaptome", "Paired neurons",
-    "Small microcircuit", "Microcircuit", "Whole brain circuit",
-    "Single neuron (legacy)" and "Synaptome (legacy)"
-```
+Precondition:
+
+1. On the Data page
+
+Steps:
+
+1. Choose the section
+
+Expected:
+
+- The section is the one now selected
+- "Experimental" offers "Morphology", "Single cell electrophysiology",
+  "Ion channel electrophysiology", "Neuron density", "Bouton density",
+  "Synapse per connection" and "EM mesh"
+- "Model" offers "Ion channel model", "Synthesized morphology", "E-model",
+  "ME-model", "Synaptome", "Circuit" and "Synaptome (legacy)"
+- "Simulations" offers "Ion channel", "Single neuron", "Synaptome",
+  "Paired neurons", "Small microcircuit", "Microcircuit",
+  "Whole brain circuit", "Single neuron (legacy)" and "Synaptome (legacy)"

@@ -1,31 +1,54 @@
 # Data page
 
-Scenarios for the Data page inside a project.
+The Data page inside a project: the scopes, the sections, and the data types
+each section holds.
 
-```gherkin
-Feature: Data page
+User: lab member
 
-@private @readonly
-Scenario: See the experimental data types
-  Given I am logged in
-  And I am inside my project
-  When I open the Data page
-  Then I can choose between the "Public" and "Project" scopes
-  And I see the "Experimental", "Model" and "Simulations" sections
-  And I see "Morphology" in the list of data types
-  And I see how many morphologies there are
+## See the experimental data types
 
-@private @readonly
-Scenario: Switch to the model data types
-  Given I am on the Data page
-  When I choose the "Model" section
-  Then I see "E-model" in the list of data types
-  And I no longer see "Morphology"
+Precondition:
 
-@private @readonly
-Scenario: Switch to my project's data
-  Given I am on the Data page
-  When I choose the "Project" scope
-  Then the page stays on the Data page
-  And I still see the list of data types
-```
+1. Inside my project
+
+Steps:
+
+1. Open the Data page
+
+Expected:
+
+- The "Public" and "Project" scopes are both offered
+- The "Experimental", "Model" and "Simulations" sections are showing
+- "Morphology" is in the list of data types
+- The number of morphologies is showing
+
+## Switch to the model data types
+
+Precondition:
+
+1. On the Data page
+
+Steps:
+
+1. Choose the "Model" section
+
+Expected:
+
+- "E-model" is in the list of data types
+- "Morphology" is gone
+
+## Switch to my project's data
+
+Precondition:
+
+1. On the Data page
+
+Steps:
+
+1. Choose the "Project" scope
+
+Expected:
+
+- The "Project" scope is the one now selected
+- The page stays on the Data page
+- The list of data types is still showing

@@ -6,39 +6,82 @@ hierarchy. Both narrow what the listing shows.
 Only Human, Mouse and Rat have a brain atlas. The rest have a single region, so
 there is nothing to navigate and choosing a region does nothing.
 
-```gherkin
-Feature: Species and brain regions
+The species picker is remembered for the user, not for the tab, so a test that
+changes it puts it back.
 
-@private @readonly
-Scenario: Choose a species with an atlas
-  Given I am on the Data page
-  When I choose the "Mouse" species
-  Then I see the 3D view
-  And I see a brain region hierarchy with more than one region
-  And the number of morphologies changes
+User: lab member
 
-@private @readonly
-Scenario: Choose a species without an atlas
-  Given I am on the Data page
-  When I choose the "Cat" species
-  Then I see a single region, so there is nothing to browse
+## Choose a species with an atlas
 
-@private @readonly
-Scenario: Every species can be chosen
-  Given I am on the Data page
-  Then I can pick each of the nine species offered
-  And each one leaves the page working
+One test per species that has an atlas.
 
-@private @readonly
-Scenario: Change the brain region on a listing
-  Given I am on the "Morphology" listing
-  And I have chosen the "Mouse" species
-  When I choose a different brain region
-  Then the listing shows a different number of results
+Precondition:
 
-@private @readonly
-Scenario: Change the species on a listing
-  Given I am on the "Morphology" listing
-  When I choose the "Mouse" species
-  Then the listing shows fewer results than for all species
-```
+1. On the Data page
+
+Steps:
+
+1. Choose the species
+
+Expected:
+
+- The 3D view is showing
+- The brain region hierarchy holds more than one region
+
+## Choose a species without an atlas
+
+One test per species that has no atlas.
+
+Precondition:
+
+1. On the Data page
+
+Steps:
+
+1. Choose the species
+
+Expected:
+
+- There is a single region, so there is nothing to browse
+
+## Every species can be chosen
+
+Precondition:
+
+1. On the Data page
+
+Steps:
+
+1. Choose each of the nine species in turn
+
+Expected:
+
+- Each one leaves the page working
+
+## Change the brain region on a listing
+
+Precondition:
+
+1. On the "Morphology" listing, with the "Mouse" species chosen
+
+Steps:
+
+1. Choose a different brain region
+
+Expected:
+
+- The listing shows a different number of results
+
+## Change the species on a listing
+
+Precondition:
+
+1. On the "Morphology" listing
+
+Steps:
+
+1. Choose the "Mouse" species
+
+Expected:
+
+- The listing shows fewer results than it did for all species
