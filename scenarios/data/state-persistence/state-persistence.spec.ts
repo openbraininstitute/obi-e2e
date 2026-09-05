@@ -1,5 +1,6 @@
 import { showAllSpecies } from '@fixtures/choose-species';
 import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
+import { setColumn } from '@fixtures/listing-columns';
 import { routes } from '@fixtures/routes';
 import { PRIVATE_READONLY } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
@@ -83,8 +84,7 @@ test.describe('What the listing remembers', () => {
     const listing = entityListing(page);
     const column = 'Contributors';
 
-    await listing.columns.click();
-    await listing.columnToggle(column).click();
+    await setColumn(page, column, false);
     await expect(listing.columnToggle(column)).not.toBeChecked();
     await expect(listing.columnHeader(column)).toBeHidden();
 
@@ -95,8 +95,7 @@ test.describe('What the listing remembers', () => {
     await expect(listing.search).toHaveValue('');
     await expect(listing.columnHeader(column)).toBeHidden();
 
-    await listing.columns.click();
-    await listing.columnToggle(column).click();
+    await setColumn(page, column, true);
     await expect(listing.columnHeader(column)).toBeVisible();
   });
 });

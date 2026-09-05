@@ -1,5 +1,6 @@
 import { checkFilter } from '@fixtures/check-filter';
 import { checkPagination } from '@fixtures/check-pagination';
+import { showAllSpecies } from '@fixtures/choose-species';
 import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
 import { toggleCount } from '@fixtures/listing-columns';
 import { routes } from '@fixtures/routes';
@@ -58,6 +59,7 @@ test.describe('Morphology listing', () => {
       routes.dataEntity(workspace.labId, workspace.projectId, entitySlug(Type.CellMorphology))
     );
     await expect(entityListing(page).table).toBeVisible();
+    await showAllSpecies(page);
   });
 
   test('shows its own columns', { tag: PRIVATE_READONLY }, async ({ page }) => {

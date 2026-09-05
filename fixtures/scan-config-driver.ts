@@ -141,9 +141,6 @@ export class ScanConfigDriver {
         return;
 
       case ScanConfigUiElement.StringSelectionEnhanced:
-        await this.setPopoverSelection(field, value, at);
-        return;
-
       case ScanConfigUiElement.Reference:
       case ScanConfigUiElement.EntityPropertyDropdown:
         await this.setSelection(field, value, at);
@@ -217,14 +214,6 @@ export class ScanConfigDriver {
     }
   }
 
-  private async setPopoverSelection(field: Locator, value: unknown, at: string): Promise<void> {
-    const option = this.optionValue(value, at);
-    if (option === null) return;
-
-    await scanConfigControl(field).click();
-    await this.editor.option(option).click();
-  }
-
   private async pickModel(field: Locator, value: unknown, at: string): Promise<void> {
     if (!isRecord(value) || typeof value.name !== 'string') {
       throw new Error(`${at}: needs a { "name": … } naming the entity to pick`);
@@ -264,11 +253,13 @@ export class ScanConfigDriver {
 
       if ((await choice.count()) === 0) {
         await control.click({ timeout: 3_000 });
-        throw new Error(`${at}: the dropdown did not open`);
+        throw new Error(`${at}: the list did not open`);
       }
 
       await choice.click({ force: true, timeout: 3_000 });
     }).toPass({ timeout: 30_000 });
+
+    await expect(control).not.toHaveText(/^Select /);
   }
 
   private optionValue(value: unknown, at: string): string | null {

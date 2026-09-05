@@ -2,6 +2,9 @@
 
 The Morphology listing, under the experimental section of the Data page.
 
+The species picker narrows it, and the app remembers that choice for the user
+rather than for the tab, so every scenario here starts from all species.
+
 ```gherkin
 Feature: Morphology listing
 
