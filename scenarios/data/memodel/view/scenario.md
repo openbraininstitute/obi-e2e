@@ -5,26 +5,62 @@ Opening one ME-model from its listing, under the models section.
 A row opens a small panel beside the listing. That panel has a way through to
 the full page, which is where the whole record lives.
 
-```gherkin
-Feature: ME-model details
+User: lab member
 
-@private @readonly
-Scenario: Open one ME-model beside the listing
-  Given I am on the ME-model listing
-  When I click a result
-  Then I see its name
-  And I see these properties:
-    "brain_region", "mtype", "etype"
-    "validation_status", "creation_date", "license"
-    "lifecycle_status"
-  And I can download it
-  And I can open its full details
+## Open one ME-model beside the listing
 
-@private @readonly
-Scenario: Open the full ME-model page
-  Given I have opened one ME-model beside the listing
-  When I choose to see its details
-  Then I land on that ME-model's own page
-  And I see these parts of the page:
-    "metadata-grid"
-```
+Precondition:
+
+1. On the ME-model listing
+
+Steps:
+
+1. Click a result
+
+Expected:
+
+- Its name is showing
+- These properties are showing:
+  "brain_region", "mtype", "etype"
+  "validation_status", "creation_date", "license"
+  "lifecycle_status"
+- It offers a download
+- It offers a way through to its full details
+
+## Open the full ME-model page
+
+Precondition:
+
+1. One ME-model is open beside the listing
+
+Steps:
+
+1. Choose to see its details
+
+Expected:
+
+- The ME-model's own page is showing
+- These parts of the page are showing:
+  "metadata-grid"
+
+## Open simulate page from details view
+
+Precondition:
+
+1. One ME-model is open beside the listing
+
+Steps:
+
+1. Choose to see its details
+
+Expected:
+
+- The ME-model's own page is showing
+- The "simulate" button is displayed in the left panel
+
+Steps:
+
+1. Click on "simulate" button
+2. The simulation page opened
+3. The simulation page has "configuration" and "simulations" tabs in the header
+4. The simulation page has "campaign name" and "campaign description" inputs empty

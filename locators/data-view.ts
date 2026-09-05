@@ -18,10 +18,18 @@ function propertyLabel(field: string): RegExp {
 
 export function dataView(page: Page) {
   const mini = page.getByTestId('mini-viewer');
+  const actions = page.getByTestId('data-view-actions');
 
   return {
     close: page.getByTitle('Close', { exact: true }),
     breadcrumbLink: (name: string) => page.getByRole('link', { name, exact: true }),
+
+    /** The action menu of the left panel, on the entity's own page. */
+    actions,
+    copyId: actions.getByTestId('data-view-action-copy-id'),
+    simulate: actions.getByTestId('data-view-action-simulate'),
+    download: actions.getByTestId('data-view-action-download'),
+    delete: actions.getByTestId('data-view-action-delete'),
 
     mini,
     miniName: mini.getByRole('heading', { level: 1 }),

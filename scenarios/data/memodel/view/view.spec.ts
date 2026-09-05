@@ -6,6 +6,9 @@ import { expect, test } from '@fixtures/test';
 import { WIDE_VIEWPORT } from '@fixtures/viewport';
 import { dataView } from '@locators/data-view';
 import { entityListing } from '@locators/listing';
+import { scanConfigEditor } from '@locators/scan-config';
+
+import { memodelViewLocators } from './locators';
 
 const SLUG = entitySlug(Type.Memodel);
 
@@ -21,6 +24,10 @@ const PROPERTIES = [
 
 const SECTIONS = ['metadata-grid'];
 
+const CAMPAIGN_FIELDS = ['campaign_name', 'campaign_description'];
+
+const SIMULATION_TABS = ['configuration', 'simulations'];
+
 test.use(WIDE_VIEWPORT);
 
 test.describe('ME-model details', () => {
@@ -35,7 +42,7 @@ test.describe('ME-model details', () => {
     await expect(dataView(page).viewDetails).toBeVisible();
   });
 
-  test('opens one beside the listing', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('Open one ME-model beside the listing', { tag: PRIVATE_READONLY }, async ({ page }) => {
     const view = dataView(page);
 
     await expect(view.miniName).toBeVisible();
@@ -45,7 +52,7 @@ test.describe('ME-model details', () => {
     await expect(view.miniDownload).toBeVisible();
   });
 
-  test('opens the full page', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('Open the full ME-model page', { tag: PRIVATE_READONLY }, async ({ page }) => {
     test.slow();
     const view = dataView(page);
 
@@ -54,6 +61,28 @@ test.describe('ME-model details', () => {
 
     for (const name of SECTIONS) {
       await expect(view.section(name).first()).toBeVisible();
+    }
+  });
+
+  test('Open simulate page from details view', { tag: PRIVATE_READONLY }, async ({ page }) => {
+    test.slow();
+    const view = dataView(page);
+    const memodel = memodelViewLocators(page);
+    const editor = scanConfigEditor(page);
+
+    await view.viewDetails.click();
+    await expect(page).toHaveURL(new RegExp(`/data/view/${SLUG}/[0-9a-f-]+/`));
+    await expect(view.simulate).toBeVisible();
+
+    await view.simulate.click();
+    await expect(page).toHaveURL(/\/workflows\/simulate\/configure\//);
+
+    for (const name of SIMULATION_TABS) {
+      await expect(editor.tab(name)).toBeVisible();
+    }
+
+    for (const key of CAMPAIGN_FIELDS) {
+      await expect(memodel.campaignField(key)).toHaveValue('');
     }
   });
 });
