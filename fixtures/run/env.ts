@@ -30,7 +30,8 @@ function parseEnvFile(file: string): Map<string, string> {
   return values;
 }
 
-function envOfUrl(url: string | undefined): 'staging' | 'production' | undefined {
+/** The deployment a URL belongs to, by its host. */
+export function envOfUrl(url: string | undefined): 'staging' | 'production' | undefined {
   if (!url) return undefined;
 
   try {

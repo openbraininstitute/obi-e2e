@@ -15,6 +15,7 @@ import {
   workspacePath,
 } from '@fixtures/run/env';
 import { log } from '@fixtures/run/logger';
+import { guardWorkspace } from '@fixtures/run/workspace';
 import { expect, test as setup } from '@playwright/test';
 
 setup('prepare a project for this run', async () => {
@@ -61,6 +62,7 @@ setup('prepare a project for this run', async () => {
   );
 
   await Bun.write(workspacePath(), `${JSON.stringify({ labId, projectId }, null, 2)}\n`);
+  guardWorkspace();
   await recordCredits({ projectId });
 
   const announce = (assigned: number | null): void => {
