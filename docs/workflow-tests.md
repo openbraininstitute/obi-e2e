@@ -16,7 +16,7 @@ Two things follow from that:
   service. A test that matched on words would break on someone else's release.
 - **The words differ per activity.** A build says "Generate build(s)" and shows
   a "results" tab; a simulation says "Generate simulation(s)" and shows a
-  "simulations" tab. `fixtures/scan-config-activities.ts` holds that wording in
+  "simulations" tab. `fixtures/scan-config/activities.ts` holds that wording in
   one place, so no test spells it out.
 
 A **sweep** is a field that takes either one number or a list. Every combination
@@ -61,7 +61,7 @@ Each workflow scenario keeps a `seed.json` beside its spec. It says which
 workflow to open, what to select, and one entry in `cases` per configuration
 worth running. Each case becomes a test of its own.
 
-`fixtures/scan-config.ts` reads and checks it, and `fixtures/scan-config.test.ts`
+`fixtures/scan-config/index.ts` reads and checks it, and `fixtures/scan-config/index.test.ts`
 walks every seed under `bun test`, so a malformed one fails in milliseconds
 rather than halfway through a browser run.
 
@@ -99,7 +99,7 @@ A project at zero cannot generate a campaign at all. That is what the
 no-credits test asserts, and it is what a whole suite would hit silently if the
 QA project ran dry — the form accepts the configuration and the button stays
 live while nothing happens. The empty balance is faked by answering the one
-request the app makes for it (`fixtures/credits.ts`), never by draining the
+request the app makes for it (`fixtures/steps/credits.ts`), never by draining the
 project.
 
 A workflow a deployment does not offer is skipped with the reason, not failed.

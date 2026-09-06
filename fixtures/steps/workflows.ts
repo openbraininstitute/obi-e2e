@@ -4,8 +4,8 @@ import { entityListing } from '@locators/listing';
 import { workflowBrowse, workflowsHub, workspaceNav } from '@locators/workflows';
 import { expect, type Locator, type Page } from '@playwright/test';
 
-import { routes } from './routes';
-import type { ScanConfigSelection } from './scan-config';
+import { routes } from '../routes';
+import type { ScanConfigSelection } from '../scan-config';
 
 type Workspace = { labId: string; projectId: string };
 

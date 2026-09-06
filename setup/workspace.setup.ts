@@ -3,7 +3,7 @@
 import * as fs from 'node:fs';
 
 import { PROJECT_LIMIT, VirtualLabApi } from '@api/virtual-lab';
-import { credits, recordCredits } from '@fixtures/credit-report';
+import { credits, recordCredits } from '@fixtures/run/credit-report';
 import {
   commit,
   hasCredentials,
@@ -13,8 +13,8 @@ import {
   RUN_STARTED_AT,
   tokenPath,
   workspacePath,
-} from '@fixtures/env';
-import { log } from '@fixtures/logger';
+} from '@fixtures/run/env';
+import { log } from '@fixtures/run/logger';
 import { expect, test as setup } from '@playwright/test';
 
 setup('prepare a project for this run', async () => {

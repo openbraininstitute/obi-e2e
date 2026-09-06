@@ -1,6 +1,6 @@
-import { showAllSpecies } from '@fixtures/choose-species';
 import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
 import { routes } from '@fixtures/routes';
+import { showAllSpecies } from '@fixtures/steps/choose-species';
 import { PRIVATE_READONLY } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { WIDE_VIEWPORT } from '@fixtures/viewport';

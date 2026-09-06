@@ -1,8 +1,8 @@
-import { checkFilter } from '@fixtures/check-filter';
-import { checkPagination } from '@fixtures/check-pagination';
+import { checkFilter } from '@fixtures/checks/filter';
+import { checkPagination } from '@fixtures/checks/pagination';
 import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
-import { toggleCount } from '@fixtures/listing-columns';
 import { routes } from '@fixtures/routes';
+import { toggleCount } from '@fixtures/steps/listing-columns';
 import { PRIVATE_READONLY } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { WIDE_VIEWPORT } from '@fixtures/viewport';

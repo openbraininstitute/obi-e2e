@@ -1,6 +1,6 @@
 /** Client for the virtual lab manager: labs, projects and credits. */
 
-import { virtualLabApiUrl } from '@fixtures/env';
+import { virtualLabApiUrl } from '@fixtures/run/env';
 import { Result } from 'better-result';
 
 import { describe, type RequestError } from './errors';

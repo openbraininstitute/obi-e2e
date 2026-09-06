@@ -3,7 +3,7 @@
 import { scanConfigResults } from '@locators/scan-config';
 import { expect, type Locator, type Page } from '@playwright/test';
 
-import type { ScanConfigCase } from './scan-config';
+import type { ScanConfigCase } from '../scan-config';
 
 const LOG_FILE = 'Task logs';
 

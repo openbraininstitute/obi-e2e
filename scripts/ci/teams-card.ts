@@ -8,8 +8,8 @@
  */
 
 /** Loads the .env files. The webhook URL lives in the deployment's local one. */
-import '@fixtures/env';
-import type { CreditReport } from '@fixtures/credit-report';
+import '@fixtures/run/env';
+import type { CreditReport } from '@fixtures/run/credit-report';
 
 import {
   collectSections,

@@ -1,11 +1,11 @@
-import { checkCompletedOutput, checkGeneratedFiles } from '@fixtures/check-campaign-output';
-import { pretendNoCredits } from '@fixtures/credits';
+import { checkCompletedOutput, checkGeneratedFiles } from '@fixtures/checks/campaign-output';
 import { loadSeed, notDeployedHere, runsOnThisDeployment } from '@fixtures/scan-config';
-import { scanConfigWords } from '@fixtures/scan-config-activities';
-import { addLocationsFromViewer, ScanConfigDriver } from '@fixtures/scan-config-driver';
+import { scanConfigWords } from '@fixtures/scan-config/activities';
+import { addLocationsFromViewer, ScanConfigDriver } from '@fixtures/scan-config/driver';
+import { pretendNoCredits } from '@fixtures/steps/credits';
+import { chooseEntities, openWorkflowsHub, startWorkflow } from '@fixtures/steps/workflows';
 import { PRIVATE_SPENDS } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
-import { chooseEntities, openWorkflowsHub, startWorkflow } from '@fixtures/workflows';
 import { scanConfigEditor, scanConfigResults } from '@locators/scan-config';
 import { morphologyLocations, morphologyViewer } from '@locators/viewer';
 import { lowCredits } from '@locators/workflows';

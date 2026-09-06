@@ -15,7 +15,7 @@ import {
   resolveBrowser,
   resolveWorkers,
   RUN_ID,
-} from './fixtures/env';
+} from './fixtures/run/env';
 import { excludedEnvironmentTag } from './fixtures/tags';
 
 const ASSERTION_TIMEOUT = 30_000;

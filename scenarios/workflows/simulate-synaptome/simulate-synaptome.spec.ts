@@ -1,10 +1,10 @@
-import { checkCompletedOutput, checkGeneratedFiles } from '@fixtures/check-campaign-output';
+import { checkCompletedOutput, checkGeneratedFiles } from '@fixtures/checks/campaign-output';
 import { loadSeed, notDeployedHere, runsOnThisDeployment } from '@fixtures/scan-config';
-import { scanConfigWords } from '@fixtures/scan-config-activities';
-import { ScanConfigDriver } from '@fixtures/scan-config-driver';
+import { scanConfigWords } from '@fixtures/scan-config/activities';
+import { ScanConfigDriver } from '@fixtures/scan-config/driver';
+import { chooseEntities, openWorkflowsHub, startWorkflow } from '@fixtures/steps/workflows';
 import { PRIVATE_SPENDS } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
-import { chooseEntities, openWorkflowsHub, startWorkflow } from '@fixtures/workflows';
 import { scanConfigEditor, scanConfigResults } from '@locators/scan-config';
 import type { Page } from '@playwright/test';
 

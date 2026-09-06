@@ -1,6 +1,6 @@
 /** The backend services this suite checks. */
 
-import { cellApiUrl } from '@fixtures/env';
+import { cellApiUrl } from '@fixtures/run/env';
 
 export type Service = {
   key: string;

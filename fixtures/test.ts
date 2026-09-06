@@ -2,7 +2,7 @@
 
 import { test as base, expect } from '@playwright/test';
 
-import { testWorkspace } from './env';
+import { testWorkspace } from './run/env';
 
 type Workspace = { labId: string; projectId: string };
 

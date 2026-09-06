@@ -1,7 +1,7 @@
 /** Fails the spending tests early when the project has no credits. */
 
-import { readCreditReport } from '@fixtures/credit-report';
-import { hasCredentials, PROJECT_CREDITS } from '@fixtures/env';
+import { readCreditReport } from '@fixtures/run/credit-report';
+import { hasCredentials, PROJECT_CREDITS } from '@fixtures/run/env';
 import { expect, test as setup } from '@playwright/test';
 
 setup('the project can pay for this run', async () => {

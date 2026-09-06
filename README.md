@@ -84,7 +84,7 @@ bun run check            # format check + lint + typecheck
 | ------------- | ----------------------------------------------------------------------------------------------- |
 | `scenarios/`  | grouped by product section, then one folder per scenario with its text, seed, locators and test |
 | `locators/`   | locators shared by more than one scenario                                                       |
-| `fixtures/`   | environment config, sign-in, and the extended `test` object                                     |
+| `fixtures/`   | the vocabulary a spec writes with, plus `run/`, `steps/`, `checks/` and `scan-config/`          |
 | `setup/`      | one sign-in per user, saved for every later test                                                |
 | `api/`        | HTTP helpers for arranging test data                                                            |
 | `prompts/`    | what the AI does for `/e2e-generate` and `/e2e-heal`                                            |

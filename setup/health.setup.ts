@@ -2,7 +2,7 @@
 
 import { checkAllServices, formatStatusTable } from '@api/health';
 import { services } from '@api/services';
-import { resetCreditReport } from '@fixtures/credit-report';
+import { resetCreditReport } from '@fixtures/run/credit-report';
 import { expect, test as setup } from '@playwright/test';
 
 setup('backend services are healthy', async () => {

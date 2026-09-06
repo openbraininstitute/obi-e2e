@@ -9,8 +9,8 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import type { CreditReport } from '@fixtures/credit-report';
-import { baseURL, deploymentEnv, RUN_DIR } from '@fixtures/env';
+import type { CreditReport } from '@fixtures/run/credit-report';
+import { baseURL, deploymentEnv, RUN_DIR } from '@fixtures/run/env';
 
 type Result = { status?: string; duration?: number; error?: { message?: string } };
 type TestCase = { status?: string; projectName?: string; results?: Result[] };

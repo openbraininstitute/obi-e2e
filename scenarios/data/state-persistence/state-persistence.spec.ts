@@ -1,7 +1,7 @@
-import { showAllSpecies } from '@fixtures/choose-species';
 import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
-import { setColumn } from '@fixtures/listing-columns';
 import { routes } from '@fixtures/routes';
+import { showAllSpecies } from '@fixtures/steps/choose-species';
+import { setColumn } from '@fixtures/steps/listing-columns';
 import { PRIVATE_READONLY } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { WIDE_VIEWPORT } from '@fixtures/viewport';

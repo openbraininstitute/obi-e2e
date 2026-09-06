@@ -1,5 +1,5 @@
-import { chooseSpecies, showAllSpecies } from '@fixtures/choose-species';
 import { routes } from '@fixtures/routes';
+import { chooseSpecies, showAllSpecies } from '@fixtures/steps/choose-species';
 import { PRIVATE_READONLY } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { WIDE_VIEWPORT } from '@fixtures/viewport';

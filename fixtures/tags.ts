@@ -1,6 +1,6 @@
 /** Tags that say how a test runs. See docs/scenario-tags.md. */
 
-import type { DeploymentEnv } from './env';
+import type { DeploymentEnv } from './run/env';
 
 export const PUBLIC = ['@public'];
 export const PRIVATE = ['@private'];

@@ -1,6 +1,6 @@
 /** The words each activity uses in the editor. */
 
-import type { ScanConfigActivity } from './scan-config';
+import type { ScanConfigActivity } from './index';
 
 export type ScanConfigWords = {
   resultsTab: string;

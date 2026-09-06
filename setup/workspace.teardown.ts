@@ -3,9 +3,9 @@
 import * as fs from 'node:fs';
 
 import { VirtualLabApi } from '@api/virtual-lab';
-import { credits, readCreditReport, recordCredits } from '@fixtures/credit-report';
-import { hasCredentials, RUN_ID, tokenPath, workspacePath } from '@fixtures/env';
-import { log } from '@fixtures/logger';
+import { credits, readCreditReport, recordCredits } from '@fixtures/run/credit-report';
+import { hasCredentials, RUN_ID, tokenPath, workspacePath } from '@fixtures/run/env';
+import { log } from '@fixtures/run/logger';
 import { expect, test as teardown } from '@playwright/test';
 
 teardown('give the project back', async () => {

@@ -3,7 +3,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import { DEPLOYMENT_ENVS, type DeploymentEnv, deploymentEnv } from './env';
+import { DEPLOYMENT_ENVS, type DeploymentEnv, deploymentEnv } from '../run/env';
 
 /** One workflow: how to reach it, what to select, and its configurations. */
 export type ScanConfigFixture = {
@@ -62,7 +62,7 @@ export type ScanConfigActivity = (typeof SCAN_CONFIG_ACTIVITIES)[number];
 /** A scenario folder keeps its seed beside its spec, under this name. */
 export const SEED_NAME = 'seed.json';
 
-const SCENARIOS_DIR = path.resolve(import.meta.dirname, '..', 'scenarios');
+const SCENARIOS_DIR = path.resolve(import.meta.dirname, '..', '..', 'scenarios');
 
 /** Whether this workflow runs on the deployment under test. */
 export function runsOnThisDeployment(fixture: ScanConfigFixture): boolean {

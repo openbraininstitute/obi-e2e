@@ -1,9 +1,9 @@
-import { checkFilter } from '@fixtures/check-filter';
-import { checkPagination } from '@fixtures/check-pagination';
-import { showAllSpecies } from '@fixtures/choose-species';
+import { checkFilter } from '@fixtures/checks/filter';
+import { checkPagination } from '@fixtures/checks/pagination';
 import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
-import { toggleCount } from '@fixtures/listing-columns';
 import { routes } from '@fixtures/routes';
+import { showAllSpecies } from '@fixtures/steps/choose-species';
+import { toggleCount } from '@fixtures/steps/listing-columns';
 import { PRIVATE_READONLY } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { WIDE_VIEWPORT } from '@fixtures/viewport';

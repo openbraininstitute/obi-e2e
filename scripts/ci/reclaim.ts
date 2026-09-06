@@ -6,7 +6,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import { VirtualLabApi } from '@api/virtual-lab';
-import { requireEnv, RUN_DIR, RUN_ID } from '@fixtures/env';
+import { requireEnv, RUN_DIR, RUN_ID } from '@fixtures/run/env';
 
 const OURS = /^e2e-\d+-\d+$/;
 

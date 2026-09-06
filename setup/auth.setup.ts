@@ -1,7 +1,7 @@
 /** Signs each user in and saves the session the tests reuse. */
 
-import { signIn } from '@fixtures/auth';
-import { hasCredentials, ROLES } from '@fixtures/env';
+import { signIn } from '@fixtures/run/auth';
+import { hasCredentials, ROLES } from '@fixtures/run/env';
 import { test as setup } from '@playwright/test';
 
 for (const role of ROLES) {

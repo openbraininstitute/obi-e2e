@@ -12,8 +12,8 @@ import {
 import { morphologyLocations, morphologyViewer } from '@locators/viewer';
 import { expect, type Locator, type Page } from '@playwright/test';
 
-import type { ScanConfigCase } from './scan-config';
-import { ScanConfigUiElement } from './scan-config-ui-elements';
+import type { ScanConfigCase } from './index';
+import { ScanConfigUiElement } from './ui-elements';
 
 /** Types one configuration into the editor, field by field. */
 export class ScanConfigDriver {

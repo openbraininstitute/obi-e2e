@@ -8,7 +8,7 @@ import {
   hasCredentials,
   resolveWorkers,
   virtualLabApiUrl,
-} from '@fixtures/env';
+} from '@fixtures/run/env';
 
 const cpus = os.availableParallelism?.() ?? os.cpus().length;
 const memoryGB = os.totalmem() / 1024 ** 3;

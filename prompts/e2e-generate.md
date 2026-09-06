@@ -35,12 +35,14 @@ side and the link is gone.
   fills the form from. `After:` names the case whose steps
   come first. `For each:` means one test per entry in the seed's `cases[]`.
   `Page:` says where to start looking, and nothing more.
-- `fixtures/` — what exists so you do not write it again. Setup and shared
-  checks live here: `test.ts` (the `test` object, with `workspace`), `tags.ts`,
-  `routes.ts`, `entity-types.ts`, `scan-config*.ts`, `workflows.ts`,
-  `check-filter.ts`, `check-pagination.ts`, `check-campaign-output.ts`,
-  `choose-species.ts`, `listing-columns.ts`, `credits.ts`, `feature-flags.ts`,
-  `viewport.ts`.
+- `fixtures/` — what exists so you do not write it again. The root holds the
+  vocabulary a spec writes with: `test.ts` (the `test` object, with
+  `workspace`), `tags.ts`, `viewport.ts`, `routes.ts`, `entity-types.ts`,
+  `data-types.ts`. Beside it, `steps/` is what a spec does to a page
+  (`choose-species.ts`, `listing-columns.ts`, `workflows.ts`, `credits.ts`,
+  `feature-flags.ts`), `checks/` is the shared assertions (`filter.ts`,
+  `pagination.ts`, `campaign-output.ts`), and `scan-config/` is the editor.
+  `run/` belongs to the harness, not to a spec.
 - `locators/` — how the app is addressed: `listing.ts`, `data.ts`,
   `data-view.ts`, `scan-config.ts`, `viewer.ts`, `workflows.ts`, `atlas.ts`,
   `column-filter.ts`, `navigation.ts`, and `helpers.ts` underneath them all.

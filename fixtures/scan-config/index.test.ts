@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 
-import { loadSeed, notDeployedHere, parseScanConfigFixture, seedFolders } from './scan-config';
+import { loadSeed, notDeployedHere, parseScanConfigFixture, seedFolders } from './index';
 
 test('every scan-config fixture has a valid envelope', () => {
   const files = seedFolders();
