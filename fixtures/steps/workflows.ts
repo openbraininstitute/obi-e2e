@@ -38,6 +38,23 @@ export async function openWorkflowsHub(page: Page, workspace: Workspace): Promis
   await expect(workflowsHub(page).categoryMenu).toBeVisible();
 }
 
+/**
+ * The tick box of one row.
+ *
+ * The grid pins its selection column into a row of its own, so the row holding
+ * the name holds no checkbox. Both carry the same `row-index`, which is what
+ * ties the two halves back together.
+ */
+function selectionCheckbox(
+  listing: ReturnType<typeof entityListing>,
+  rowIndex: string | null
+): Locator {
+  return listing.table
+    .locator(`[role="row"][row-index="${rowIndex ?? ''}"]`)
+    .getByRole('checkbox')
+    .first();
+}
+
 /** Why a step could not run, or null when it ran. */
 export type WorkflowUnavailable = string | null;
 
@@ -102,12 +119,16 @@ export async function chooseEntities(
       return `This project holds no "${name}" to build from.`;
     }
 
-    const checkbox = row.getByRole('checkbox');
-    if (selection.mode === 'multiple' && (await checkbox.count()) > 0) {
-      await checkbox.first().check();
-    } else {
-      await row.getByRole('gridcell').filter({ hasText: name }).first().click();
+    if (selection.mode === 'multiple') {
+      const checkbox = selectionCheckbox(listing, await row.getAttribute('row-index'));
+      if ((await checkbox.count()) === 0) {
+        return `The "${name}" listing offers nothing to tick, so nothing can be selected.`;
+      }
+      await checkbox.check();
+      continue;
     }
+
+    await row.getByRole('gridcell').filter({ hasText: name }).first().click();
   }
 
   await (selection.mode === 'single' ? browse.useModel : browse.useSelection).click();

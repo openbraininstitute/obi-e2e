@@ -150,6 +150,10 @@ export class ScanConfigDriver {
         await this.pickModel(field, value, at);
         return;
 
+      case ScanConfigUiElement.SelectEFeaturesByProtocol:
+        await this.selectProtocols(field, value, at);
+        return;
+
       case ScanConfigUiElement.MorphologyLocationSelection:
         await this.setMorphologyLocations(value, at);
         return;
@@ -160,8 +164,14 @@ export class ScanConfigDriver {
             'them by SWC code. Leave the field out to keep the schema default.'
         );
 
+      // What the browse step already chose arrives filled in, and a fixture that
+      // names nothing leaves it that way.
       case ScanConfigUiElement.ModelIdentifier:
+        return;
+
       case ScanConfigUiElement.ModelIdentifierMultiple:
+        if (value === null || value === undefined) return;
+        await this.pickEntities(field, value, at);
         return;
 
       default:
@@ -214,6 +224,78 @@ export class ScanConfigDriver {
     }
   }
 
+  /**
+   * Picks entities in the editor's own catalogue.
+   *
+   * Some workflows have no browse step — e-feature extraction chooses its
+   * recordings here — so the field opens the same catalogue the browse page
+   * shows, and confirms a whole selection at once.
+   */
+  private async pickEntities(field: Locator, value: unknown, at: string): Promise<void> {
+    if (!Array.isArray(value)) {
+      throw new Error(`${at}: needs a list of { "name": … }, one per entity to pick`);
+    }
+
+    const picker = scanConfigModelPicker(this.page);
+    await field.getByRole('button', { name: /^Add / }).first().click();
+
+    const catalogue = picker.panel;
+    await expect(catalogue).toBeVisible();
+
+    for (const [index, entry] of value.entries()) {
+      if (!isRecord(entry) || typeof entry.name !== 'string') {
+        throw new Error(`${at}[${index}]: needs a { "name": … } naming the entity to pick`);
+      }
+
+      await catalogue.getByRole('textbox', { name: 'Search' }).fill(entry.name);
+
+      const row = catalogue.getByRole('row').filter({ hasText: entry.name }).first();
+      await expect(row, `No "${entry.name}" to pick for ${at}.`).toBeVisible();
+
+      // The grid pins its tick boxes into a row of their own, so the row holding
+      // the name holds none; both halves carry the same index.
+      await catalogue
+        .locator(`[role="row"][row-index="${await row.getAttribute('row-index')}"]`)
+        .getByRole('checkbox')
+        .first()
+        .check();
+    }
+
+    await expect(picker.confirm).toBeEnabled();
+    await picker.confirm.click();
+    await expect(picker.overlay).toHaveCount(0);
+
+    for (const entry of value) {
+      await expect(field).toContainText((entry as { name: string }).name);
+    }
+  }
+
+  /**
+   * Ticks the protocols to extract e-features from.
+   *
+   * Which protocols are offered comes from the chosen recordings, so a fixture
+   * names the ones its recordings hold and the run fails if they stop holding
+   * them. Ticking one takes that protocol's whole feature set.
+   */
+  private async selectProtocols(field: Locator, value: unknown, at: string): Promise<void> {
+    if (!Array.isArray(value) || value.length === 0) {
+      throw new Error(`${at}: needs a list of the protocol names to extract from`);
+    }
+
+    for (const [index, protocol] of value.entries()) {
+      if (typeof protocol !== 'string') {
+        throw new Error(`${at}[${index}]: a protocol is named by the label on its card`);
+      }
+
+      const box = field.getByRole('checkbox', { name: `Extract features from ${protocol}` });
+      await expect(
+        box,
+        `The chosen recordings offer no "${protocol}" protocol for ${at}.`
+      ).toBeVisible();
+      await box.check();
+    }
+  }
+
   private async pickModel(field: Locator, value: unknown, at: string): Promise<void> {
     if (!isRecord(value) || typeof value.name !== 'string') {
       throw new Error(`${at}: needs a { "name": … } naming the entity to pick`);
@@ -244,20 +326,25 @@ export class ScanConfigDriver {
 
     const control = scanConfigControl(field);
 
+    /*
+     * Two components render a list here — a reference field is an antd Select,
+     * the enhanced string selection is a button — and neither can be asked
+     * reliably whether it is already open. So every attempt starts from a known
+     * state instead: Escape closes whatever is showing, one click opens this
+     * one, and the option has to be genuinely visible before it is clicked.
+     * Retrying an attempt that toggled the list shut is what used to hang.
+     */
     await expect(async () => {
-      const choice = this.page
+      await this.page.keyboard.press('Escape');
+      await control.click({ force: true, timeout: 3_000 });
+
+      await this.page
         .getByTestId(`scan-config-option-${option}`)
         .or(this.page.getByTitle(option, { exact: true }))
         .filter({ visible: true })
-        .first();
-
-      if ((await choice.count()) === 0) {
-        await control.click({ timeout: 3_000 });
-        throw new Error(`${at}: the list did not open`);
-      }
-
-      await choice.click({ force: true, timeout: 3_000 });
-    }).toPass({ timeout: 30_000 });
+        .first()
+        .click({ timeout: 5_000 });
+    }, `${at}: "${option}" never became selectable`).toPass({ timeout: 30_000 });
 
     await expect(control).not.toHaveText(/^Select /);
   }
