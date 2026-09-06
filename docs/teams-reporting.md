@@ -155,6 +155,9 @@ bun run test
 bun run notify
 ```
 
+`bun run notify --perf` posts the performance card from `bun run perf` the same
+way, as one card on its own.
+
 ## Tagging people when a run cannot be paid for
 
 A run that stops because the lab has no credits has not found a bug, and a card

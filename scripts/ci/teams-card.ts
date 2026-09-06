@@ -23,9 +23,9 @@ import {
   type Summary,
 } from './summarize-results';
 
-type TextColor = 'Default' | 'Dark' | 'Light' | 'Accent' | 'Good' | 'Warning' | 'Attention';
-type ContainerStyle = 'default' | 'emphasis' | 'good' | 'attention' | 'warning' | 'accent';
-type BadgeStyle =
+export type TextColor = 'Default' | 'Dark' | 'Light' | 'Accent' | 'Good' | 'Warning' | 'Attention';
+export type ContainerStyle = 'default' | 'emphasis' | 'good' | 'attention' | 'warning' | 'accent';
+export type BadgeStyle =
   | 'Default'
   | 'Subtle'
   | 'Informative'
@@ -64,7 +64,7 @@ const OUTCOME: Record<ReturnType<typeof featureStatus>, { label: string; style: 
   skipped: { label: 'Skipped', style: 'Subtle' },
 };
 
-function text(
+export function text(
   value: string,
   options: {
     size?: 'Small' | 'Default' | 'Medium' | 'Large';
@@ -89,7 +89,7 @@ function text(
 }
 
 /** A chip. Badge is Teams-only, so each one carries a text fallback. */
-function badge(
+export function badge(
   value: string,
   options: { style?: BadgeStyle; appearance?: 'Filled' | 'Tint'; tooltip?: string } = {}
 ) {
@@ -104,7 +104,7 @@ function badge(
   };
 }
 
-function panel(
+export function panel(
   items: unknown[],
   options: { area?: string; spacing?: 'None' | 'Small' | 'Default' | 'Medium' } = {}
 ) {
@@ -119,7 +119,7 @@ function panel(
   };
 }
 
-function cell(
+export function cell(
   value: string,
   options: {
     weight?: 'Bolder';
@@ -151,11 +151,11 @@ function statusCell(kind: keyof typeof STATUS) {
   return cell(status.label, { weight: 'Bolder', color: status.color, style: status.style });
 }
 
-function headerRow(labels: string[]) {
+export function headerRow(labels: string[]) {
   return { type: 'TableRow', style: 'emphasis', cells: labels.map(headerCell) };
 }
 
-function table(
+export function table(
   columns: number[],
   rows: unknown[],
   options: { id?: string; isVisible?: boolean; firstRowAsHeader?: boolean } = {}
@@ -174,7 +174,7 @@ function table(
   };
 }
 
-function fact(title: string, value: string) {
+export function fact(title: string, value: string) {
   return { title, value };
 }
 
@@ -686,7 +686,7 @@ function report(what: string, shape: string): void {
   );
 }
 
-async function send(webhook: string, body: unknown): Promise<boolean> {
+export async function send(webhook: string, body: unknown): Promise<boolean> {
   const response = await fetch(webhook, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },

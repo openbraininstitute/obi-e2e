@@ -250,6 +250,13 @@ export function collectFeatures(suites: Suite[] = [], parents: string[] = []): F
   );
 }
 
+/** The GitHub Actions run, when there is one. */
+export function runUrl(env: NodeJS.ProcessEnv = process.env): string {
+  return env.GITHUB_SERVER_URL && env.GITHUB_REPOSITORY && env.GITHUB_RUN_ID
+    ? `${env.GITHUB_SERVER_URL}/${env.GITHUB_REPOSITORY}/actions/runs/${env.GITHUB_RUN_ID}`
+    : '';
+}
+
 export function buildSummary(
   report: Report,
   services: ServiceSummary[] = [],
@@ -269,10 +276,7 @@ export function buildSummary(
     baseUrl: report.config?.metadata?.baseUrl ?? env.E2E_BASE_URL ?? baseURL,
     browser: env.PLAYWRIGHT_BROWSER ?? 'chromium',
     commit: env.GITHUB_SHA ?? '',
-    runUrl:
-      env.GITHUB_SERVER_URL && env.GITHUB_REPOSITORY && env.GITHUB_RUN_ID
-        ? `${env.GITHUB_SERVER_URL}/${env.GITHUB_REPOSITORY}/actions/runs/${env.GITHUB_RUN_ID}`
-        : '',
+    runUrl: runUrl(env),
     reportUrl: env.E2E_REPORT_URL ?? '',
     trigger: detectTrigger(env.GITHUB_EVENT_NAME),
     failures: failures.slice(0, 5),

@@ -17,15 +17,16 @@
     "codegen": "bun --bun playwright codegen \"${E2E_BASE_URL:-https://staging.openbraininstitute.org}\"",
     "browsers": "bunx playwright install --with-deps chromium",
     "summarize": "bun scripts/ci/summarize-results.ts test-results/results.json test-results",
-    "notify": "bun run summarize && bun scripts/ci/teams-card.ts test-results/summary.json",
-    "test:unit": "bun test ./scripts ./fixtures ./tools",
+    "notify": "bun scripts/ci/notify.ts",
+    "test:unit": "bun test ./scripts ./fixtures ./tools ./perf",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "typecheck": "tsc --noEmit",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
     "check": "bun run format:check && bun run lint && bun run typecheck && bun run test:unit",
-    "casebook": "bun tools/casebook/validator/cli.ts"
+    "casebook": "bun tools/casebook/validator/cli.ts",
+    "perf": "bun perf/run.ts"
   },
   "dependencies": {
     "better-result": "^3.0.1",
