@@ -9,6 +9,10 @@ playwright/.cache/
 .e2e-runs/
 .auth/
 
+# lighthouse output
+perf/report/
+.lighthouseci/
+
 # secrets only: .env, .env.staging and .env.production are committed
 .env*.local
 .env.backup
