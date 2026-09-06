@@ -82,12 +82,67 @@ For the file format, see [tools/casebook/README.md](../tools/casebook/README.md)
 5. **Read what it produced.** `expect.generated` is what the coordinate holds
    the moment the campaign exists; `expect.completed` is what it holds once the
    run finished. Both lists are complete, so a file the app starts or stops
-   producing fails here instead of passing unnoticed. `expect.built` goes
-   further and names the entity the run registered.
+   producing fails here instead of passing unnoticed.
+
+`expect.completed.views` says what opening one of those files shows. A list is
+the text its pane holds; a mapping is the card of the entity the run
+registered, read property by property:
+
+```json
+"completed": {
+  "within": 20,
+  "inputs": ["obi_one_coordinate.json"],
+  "outputs": ["Task logs", "E2E synaptome build"],
+  "views": {
+    "spikes.h5": ["PopulationAll", "spikes"],
+    "E2E synaptome build": { "Number of synapses": "1" }
+  }
+}
+```
 
 Only names seen on a real run belong in a seed. A workflow nobody has run
-through leaves them out, and the test then asks only that something was
-produced.
+through leaves `completed` out, and the test then only asks that the campaign
+starts.
+
+## Runs that take longer than a test
+
+A campaign is not a page load. A single-neuron simulation is done inside a
+minute; a microcircuit takes tens of minutes; a whole brain takes hours. The
+suite handles that in three steps, and `fixtures/steps/campaign.ts` holds all
+of it.
+
+**A case that takes too long says so.** One word in the seed:
+
+```json
+{ "name": "one mesh at the default resolution", "slow": true, "config": { … } }
+```
+
+Nothing else. There is no number to guess: an ordinary case gets five minutes,
+a `slow` one gets four hours.
+
+**A slow case runs in its own job.** It is tagged `@slow`; `e2e.yml` leaves it
+out and [`e2e-slow.yml`](../.github/workflows/e2e-slow.yml) runs
+`--project=slow` with six hours on the clock instead of forty-five minutes.
+Same spec, same seed — only the job around it changes.
+
+**The wait stays on the page that launched the run.** This is the awkward part.
+A campaign lives in the editor's own state, not in the URL, so reloading loses
+it — the page comes back on the configuration tab with no coordinates to read.
+The usual trick of polling a fresh page is therefore not available, and the
+test holds one page for as long as the run takes.
+
+That sets the ceiling. Six hours is what a GitHub job may run, and holding one
+page for even that long is the fragile part rather than the run itself. A
+campaign that cannot finish inside it should not be followed from the editor at
+all: launch it, and read it afterwards from the Workflows activity table, which
+lists every campaign with its status and _is_ addressable by URL. No test does
+that yet — no workflow has needed it — and it wants a project that outlives the
+run, since the one a run creates for itself is given back at the end.
+
+A case that names no `completed` is the third option, and the cheapest: the
+campaign is launched and only has to leave `created`. Use it while nobody has
+watched the run finish, because only names seen on a real run belong in a
+seed.
 
 ## Credits
 

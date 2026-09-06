@@ -33,6 +33,9 @@ export default defineConfig({
 
   metadata: { environment: deploymentEnv(), baseUrl: baseURL, runId: RUN_ID },
 
+  /** Gives the project back on Ctrl+C, which never reaches the teardown project. */
+  globalTeardown: './scripts/ci/teardown.ts',
+
   fullyParallel: true,
   forbidOnly: isCI,
   retries: isCI ? 1 : 0,
@@ -105,6 +108,21 @@ export default defineConfig({
       name: 'spends',
       testDir: './scenarios',
       grep: /@spends/,
+      grepInvert: excluding(/@slow\b/),
+      dependencies: ['credits'],
+      use: { storageState: authStatePath('primary') },
+    },
+    /**
+     * Runs that take longer than the nightly suite can hold: a microcircuit
+     * simulation, a mesh skeletonisation. They are followed to the end, so this
+     * project needs a job with hours rather than minutes — see
+     * `.github/workflows/e2e-slow.yml`. Each test's own timeout comes from its
+     * seed's `expect.completed.within`.
+     */
+    {
+      name: 'slow',
+      testDir: './scenarios',
+      grep: /@slow/,
       grepInvert: excluding(),
       dependencies: ['credits'],
       use: { storageState: authStatePath('primary') },

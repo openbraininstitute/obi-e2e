@@ -1,0 +1,103 @@
+# Campaigns that are followed to the end but take longer than the nightly suite
+# can hold: a microcircuit simulation, a mesh skeletonisation. They are tagged
+# `@slow`, excluded from the nightly job, and run here on their own with hours
+# rather than minutes on the clock.
+#
+# Each test's own budget comes from its seed's `expect.completed.within`; this
+# job only has to outlast the slowest of them.
+#
+# No schedule yet: nothing carries `@slow`, so a nightly run would report an
+# empty suite. Add `schedule: - cron: '0 2 * * *'` as soon as a case does.
+name: E2E (slow)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        type: choice
+        options: [staging, production]
+        default: staging
+
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.environment || 'staging' }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    # The GitHub maximum for a hosted job. A campaign that cannot finish inside
+    # it is not followed from a browser at all — see docs/workflow-tests.md.
+    timeout-minutes: 360
+    env:
+      CI: 'true'
+      E2E_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+      E2E_ENVIRONMENT: ${{ inputs.environment || 'staging' }}
+      E2E_ENV: ${{ inputs.environment || 'staging' }}
+      E2E_TEST_USERNAME: >-
+        ${{ inputs.environment == 'production' && secrets.OBI_USERNAME_PRODUCTION
+            || secrets.OBI_USERNAME_STAGING }}
+      E2E_TEST_PASSWORD: >-
+        ${{ inputs.environment == 'production' && secrets.OBI_PASSWORD_PRODUCTION
+            || secrets.OBI_PASSWORD_STAGING }}
+      LAB_ID: >-
+        ${{ inputs.environment == 'production' && secrets.LAB_ID_PRODUCTION
+            || secrets.LAB_ID_STAGING }}
+      PLAYWRIGHT_BROWSER: chromium
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+
+      - run: bun install --frozen-lockfile
+
+      - name: Cache Playwright browsers
+        id: browser-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+
+      - name: Install browsers
+        run: bun run browsers
+
+      - name: Check configuration
+        run: bun run preflight
+
+      - name: Run the slow campaigns
+        run: bun run test --project=slow
+
+      - name: Give the project back
+        if: always()
+        run: bun scripts/ci/teardown.ts
+
+      - name: Summarize results
+        if: always()
+        run: bun scripts/ci/summarize-results.ts test-results/results.json test-results
+
+      - name: Job summary
+        if: always()
+        run: cat test-results/summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - id: report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-slow
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+
+      - name: Post Teams card
+        if: always()
+        env:
+          TEAMS_WEBHOOK_URL: ${{ secrets.MS_TEAMS_NEW_WEBHOOK_URI }}
+          TEAMS_LAYOUT: thread
+          E2E_REPORT_URL: ${{ steps.report.outputs.artifact-url }}
+        run: bun scripts/ci/teams-card.ts test-results/summary.json

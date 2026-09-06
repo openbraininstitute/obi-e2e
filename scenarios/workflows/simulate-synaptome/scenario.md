@@ -54,15 +54,7 @@ Steps:
 
 Expected:
 
-- The simulations tab is enabled
-- The button now reads "New simulation campaign"
-
-Steps:
-
-1. Open the simulations tab
-
-Expected:
-
+- The simulations tab opens by itself
 - There are as many coordinates as the seed says
 - The first coordinate reads "created"
 - Its inputs hold the stimulus spikes, "Stimulus 0_spikes.h5", beside
@@ -73,7 +65,16 @@ Expected:
 
 Steps:
 
-1. Press "Launch simulations"
+1. Go back to the configuration tab
+
+Expected:
+
+- The button now reads "New simulation campaign"
+
+Steps:
+
+1. Open the simulations tab again
+2. Press "Launch simulations"
 
 Expected:
 

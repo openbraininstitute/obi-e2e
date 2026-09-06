@@ -12,6 +12,9 @@ export const PUBLIC_READONLY = [...PUBLIC, '@readonly'];
 export const PRIVATE_READONLY = [...PRIVATE, '@readonly'];
 export const ONBOARDING_READONLY = [...ONBOARDING, '@readonly'];
 
+/** A run too long for the nightly suite; it has a job of its own. */
+export const SLOW = '@slow';
+
 export const STAGING_ONLY = '@staging';
 export const PRODUCTION_ONLY = '@production';
 

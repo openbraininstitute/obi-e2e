@@ -19,6 +19,7 @@ fixtures/
     credit-report.ts what the run did with credits
 
   steps/             things a spec does to a page
+    campaign.ts      generating a scan config campaign and launching it
   checks/            shared assertions a spec reuses
   scan-config/       the scan-config editor: seeds, driver, wording
 ```

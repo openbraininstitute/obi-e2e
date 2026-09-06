@@ -46,22 +46,23 @@ Steps:
 
 Expected:
 
-- The results tab is enabled
-- The button now reads "New build campaign"
-
-Steps:
-
-1. Open the results tab
-
-Expected:
-
+- The results tab opens by itself
 - There are as many coordinates as the seed says
 - The first coordinate reads "created"
 - The configuration it was generated from is among its inputs
 
 Steps:
 
-1. Press "Launch builds"
+1. Go back to the configuration tab
+
+Expected:
+
+- The button now reads "New build campaign"
+
+Steps:
+
+1. Open the results tab again
+2. Press "Launch builds"
 
 Expected:
 

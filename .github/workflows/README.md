@@ -1,6 +1,6 @@
 # Workflows
 
-`e2e.yml` is the only workflow. It decides what to run from the trigger:
+`e2e.yml` runs the tests. It decides what to run from the trigger:
 
 | Trigger                               | Target             | What runs   | Result                                |
 | ------------------------------------- | ------------------ | ----------- | ------------------------------------- |
@@ -18,6 +18,25 @@ deployment out of its fixture's `env` list. See
 Production runs are no longer read-only: they create a project in the production
 lab, move credits into it, and delete it at the end, the same as staging.
 
+## `e2e-slow.yml`
+
+The campaigns that are followed to the end but take longer than the nightly
+suite can hold — a microcircuit simulation, a mesh skeletonisation. They carry
+`@slow`, `e2e.yml` leaves them out, and this job gives them six hours on the
+clock instead of forty-five minutes. It is manual for now, because no case has
+needed the tag yet; give it a schedule when one does.
+
+A case opts in with one word in its seed — `"slow": true` — and gets four hours
+instead of five minutes. See
+[docs/workflow-tests.md](../../docs/workflow-tests.md).
+
+## `perf.yml`
+
+Lighthouse on the marketing pages, at 06:00 UTC on both deployments, or on the
+deployment chosen for a manual run. It uploads the reports as an artifact and
+posts its own Teams card through the same webhook. See
+[perf/README.md](../../perf/README.md).
+
 ## Configuration
 
 Repository **variables**: `E2E_BASE_URL_STAGING`, `E2E_BASE_URL_PRODUCTION`.
@@ -28,7 +47,8 @@ Repository **secrets** (same names as the Selenium repo, plus one):
 comment on `core-web-app` PRs).
 
 There is no project secret: every run creates a project inside the lab, moves a
-budget into it, and deletes it at the end.
+budget into it, and deletes it at the end. A step after the tests gives the
+project back even when the job is cancelled.
 
 Optional: `OBI_ONBOARDING_USERNAME` and `OBI_ONBOARDING_PASSWORD` for the second
 user that tests virtual lab creation. Leave them unset and those tests skip.
