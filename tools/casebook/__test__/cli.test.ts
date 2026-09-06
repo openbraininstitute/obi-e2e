@@ -13,6 +13,11 @@ function run(...args: string[]) {
   return { code: result.exitCode, out: result.stdout.toString(), err: result.stderr.toString() };
 }
 
+/** The file count out of a summary line like "7 files · 20 cases · 0 errors". */
+function fileCount(out: string): number {
+  return Number(/(\d+) files?\b/.exec(out)?.[1] ?? -1);
+}
+
 describe('parseArgs', () => {
   test('defaults to check, scenarios/, text', () => {
     expect(parseArgs([])).toEqual({
@@ -157,10 +162,15 @@ describe('cli', () => {
   });
 
   test('checks one section without touching the rest', () => {
-    const { code, out } = run('scenarios/workflows');
+    const section = run('scenarios/workflows');
+    const everything = run();
 
-    expect(code).toBe(0);
-    expect(out).toContain('7 files');
+    expect(section.code).toBe(0);
+    expect(everything.code).toBe(0);
+
+    // Counted, not spelled out: a new scenario must not fail this.
+    expect(fileCount(section.out)).toBeGreaterThan(0);
+    expect(fileCount(section.out)).toBeLessThan(fileCount(everything.out));
   });
 
   test('a path that is not there fails loudly, rather than passing quietly', () => {
