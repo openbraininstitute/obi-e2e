@@ -25,18 +25,15 @@ export type ScanConfigFixture = {
 
 export type ScanConfigCase = {
   name: string;
+  /** A run too long for the nightly suite. It runs in the slow job instead. */
+  slow?: boolean;
   config: Record<string, unknown>;
   expect: {
     coordinateCount: number;
     generated?: ScanConfigFiles;
+    /** Left out when the run is too long to sit through: it only has to start. */
     completed?: ScanConfigFiles;
-    built?: ScanConfigBuiltEntity;
   };
-};
-
-export type ScanConfigBuiltEntity = {
-  name: string;
-  properties: Record<string, string>;
 };
 
 export type ScanConfigScope = 'public' | 'project';
@@ -44,8 +41,14 @@ export type ScanConfigScope = 'public' | 'project';
 export type ScanConfigFiles = {
   inputs: string[];
   outputs: string[];
-  views?: Record<string, string[]>;
+  views?: Record<string, ScanConfigView>;
 };
+
+/**
+ * What opening one file shows: the text a pane holds, or, for the entity a run
+ * registered, the properties its card reads out.
+ */
+export type ScanConfigView = string[] | Record<string, string>;
 
 type SelectionBase = {
   scope?: ScanConfigScope;
@@ -213,13 +216,26 @@ function parseCase(
   }
 
   const expected = object(entry.expect, `${at}.expect`);
+  if (expected.built !== undefined) {
+    fail(
+      `${at}.expect.built moved into completed.views: name the entity by its file, and give ` +
+        'the properties its card reads out'
+    );
+  }
+
   const coordinateCount = expected.coordinateCount;
   if (!Number.isInteger(coordinateCount) || (coordinateCount as number) < 1) {
     fail(`${at}.expect.coordinateCount must be a positive integer`);
   }
 
+  const slow = entry.slow;
+  if (slow !== undefined && typeof slow !== 'boolean') {
+    fail(`${at}.slow must be true or false`);
+  }
+
   return {
     name: text(entry.name, `${at}.name`),
+    ...(slow === true ? { slow: true } : {}),
     config,
     expect: {
       coordinateCount: coordinateCount as number,
@@ -229,9 +245,6 @@ function parseCase(
       ...(expected.completed === undefined
         ? {}
         : { completed: parseFiles(expected.completed, `${at}.expect.completed`, fail) }),
-      ...(expected.built === undefined
-        ? {}
-        : { built: parseBuiltEntity(expected.built, `${at}.expect.built`, fail, text, object) }),
     },
   };
 }
@@ -256,7 +269,7 @@ function parseFiles(value: unknown, at: string, fail: (message: string) => never
   const record = value as Record<string, unknown>;
   const views = record.views;
   if (views !== undefined && (!views || typeof views !== 'object' || Array.isArray(views))) {
-    fail(`${at}.views must map a file name to the text its pane shows`);
+    fail(`${at}.views must map a file name to what opening it shows`);
   }
 
   return {
@@ -268,11 +281,33 @@ function parseFiles(value: unknown, at: string, fail: (message: string) => never
           views: Object.fromEntries(
             Object.entries(views as Record<string, unknown>).map(([file, shown]) => [
               file,
-              parseFileNames(shown, `${at}.views["${file}"]`, fail),
+              parseView(shown, `${at}.views["${file}"]`, fail),
             ])
           ),
         }),
   };
+}
+
+/** A pane holds text; an entity card reads out properties. */
+function parseView(value: unknown, at: string, fail: (message: string) => never): ScanConfigView {
+  if (Array.isArray(value)) return parseFileNames(value, at, fail);
+
+  if (!value || typeof value !== 'object') {
+    fail(`${at} must be a list of the text its pane shows, or the properties its card reads out`);
+  }
+
+  const properties = value as Record<string, unknown>;
+  if (Object.keys(properties).length === 0) {
+    fail(`${at} must name at least one property a user can read`);
+  }
+
+  for (const [label, shown] of Object.entries(properties)) {
+    if (typeof shown !== 'string' || shown.trim() === '') {
+      fail(`${at}["${label}"] must be the value shown, as a string`);
+    }
+  }
+
+  return properties as Record<string, string>;
 }
 
 function parseFileNames(value: unknown, at: string, fail: (message: string) => never): string[] {
@@ -283,30 +318,4 @@ function parseFileNames(value: unknown, at: string, fail: (message: string) => n
     }
   }
   return value as string[];
-}
-
-function parseBuiltEntity(
-  value: unknown,
-  at: string,
-  fail: (message: string) => never,
-  text: TextReader,
-  object: ObjectReader
-): ScanConfigBuiltEntity {
-  const record = object(value, at);
-  const properties = object(record.properties, `${at}.properties`);
-
-  if (Object.keys(properties).length === 0) {
-    fail(`${at}.properties must name at least one property a user can read`);
-  }
-
-  for (const [label, shown] of Object.entries(properties)) {
-    if (typeof shown !== 'string' || shown.trim() === '') {
-      fail(`${at}.properties["${label}"] must be the value shown, as a string`);
-    }
-  }
-
-  return {
-    name: text(record.name, `${at}.name`),
-    properties: properties as Record<string, string>,
-  };
 }

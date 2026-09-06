@@ -155,15 +155,14 @@
         },
         "completed": {
           "inputs": ["Task configuration", "obi_one_coordinate.json", "circuit_config.json"],
-          "outputs": ["Task logs", "E2E synaptome explicit locations"]
-        },
-        "built": {
-          "name": "E2E synaptome explicit locations",
-          "properties": {
-            "Scale": "Single",
-            "Number of neurons": "1",
-            "Number of synapses": "1",
-            "Build category": "Computational model"
+          "outputs": ["Task logs", "E2E synaptome explicit locations"],
+          "views": {
+            "E2E synaptome explicit locations": {
+              "Scale": "Single",
+              "Number of neurons": "1",
+              "Number of synapses": "1",
+              "Build category": "Computational model"
+            }
           }
         }
       }
