@@ -1,0 +1,63 @@
+{
+  "name": "Whole brain simulation",
+  "activity": "simulate",
+  "env": ["staging", "production"],
+  "workflow": {
+    "label": "Whole brain",
+    "type": "whole-brain-circuit-simulation"
+  },
+  "schemaName": "Brian2CircuitSimulationScanConfig",
+  "selection": {
+    "mode": "single",
+    "entities": ["FlyWire-v783-Brian2-LIF"]
+  },
+  "cases": [
+    {
+      "name": "a Poisson drive on every point neuron",
+      "config": {
+        "info": {
+          "type": "Info",
+          "campaign_name": "E2E whole brain simulation",
+          "campaign_description": "One Poisson drive on every point neuron of the connectome."
+        },
+        "neuron_sets": {
+          "all_neurons": {
+            "type": "AllPointNeurons",
+            "$variant": "ALL POPULATIONS (Point)"
+          }
+        },
+        "stimuli": {
+          "poisson_drive": {
+            "type": "Brian2DirectPoissonStimulus",
+            "$variant": "Direct Poisson Input",
+            "neuron_set": {
+              "block_dict_name": "neuron_sets",
+              "block_name": "all_neurons"
+            },
+            "frequency": 150,
+            "weight": 68.75,
+            "duration": 200
+          }
+        },
+        "initialize": {
+          "type": "Brian2CircuitSimulationScanConfig.Initialize",
+          "simulation_length": 1000,
+          "v_init": -80,
+          "random_seed": 1
+        }
+      },
+      "expect": {
+        "coordinateCount": 1,
+        "generated": {
+          "inputs": [
+            "circuit_config.json",
+            "node_sets.json",
+            "obi_one_coordinate.json",
+            "simulation_config.json"
+          ],
+          "outputs": []
+        }
+      }
+    }
+  ]
+}

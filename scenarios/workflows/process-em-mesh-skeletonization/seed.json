@@ -1,0 +1,51 @@
+{
+  "name": "EM mesh skeletonization",
+  "activity": "process",
+  "env": ["staging", "production"],
+  "workflow": {
+    "label": "EM mesh skeletonization",
+    "type": "skeletonization-campaign"
+  },
+  "schemaName": "SkeletonizationScanConfig",
+  "selection": {
+    "mode": "multiple",
+    "entities": ["h01_v20210601_7052969349"],
+    "scope": "public"
+  },
+  "cases": [
+    {
+      "name": "one public mesh, without the raw spines",
+      "config": {
+        "info": {
+          "type": "Info",
+          "campaign_name": "E2E EM mesh skeletonization",
+          "campaign_description": "One public EM cell mesh, reconstructed without the raw spine meshes."
+        },
+        "initialize": {
+          "type": "SkeletonizationScanConfig.Initialize",
+          "neuron_voxel_size": 0.1,
+          "spines_voxel_size": 0.1,
+          "write_raw_spines": false
+        }
+      },
+      "expect": {
+        "coordinateCount": 1,
+        "generated": {
+          "inputs": ["obi_one_coordinate.json"],
+          "outputs": []
+        },
+        "completed": {
+          "inputs": ["Task configuration", "obi_one_coordinate.json"],
+          "outputs": ["Task logs", "Skeletonized morphology"],
+          "views": {
+            "Skeletonized morphology": {
+              "Brain Region": "Temporal lobe",
+              "Species": "Homo sapiens",
+              "Lifecycle status": "Active"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

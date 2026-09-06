@@ -1,0 +1,47 @@
+{
+  "name": "Intracellular e-feature extraction",
+  "activity": "extract",
+  "env": ["staging"],
+  "workflow": {
+    "label": "Intracellular EFeatures",
+    "type": "efeature-extraction-campaign"
+  },
+  "schemaName": "EModelEFeatureExtractionScanConfig",
+  "selection": {
+    "mode": "none"
+  },
+  "requires": {
+    "featureFlag": "efeature_extraction_campaign"
+  },
+  "cases": [
+    {
+      "name": "one recording, extracting the generic step protocol",
+      "config": {
+        "info": {
+          "type": "Info",
+          "campaign_name": "E2E e-feature extraction",
+          "campaign_description": "One intracellular recording, with the features of its generic step protocol."
+        },
+        "initialize": {
+          "type": "EModelEFeatureExtractionScanConfig.Initialize",
+          "electrical_cell_recording": [
+            {
+              "name": "sub-X2020-01-28-2020-01-28-0029_icephys"
+            }
+          ]
+        },
+        "efeatures_by_protocol": {
+          "type": "ProtocolAndFeatureSelection",
+          "selection": ["GenericStep"]
+        }
+      },
+      "expect": {
+        "coordinateCount": 1,
+        "generated": {
+          "inputs": ["obi_one_coordinate.json"],
+          "outputs": []
+        }
+      }
+    }
+  ]
+}

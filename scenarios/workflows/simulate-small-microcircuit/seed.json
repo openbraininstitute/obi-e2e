@@ -1,0 +1,97 @@
+{
+  "name": "Small microcircuit simulation",
+  "activity": "simulate",
+  "env": ["staging", "production"],
+  "workflow": {
+    "label": "Small microcircuit",
+    "type": "small-microcircuit-simulation"
+  },
+  "schemaName": "CircuitSimulationScanConfig",
+  "selection": {
+    "mode": "single",
+    "entities": ["rCA1-CYLINDER-REF-1PC-8PV-01"]
+  },
+  "cases": [
+    {
+      "name": "a constant current clamp on every biophysical neuron",
+      "config": {
+        "info": {
+          "type": "Info",
+          "campaign_name": "E2E small microcircuit simulation",
+          "campaign_description": "One clamp on every biophysical neuron of the microcircuit, recorded at the soma."
+        },
+        "timestamps": {
+          "regular": {
+            "type": "RegularTimestamps",
+            "start_time": 0,
+            "interval": 1000,
+            "number_of_repetitions": 1
+          }
+        },
+        "neuron_sets": {
+          "all_neurons": {
+            "type": "AllBiophysicalNeurons"
+          }
+        },
+        "stimuli": {
+          "current_clamp": {
+            "type": "ConstantCurrentClampSomaticStimulus",
+            "timestamps": {
+              "block_dict_name": "timestamps",
+              "block_name": "regular"
+            },
+            "neuron_set": {
+              "block_dict_name": "neuron_sets",
+              "block_name": "all_neurons"
+            },
+            "duration": 800,
+            "amplitude": 0.5
+          }
+        },
+        "recordings": {
+          "soma_voltage": {
+            "type": "SomaVoltageRecording",
+            "neuron_set": {
+              "block_dict_name": "neuron_sets",
+              "block_name": "all_neurons"
+            },
+            "dt": 0.1
+          }
+        },
+        "initialize": {
+          "type": "CircuitSimulationScanConfig.Initialize",
+          "node_set": {
+            "block_dict_name": "neuron_sets",
+            "block_name": "all_neurons"
+          },
+          "simulation_length": 1000
+        }
+      },
+      "expect": {
+        "coordinateCount": 1,
+        "generated": {
+          "inputs": [
+            "circuit_config.json",
+            "node_sets.json",
+            "obi_one_coordinate.json",
+            "simulation_config.json"
+          ],
+          "outputs": []
+        },
+        "completed": {
+          "inputs": [
+            "circuit_config.json",
+            "node_sets.json",
+            "obi_one_coordinate.json",
+            "simulation_config.json"
+          ],
+          "outputs": ["Recording 0.h5", "spikes.h5"],
+          "views": {
+            "Recording 0.h5": ["hippocampus_neurons_0", "Time (ms)", "Voltage (mV)"],
+            "spikes.h5": ["Populationhippocampus_neurons", "spikes"]
+          }
+        }
+      }
+    }
+  ]
+}
