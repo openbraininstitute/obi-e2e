@@ -95,10 +95,10 @@ export async function runCampaign(
   await checkGeneratedFiles(page, configuration);
 
   // Back on the form, the button offers a new campaign rather than the same one again.
-  await editor.tab(CONFIGURATION_TAB).click();
+  await openTab(page, editor, CONFIGURATION_TAB);
   await expect(editor.submit).toHaveText(words.newCampaign);
 
-  await editor.tab(words.resultsTab).click();
+  await openTab(page, editor, words.resultsTab);
 
   await expect(results.launch).toContainText(words.launch);
 
@@ -125,6 +125,25 @@ export async function runCampaign(
   await expect(status).toHaveText(/^done$/i);
 
   await checkCompletedOutput(page, configuration);
+}
+
+/**
+ * Moves to one of the editor's tabs.
+ *
+ * The pointer is left wherever the last click landed, and a tooltip that opens
+ * under it is drawn into a popper that can cover the tab bar and swallow every
+ * click until the action gives up — thirty seconds spent being told that
+ * "virtual" intercepts pointer events. Escape closes whatever is showing, and
+ * what it dismissed stays shut until the pointer leaves and comes back, which
+ * the click itself does.
+ */
+async function openTab(
+  page: Page,
+  editor: ReturnType<typeof scanConfigEditor>,
+  id: string
+): Promise<void> {
+  await page.keyboard.press('Escape');
+  await editor.tab(id).click();
 }
 
 /**
