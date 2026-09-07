@@ -17,6 +17,7 @@
   "cases": [
     {
       "name": "a constant current clamp on every biophysical neuron",
+      "launch": false,
       "config": {
         "info": {
           "type": "Info",
