@@ -169,12 +169,22 @@ export function credentials(role: Role): { username: string; password: string } 
   };
 }
 
-/** Credits the run moves into its project. */
+/**
+ * Credits the run moves into its project.
+ *
+ * Only what a campaign actually spends leaves the lab: the teardown deletes the
+ * project and the rest goes back, so the number is a ceiling rather than a cost.
+ * It has to clear the priciest single launch in the suite, not just the total —
+ * the microcircuit simulation is quoted at ~2,300 on its own, and a project
+ * holding less than that is refused at launch with an insufficient-funds 403
+ * however little the run has spent so far. A whole `@credits` pass spends
+ * roughly 3,700 with that one included, so this leaves it half again as much.
+ */
 export const PROJECT_CREDITS = readCredits();
 
 function readCredits(): number {
   const raw = process.env.E2E_PROJECT_CREDITS;
-  if (!raw) return 2_000;
+  if (!raw) return 6_000;
 
   const parsed = Number(raw);
   if (!Number.isFinite(parsed) || parsed <= 0) {
