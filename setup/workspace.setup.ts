@@ -1,7 +1,5 @@
 /** Creates the project this run works in, and funds it. */
 
-import * as fs from 'node:fs';
-
 import { PROJECT_LIMIT, VirtualLabApi } from '@api/virtual-lab';
 import { credits, recordCredits } from '@fixtures/run/credit-report';
 import {
@@ -11,10 +9,10 @@ import {
   requireEnv,
   RUN_ID,
   RUN_STARTED_AT,
-  tokenPath,
   workspacePath,
 } from '@fixtures/run/env';
 import { log } from '@fixtures/run/logger';
+import { accessToken } from '@fixtures/run/token';
 import { guardWorkspace } from '@fixtures/run/workspace';
 import { expect, test as setup } from '@playwright/test';
 
@@ -25,7 +23,7 @@ setup('prepare a project for this run', async () => {
   );
 
   const labId = requireEnv('LAB_ID').LAB_ID;
-  const api = new VirtualLabApi(fs.readFileSync(tokenPath('primary'), 'utf8').trim());
+  const api = new VirtualLabApi(await accessToken('primary'));
   const required = PROJECT_CREDITS;
 
   const labBalance = await api.labBalance(labId);
