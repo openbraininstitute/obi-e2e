@@ -27,6 +27,14 @@ export type ScanConfigCase = {
   name: string;
   /** A run too long for the nightly suite. It runs in the slow job instead. */
   slow?: boolean;
+  /**
+   * Set false for a campaign that is generated and read but never started.
+   *
+   * A simulation the lab cannot afford still has a form worth covering: the
+   * case runs to the point where the launch button is offered and stops there,
+   * so the workflow keeps its test without the launch that would be refused.
+   */
+  launch?: boolean;
   config: Record<string, unknown>;
   expect: {
     coordinateCount: number;
@@ -233,9 +241,19 @@ function parseCase(
     fail(`${at}.slow must be true or false`);
   }
 
+  const launch = entry.launch;
+  if (launch !== undefined && typeof launch !== 'boolean') {
+    fail(`${at}.launch must be true or false`);
+  }
+
+  if (launch === false && expected.completed !== undefined) {
+    fail(`${at} cannot expect a completed run when it never launches one`);
+  }
+
   return {
     name: text(entry.name, `${at}.name`),
     ...(slow === true ? { slow: true } : {}),
+    ...(launch === false ? { launch: false } : {}),
     config,
     expect: {
       coordinateCount: coordinateCount as number,

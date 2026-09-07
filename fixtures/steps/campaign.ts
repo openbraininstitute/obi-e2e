@@ -63,8 +63,9 @@ export function campaignTimeout(fixture: ScanConfigFixture): number {
  * it, and follows it as far as the seed asks.
  *
  * A configuration that says what the finished run holds is followed to "done"
- * and read; one that says nothing only has to start. See `waitForCampaign` for
- * why the wait is a reload rather than a stare.
+ * and read; one that says nothing only has to start; one marked `launch: false`
+ * stops before it starts at all. See `waitForCampaign` for why the wait is a
+ * reload rather than a stare.
  */
 export async function runCampaign(
   page: Page,
@@ -101,6 +102,9 @@ export async function runCampaign(
 
   await expect(results.launch).toContainText(words.launch);
 
+  // A case the lab cannot afford to run stops with the button offered, unpressed.
+  if (configuration.launch === false) return;
+
   await results.launch.click();
 
   if (fixture.workflow.confirmsCost) {
@@ -108,7 +112,12 @@ export async function runCampaign(
     await results.costConfirm.click();
   }
 
-  await expect(status).not.toHaveText(/^created$/i);
+  /* The app swallows a refused launch: a 403 lands in the console only, never on the page. */
+  await expect(
+    status,
+    'The launch never took. The project is most likely out of credits — the refusal is ' +
+      'only visible as a console error, so check the trace for POST /task/launch.'
+  ).not.toHaveText(/^created$/i);
 
   if (!isFollowed(configuration)) return;
 
