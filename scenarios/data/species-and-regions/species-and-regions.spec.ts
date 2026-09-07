@@ -1,9 +1,9 @@
 import { routes } from '@fixtures/routes';
 import { chooseSpecies, showAllSpecies } from '@fixtures/steps/choose-species';
-import { PRIVATE_READONLY } from '@fixtures/tags';
+import { AUTHENTICATED } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { WIDE_VIEWPORT } from '@fixtures/viewport';
-import { atlas, SPECIES_WITH_ATLAS, SPECIES_WITHOUT_ATLAS } from '@locators/atlas';
+import { atlas, EVERY_SPECIES, SPECIES_WITH_ATLAS, SPECIES_WITHOUT_ATLAS } from '@locators/atlas';
 import { dataPage } from '@locators/data';
 import { entityListing } from '@locators/listing';
 
@@ -51,13 +51,15 @@ test.describe('Species and brain regions', () => {
       );
     }
 
-    test('Every species can be chosen', { tag: PRIVATE_READONLY }, async ({ page }) => {
+    test('Every species can be chosen', { tag: AUTHENTICATED }, async ({ page }) => {
       const controls = atlas(page);
 
-      await expect(controls.speciesCards).toHaveCount(9);
+      await expect(controls.speciesCards).toHaveCount(EVERY_SPECIES.length);
 
-      await controls.speciesSelector.click();
-      await expect(page.getByRole('option')).toHaveCount(11);
+      for (const species of EVERY_SPECIES) {
+        await chooseSpecies(page, species);
+        await expect(controls.viewer).toBeVisible();
+      }
     });
   });
 
@@ -68,7 +70,7 @@ test.describe('Species and brain regions', () => {
       await expect(entityListing(page).cells.first()).toBeVisible();
     });
 
-    test('Change the species on a listing', { tag: PRIVATE_READONLY }, async ({ page }) => {
+    test('Change the species on a listing', { tag: AUTHENTICATED }, async ({ page }) => {
       const listing = entityListing(page);
       const before = await listing.resultCount.innerText();
 
