@@ -327,6 +327,17 @@ export class ScanConfigDriver {
     const control = scanConfigControl(field);
 
     /*
+     * A field that already holds what the fixture asks for is left alone. A
+     * reference with one thing to reference arrives filled in, and opening a
+     * list to pick what is already picked only risks toggling it shut: the
+     * option is not in the page to be clicked, so every attempt looks for
+     * something that was never going to be there. Exact text, so "Neuron set 1"
+     * is never read as a match for "Neuron set 10"; anything less certain falls
+     * through and is chosen the long way.
+     */
+    if ((await control.innerText().catch(() => '')).trim() === option) return;
+
+    /*
      * Two components render a list here — a reference field is an antd Select,
      * the enhanced string selection is a button — and neither can be asked
      * reliably whether it is already open. So every attempt starts from a known
@@ -338,12 +349,21 @@ export class ScanConfigDriver {
       await this.page.keyboard.press('Escape');
       await control.click({ force: true, timeout: 3_000 });
 
+      /*
+       * Forced, like the click that opened the list. An antd list is a portal
+       * that re-aligns itself whenever an ancestor scrolls, so asking to scroll
+       * it into view moves it, which re-aligns it, which asks again: the option
+       * is reported "not stable" until the attempt runs out. The list is open
+       * and the option filtered on being visible, so there is nothing left for
+       * the actionability checks to establish — and a click that lands on
+       * nothing still fails the assertion below.
+       */
       await this.page
         .getByTestId(`scan-config-option-${option}`)
         .or(this.page.getByTitle(option, { exact: true }))
         .filter({ visible: true })
         .first()
-        .click({ timeout: 5_000 });
+        .click({ force: true, timeout: 5_000 });
     }, `${at}: "${option}" never became selectable`).toPass({ timeout: 30_000 });
 
     await expect(control).not.toHaveText(/^Select /);
