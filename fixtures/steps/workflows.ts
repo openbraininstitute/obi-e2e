@@ -82,12 +82,17 @@ export async function startWorkflow(
       'flag needs that flag set before the page loads.'
   ).not.toHaveAttribute('aria-disabled', 'true');
 
-  await expect(async () => {
-    await card.click();
-    await expect(page).toHaveURL(new RegExp(`/workflows/${activity}/(new|configure)/`), {
-      timeout: 5_000,
-    });
-  }).toPass();
+  /*
+   * Clicked once, never retried. The card opens a route of its own, and a
+   * retry that fires while that navigation is still in flight finds the hub
+   * gone and waits out the action timeout for a card that has left the page,
+   * over and over, until the test runs out of clock. A slow route compile
+   * turned four Synaptome tests into eight-minute timeouts that way. The
+   * hydration this used to guard against is already settled: the category
+   * click above only opened its menu because React was listening.
+   */
+  await card.click();
+  await page.waitForURL(new RegExp(`/workflows/${activity}/(new|configure)/`));
 }
 
 /** Picks what the workflow works from. Returns a reason when the project has none. */
@@ -132,6 +137,9 @@ export async function chooseEntities(
   }
 
   await (selection.mode === 'single' ? browse.useModel : browse.useSelection).click();
-  await expect(page).toHaveURL(/\/configure\//);
+
+  // The editor is a route, so this waits on the navigation clock rather than
+  // the shorter one an assertion gets.
+  await page.waitForURL(/\/configure\//);
   return null;
 }
