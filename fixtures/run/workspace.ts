@@ -7,8 +7,9 @@ import * as path from 'node:path';
 import { VirtualLabApi } from '@api/virtual-lab';
 
 import { credits, readCreditReport, recordCredits } from './credit-report';
-import { isCI, RUN_DIR, RUN_ID, tokenPath, workspacePath } from './env';
+import { isCI, RUN_DIR, RUN_ID, workspacePath } from './env';
 import { log } from './logger';
+import { accessToken } from './token';
 
 export type Teardown = { projectId: string; removed: 'ok' | 'failed' };
 
@@ -29,7 +30,7 @@ export async function teardownWorkspace(): Promise<Teardown | undefined> {
     labId: string;
     projectId: string;
   };
-  const api = new VirtualLabApi(fs.readFileSync(tokenPath('primary'), 'utf8').trim());
+  const api = new VirtualLabApi(await accessToken('primary'));
   const assigned = readCreditReport()?.assigned;
 
   const remaining = await api
