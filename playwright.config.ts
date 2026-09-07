@@ -53,9 +53,16 @@ export default defineConfig({
     baseURL,
     actionTimeout: ASSERTION_TIMEOUT,
     navigationTimeout: isCI ? 90_000 : 60_000,
-    screenshot: 'only-on-failure',
-    video: isCI ? 'retain-on-failure' : 'off',
-    trace: isCI ? 'on-first-retry' : 'retain-on-failure',
+    /*
+     * Nothing heavy on CI. Videos, traces and screenshots for twenty failures
+     * and their retries came to a 1.5 GB artifact nobody could download. The
+     * HTML report still carries the stack traces, and Playwright writes
+     * `error-context.md` — the page at the moment it failed — whatever these
+     * are set to. Locally they all stay on, where the weight costs nothing.
+     */
+    screenshot: isCI ? 'off' : 'only-on-failure',
+    video: 'off',
+    trace: isCI ? 'off' : 'retain-on-failure',
     ...resolveBrowser(devices),
   },
 

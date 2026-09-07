@@ -133,14 +133,22 @@ jobs:
         if: always()
         run: cat test-results/summary.md >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Collect the scenarios that failed
+        if: always()
+        run: bun scripts/ci/collect-scenarios.ts test-results/results.json playwright-report
+
       - id: report
         uses: actions/upload-artifact@v4
         if: always()
+        # The report holds the stack traces and each failure's error-context;
+        # test-results/ holds the videos and traces, and stays behind. Only the
+        # two summaries go with it, because report-to-pr reads them.
         with:
           name: playwright-report-${{ matrix.run.name }}
           path: |
             playwright-report/
-            test-results/
+            test-results/summary.md
+            test-results/summary.json
           retention-days: 14
 
       - name: Rebuild the summary with the report link
