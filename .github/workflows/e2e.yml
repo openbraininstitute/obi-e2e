@@ -58,7 +58,9 @@ jobs:
   run:
     needs: matrix
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # A 2-core runner gives workersFor() two workers, so the whole suite walks
+    # through 248 tests two at a time. Forty-five minutes cut it off mid-run.
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
