@@ -37,7 +37,7 @@ describe('skeleton', () => {
     expect(kept).toEqual([]);
     expect(orphans).toEqual([]);
 
-    expect(text).toContain("import { PRIVATE_READONLY, PRIVATE_SPENDS } from '@fixtures/tags';");
+    expect(text).toContain("import { AUTHENTICATED, CREDITS } from '@fixtures/tags';");
     expect(text).toContain("import { test } from '@fixtures/test';");
     expect(text).toContain("test.describe('Viewer', () => {");
     expect(text).toContain(
@@ -45,9 +45,7 @@ describe('skeleton', () => {
     );
     expect(text).toContain('    // Step: Open the viewer settings');
     expect(text).toContain('    // Expect: The axon toggle is off');
-    expect(text).toContain(
-      "test.fixme('Add a zoom slider', { tag: PRIVATE_SPENDS }, async () => {"
-    );
+    expect(text).toContain("test.fixme('Add a zoom slider', { tag: CREDITS }, async () => {");
     expect(text).toContain('    // Precondition: On the viewer');
   });
 
@@ -79,7 +77,7 @@ test.describe('Viewer', () => {
     expect(kept).toEqual(['Turn the axon on and off']);
     expect(orphans).toEqual([]);
     expect(text).toContain('await expect(page).toBeVisible();');
-    expect(text).toContain("import { PRIVATE_READONLY, PRIVATE_SPENDS } from '@fixtures/tags';");
+    expect(text).toContain("import { AUTHENTICATED, CREDITS } from '@fixtures/tags';");
     expect(scanSpec(text, 'x').tests.map((t) => t.title)).toEqual([
       'Turn the axon on and off',
       'Add a zoom slider',
@@ -88,13 +86,13 @@ test.describe('Viewer', () => {
   });
 
   test('a test whose title matches no case is reported, never deleted', () => {
-    const existing = `import { PRIVATE_READONLY, PRIVATE_SPENDS } from '@fixtures/tags';
+    const existing = `import { AUTHENTICATED, CREDITS } from '@fixtures/tags';
 import { test } from '@fixtures/test';
 
 test.describe('Viewer', () => {
-  test('Turn the axon on and off', { tag: PRIVATE_READONLY }, async () => {});
-  test('Add a zoom slider', { tag: PRIVATE_SPENDS }, async () => {});
-  test('An old test nobody asked for', { tag: PRIVATE_READONLY }, async () => {});
+  test('Turn the axon on and off', { tag: AUTHENTICATED }, async () => {});
+  test('Add a zoom slider', { tag: CREDITS }, async () => {});
+  test('An old test nobody asked for', { tag: AUTHENTICATED }, async () => {});
 });
 `;
 
@@ -112,9 +110,7 @@ test.describe('Viewer', () => {
 
     expect(text).toContain("test('unrelated', async () => {});");
     expect(text).toContain("test.describe('Viewer', () => {");
-    expect(
-      text.startsWith("import { PRIVATE_READONLY, PRIVATE_SPENDS } from '@fixtures/tags';")
-    ).toBe(true);
+    expect(text.startsWith("import { AUTHENTICATED, CREDITS } from '@fixtures/tags';")).toBe(true);
   });
 
   test('running it twice changes nothing', () => {
@@ -176,7 +172,7 @@ describe('skeleton, the workflow shapes', () => {
     expect(text).toContain("import { loadSeed } from '@fixtures/scan-config';");
     expect(text).toContain('for (const configuration of loadSeed(import.meta.dir).cases) {');
     expect(text).toContain(
-      'test.fixme(`Generate a build campaign: ${configuration.name}`, { tag: PRIVATE_SPENDS }, async () => {'
+      'test.fixme(`Generate a build campaign: ${configuration.name}`, { tag: CREDITS }, async () => {'
     );
   });
 
@@ -192,11 +188,11 @@ describe('skeleton, the workflow shapes', () => {
 
   test('growing a spec that already imports from scan-config merges, never duplicates', () => {
     const existing = `import { loadSeed, notDeployedHere } from '@fixtures/scan-config';
-import { PRIVATE_SPENDS } from '@fixtures/tags';
+import { CREDITS } from '@fixtures/tags';
 import { test } from '@fixtures/test';
 
 test.describe('Synaptome build', () => {
-  test('The form will not launch until it is complete', { tag: PRIVATE_SPENDS }, async () => {});
+  test('The form will not launch until it is complete', { tag: CREDITS }, async () => {});
 });
 `;
     const { text, added } = skeleton(workflow(), existing, 'x.spec.ts');

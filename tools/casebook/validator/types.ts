@@ -13,13 +13,10 @@ export const ENVIRONMENTS = ['staging', 'production'] as const;
 
 /** What `User:` may say, and the constant in fixtures/tags.ts each one becomes. */
 export const USERS: Record<string, string> = {
-  visitor: 'PUBLIC_READONLY',
-  'visitor, making changes': 'PUBLIC',
-  'lab member': 'PRIVATE_READONLY',
-  'lab member, making changes': 'PRIVATE',
-  'lab member, spending credits': 'PRIVATE_SPENDS',
-  'new user': 'ONBOARDING_READONLY',
-  'new user, making changes': 'ONBOARDING',
+  visitor: 'VISITOR',
+  authenticated: 'AUTHENTICATED',
+  credits: 'CREDITS',
+  onboarding: 'ONBOARDING',
 };
 
 export type Field = { key: FieldKey; value: string; line: number };

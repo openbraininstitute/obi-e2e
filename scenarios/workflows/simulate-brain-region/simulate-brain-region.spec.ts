@@ -3,7 +3,7 @@ import { scanConfigWords } from '@fixtures/scan-config/activities';
 import { campaignTags, campaignTimeout, runCampaign } from '@fixtures/steps/campaign';
 import { enableFeature } from '@fixtures/steps/feature-flags';
 import { chooseEntities, openWorkflowsHub, startWorkflow } from '@fixtures/steps/workflows';
-import { PRIVATE_SPENDS } from '@fixtures/tags';
+import { CREDITS } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { scanConfigEditor } from '@locators/scan-config';
 import type { BrowserContext, Page } from '@playwright/test';
@@ -44,7 +44,7 @@ async function openEditor(
 test.describe('Brain region simulation', () => {
   test(
     'The form will not launch until it is complete',
-    { tag: PRIVATE_SPENDS },
+    { tag: CREDITS },
     async ({ page, context, workspace, baseURL }) => {
       await openEditor(page, context, workspace, baseURL);
 

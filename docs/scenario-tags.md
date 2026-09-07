@@ -22,15 +22,12 @@ two never drift apart.
 
 ## The users
 
-| `User:`                        | Constant              | Signed in as                            |
-| ------------------------------ | --------------------- | --------------------------------------- |
-| `visitor`                      | `PUBLIC_READONLY`     | nobody                                  |
-| `visitor, making changes`      | `PUBLIC`              | nobody                                  |
-| `lab member`                   | `PRIVATE_READONLY`    | the primary user, in their existing lab |
-| `lab member, making changes`   | `PRIVATE`             | the same                                |
-| `lab member, spending credits` | `PRIVATE_SPENDS`      | the same, and it costs credits          |
-| `new user`                     | `ONBOARDING_READONLY` | the onboarding user, who owns nothing   |
-| `new user, making changes`     | `ONBOARDING`          | the same                                |
+| `User:`         | Constant        | Signed in as                                         |
+| --------------- | --------------- | ---------------------------------------------------- |
+| `visitor`       | `VISITOR`       | nobody                                               |
+| `authenticated` | `AUTHENTICATED` | the primary user, in their existing lab              |
+| `credits`       | `CREDITS`       | the same, and it launches something the lab pays for |
+| `onboarding`    | `ONBOARDING`    | the second user, who owns nothing: signing up        |
 
 **A test with no user never runs.** No project picks it up and nothing warns
 you, which is why `casebook` treats a missing `User:` as an error.
@@ -49,8 +46,8 @@ Then:
 
 ## What the constants become
 
-A constant is just a list of `@` labels. `PRIVATE_READONLY` is
-`['@private', '@readonly']`.
+A constant is just a list of `@` labels. `CREDITS` is
+`['@private', '@credits']`.
 
 | Label         | Means                                                     |
 | ------------- | --------------------------------------------------------- |

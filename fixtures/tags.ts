@@ -6,11 +6,16 @@ export const PUBLIC = ['@public'];
 export const PRIVATE = ['@private'];
 export const ONBOARDING = ['@onboarding'];
 
-export const PRIVATE_SPENDS = [...PRIVATE, '@spends'];
+/**
+ * Signed in, and it launches something the project pays for.
+ *
+ * Carries `@private` too, so the authenticated project can leave it out and the
+ * credits project can pick it up: a test that spends waits for a funded project.
+ */
+export const CREDITS = [...AUTHENTICATED, '@credits'];
 
-export const PUBLIC_READONLY = [...PUBLIC, '@readonly'];
-export const PRIVATE_READONLY = [...PRIVATE, '@readonly'];
-export const ONBOARDING_READONLY = [...ONBOARDING, '@readonly'];
+/** Signed in as the second user, who owns nothing: signing up, and what follows. */
+export const ONBOARDING = ['@onboarding'];
 
 /** A run too long for the nightly suite; it has a job of its own. */
 export const SLOW = '@slow';
