@@ -13,17 +13,24 @@
   },
   "cases": [
     {
-      "name": "a Poisson drive on every point neuron",
+      "name": "a Poisson drive on the sugar-sensing neurons",
+      "launch": false,
       "config": {
         "info": {
           "type": "Info",
           "campaign_name": "E2E whole brain simulation",
-          "campaign_description": "One Poisson drive on every point neuron of the connectome."
+          "campaign_description": "One Poisson drive on the sugar-sensing neurons of the connectome."
         },
         "neuron_sets": {
           "all_neurons": {
             "type": "AllPointNeurons",
             "$variant": "ALL POPULATIONS (Point)"
+          },
+          "sugar_drive": {
+            "type": "PointPopulationPredefinedNeuronSet",
+            "$variant": "PREDEFINED (Point)",
+            "population": "drosophila",
+            "node_set": "sugar"
           }
         },
         "stimuli": {
@@ -32,7 +39,7 @@
             "$variant": "Direct Poisson Input",
             "neuron_set": {
               "block_dict_name": "neuron_sets",
-              "block_name": "all_neurons"
+              "block_name": "sugar_drive"
             },
             "frequency": 150,
             "weight": 68.75,

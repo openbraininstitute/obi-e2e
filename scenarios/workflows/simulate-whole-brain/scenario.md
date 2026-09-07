@@ -6,16 +6,23 @@ Poisson drive on it.
 
 The circuit is a FlyWire fly connectome of point neurons, run on the Brian2
 simulator. The form carries no timestamps and no recordings, so the seed sets
-only the campaign details, the neuron set, the drive and the initialisation.
+only the campaign details, the neuron sets, the drive and the initialisation.
+
+The drive follows obi-one's own reference for this circuit,
+`projects/drosophila/brian2_simulation_from_sonata.ipynb`: it lands on the
+`sugar` node set the circuit already carries — the twenty-one sugar-sensing
+neurons — and not on the whole connectome. Direct Poisson Input is capped at a
+hundred neurons, so a drive on every point neuron is refused when the campaign
+is generated.
 
 A whole brain takes hours to simulate, far longer than a browser test can sit
-through. So the launch case stops once the coordinate leaves "created", and
-nothing here says what the run produces.
+through, and costs more than a nightly suite should spend on one workflow. So
+this scenario covers the form and the generated campaign and stops with the
+launch button offered but unpressed. Nothing here says what a run produces,
+because none is started.
 
-The seed also says which deployments the workflow runs on, so no line here does.
-
-Launching prices the simulation first: the estimate is shown and has to be
-confirmed before anything starts.
+The seed says so too, with `launch: false` on the configuration. It also says
+which deployments the workflow runs on, so no line here does.
 
 User: lab member, spending credits
 Seed: seed.json
@@ -35,7 +42,7 @@ Expected:
 
 - "Generate simulation(s)" is disabled
 
-## Generate a simulation campaign and launch it
+## Generate a simulation campaign without launching it
 
 For each: configuration in the seed
 
@@ -77,16 +84,7 @@ Expected:
 Steps:
 
 1. Open the simulations tab again
-2. Press "Launch simulations"
 
 Expected:
 
-- An estimated cost breakdown is shown, with a "Confirm" to press
-
-Steps:
-
-1. Press "Confirm"
-
-Expected:
-
-- The coordinate leaves "created"
+- The launch button still reads "Launch simulations", and is left unpressed
