@@ -97,7 +97,7 @@ jobs:
       - name: Post Teams card
         if: always()
         env:
-          TEAMS_WEBHOOK_URL: ${{ secrets.MS_TEAMS_NEW_WEBHOOK_URI }}
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
           TEAMS_LAYOUT: thread
           E2E_REPORT_URL: ${{ steps.report.outputs.artifact-url }}
         run: bun scripts/ci/teams-card.ts test-results/summary.json
