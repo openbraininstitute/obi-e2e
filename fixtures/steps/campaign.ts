@@ -7,7 +7,7 @@ import { checkCompletedOutput, checkGeneratedFiles } from '../checks/campaign-ou
 import type { ScanConfigCase, ScanConfigFixture } from '../scan-config';
 import { scanConfigWords } from '../scan-config/activities';
 import { ScanConfigDriver } from '../scan-config/driver';
-import { PRIVATE_SPENDS, SLOW } from '../tags';
+import { CREDITS, SLOW } from '../tags';
 
 /** How long an ordinary run may take. */
 const RUN_MINUTES = 5;
@@ -49,7 +49,7 @@ function runMinutes(configuration: ScanConfigCase): number {
  * that has hours to spare.
  */
 export function campaignTags(configuration: ScanConfigCase): string[] {
-  return configuration.slow ? [...PRIVATE_SPENDS, SLOW] : PRIVATE_SPENDS;
+  return configuration.slow ? [...CREDITS, SLOW] : CREDITS;
 }
 
 /** Time on the clock for the slowest case in a scenario. */

@@ -5,7 +5,7 @@ import { campaignTags, campaignTimeout, runCampaign } from '@fixtures/steps/camp
 import { pretendNoCredits } from '@fixtures/steps/credits';
 import { enableFeature } from '@fixtures/steps/feature-flags';
 import { chooseEntities, openWorkflowsHub, startWorkflow } from '@fixtures/steps/workflows';
-import { PRIVATE_SPENDS } from '@fixtures/tags';
+import { CREDITS } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { scanConfigEditor } from '@locators/scan-config';
 import { morphologyLocations, morphologyViewer } from '@locators/viewer';
@@ -50,11 +50,8 @@ test.describe('Synaptome build', () => {
     await openWorkflowsHub(page, workspace);
   });
 
-  test(
-    'The form will not launch until it is complete',
-    { tag: PRIVATE_SPENDS },
-    async ({ page }) => {
-      await openEditor(page);
+  test('The form will not launch until it is complete', { tag: CREDITS }, async ({ page }) => {
+    await openEditor(page);
 
       await expect(scanConfigEditor(page).submit).toHaveText(words.generate);
       await expect(scanConfigEditor(page).submit).toBeDisabled();
@@ -63,7 +60,7 @@ test.describe('Synaptome build', () => {
 
   test(
     'A project with no credits cannot generate a campaign',
-    { tag: PRIVATE_SPENDS },
+    { tag: CREDITS },
     async ({ page, workspace }) => {
       const editor = scanConfigEditor(page);
 
@@ -97,7 +94,7 @@ test.describe('Synaptome build', () => {
     );
   }
 
-  test('Clicking a neurite adds a location', { tag: PRIVATE_SPENDS }, async ({ page }) => {
+  test('Clicking a neurite adds a location', { tag: CREDITS }, async ({ page }) => {
     const locations = morphologyLocations(page);
 
     await openEditor(page);
@@ -113,7 +110,7 @@ test.describe('Synaptome build', () => {
     await expect(locations.offset(0)).toBeEnabled();
   });
 
-  test('An offset stays inside its section', { tag: PRIVATE_SPENDS }, async ({ page }) => {
+  test('An offset stays inside its section', { tag: CREDITS }, async ({ page }) => {
     const locations = morphologyLocations(page);
 
     await openEditor(page);
@@ -133,7 +130,7 @@ test.describe('Synaptome build', () => {
     await expect(locations.offset(0)).toHaveValue('0.00');
   });
 
-  test('A synapse group keeps its last location', { tag: PRIVATE_SPENDS }, async ({ page }) => {
+  test('A synapse group keeps its last location', { tag: CREDITS }, async ({ page }) => {
     const locations = morphologyLocations(page);
 
     await openEditor(page);
@@ -146,11 +143,8 @@ test.describe('Synaptome build', () => {
     await expect(locations.remove(0)).toHaveCount(0);
   });
 
-  test(
-    'Look at the morphology as a dendrogram and back',
-    { tag: PRIVATE_SPENDS },
-    async ({ page }) => {
-      const viewer = morphologyViewer(page);
+  test('Look at the morphology as a dendrogram and back', { tag: CREDITS }, async ({ page }) => {
+    const viewer = morphologyViewer(page);
 
       await openEditor(page);
       await expect(viewer.scene).toBeVisible();
@@ -169,7 +163,7 @@ test.describe('Synaptome build', () => {
     }
   );
 
-  test('Turn the axon on and off', { tag: PRIVATE_SPENDS }, async ({ page }) => {
+  test('Turn the axon on and off', { tag: CREDITS }, async ({ page }) => {
     const viewer = morphologyViewer(page);
 
     await openEditor(page);
@@ -189,7 +183,7 @@ test.describe('Synaptome build', () => {
     await expect(viewer.toggle.axons).not.toBeChecked();
   });
 
-  test('Add a zoom slider to the viewer', { tag: PRIVATE_SPENDS }, async ({ page }) => {
+  test('Add a zoom slider to the viewer', { tag: CREDITS }, async ({ page }) => {
     const viewer = morphologyViewer(page);
 
     await openEditor(page);
@@ -213,7 +207,7 @@ test.describe('Synaptome build', () => {
 
   test(
     'The viewer opens with a scale bar and a solid neuron',
-    { tag: PRIVATE_SPENDS },
+    { tag: CREDITS },
     async ({ page }) => {
       const viewer = morphologyViewer(page);
 

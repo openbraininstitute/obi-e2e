@@ -92,8 +92,15 @@ every time. A workflow says where it runs in its fixture's `env` list instead.
 Public pages carry `@public` and run signed out, because that is what a visitor
 actually sees. Checking them while signed in would test a different page.
 
-Tags are written once in `fixtures/tags.ts` and imported, so a typo cannot
-silently stop a test from running.
+Each test says who is signed in. The `User:` line does this in the scenario, and
+a tag does it in the spec.
+
+| `User:`         | Constant        | Signed in as                                   |
+| --------------- | --------------- | ---------------------------------------------- |
+| `visitor`       | `VISITOR`       | nobody                                         |
+| `authenticated` | `AUTHENTICATED` | the primary user, in the run's own project     |
+| `credits`       | `CREDITS`       | the same, and it launches something that costs |
+| `onboarding`    | `ONBOARDING`    | the second user, who owns nothing              |
 
 ```ts
 import { PRIVATE_READONLY } from '@fixtures/tags';
@@ -103,11 +110,42 @@ test('opens the Simulate workflows', { tag: PRIVATE_READONLY }, async ({ page })
 });
 ```
 
-| Constant                                                     | Tags                      |
-| ------------------------------------------------------------ | ------------------------- |
-| `PUBLIC`, `PRIVATE`, `ONBOARDING`                            | the context on its own    |
-| `PUBLIC_READONLY`, `PRIVATE_READONLY`, `ONBOARDING_READONLY` | context plus `@readonly`  |
-| `PRIVATE_SPENDS`                                             | `@private` plus `@spends` |
+Each constant is a list of labels, and Playwright uses them to pick a project.
+`CREDITS` is `['@private', '@credits']`: the same user as `AUTHENTICATED`, but it
+waits for a funded project.
+
+**A test with no tag never runs, and nothing warns you.** That is why `casebook`
+treats a missing `User:` as an error. Full rules:
+[docs/scenario-tags.md](../docs/scenario-tags.md).
+
+## Which deployment
+
+Every test runs on staging **and** production. Add `@staging` or `@production`
+only when a test truly cannot run on the other one.
+
+A workflow says nothing about this. Its seed does, in an `env` list.
+
+## Skipping what a deployment does not have
+
+A workflow can be missing from one deployment: behind a feature flag, or newer
+than the build under test. The test skips and says why, because a red suite
+should mean the application is broken.
+
+A workflow scenario skips in two places:
+
+```ts
+// the whole file, when the seed says this deployment does not offer it
+test.skip(!runsOnThisDeployment(fixture), notDeployedHere(fixture));
+
+// one test, when the project holds nothing to work from
+const missing = await chooseEntities(page, fixture.selection);
+test.skip(missing !== null, missing ?? '');
+```
+
+The reason reaches the report, so a skipped run still says what was missing.
+Never skip to hide a real failure.
+
+## Every listing starts from all species
 
 A scenario that should hold in more than one context carries more than one tag,
 or extracts its steps into a function that each tagged test calls.

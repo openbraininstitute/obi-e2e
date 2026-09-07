@@ -3,7 +3,7 @@ import { scanConfigWords } from '@fixtures/scan-config/activities';
 import { campaignTags, campaignTimeout, runCampaign } from '@fixtures/steps/campaign';
 import { enableFeature } from '@fixtures/steps/feature-flags';
 import { openWorkflowsHub, startWorkflow } from '@fixtures/steps/workflows';
-import { PRIVATE_SPENDS } from '@fixtures/tags';
+import { CREDITS } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { scanConfigEditor } from '@locators/scan-config';
 import type { Page } from '@playwright/test';
@@ -34,11 +34,8 @@ test.describe('Intracellular e-feature extraction', () => {
     await openWorkflowsHub(page, workspace);
   });
 
-  test(
-    'The form will not launch until it is complete',
-    { tag: PRIVATE_SPENDS },
-    async ({ page }) => {
-      await openEditor(page);
+  test('The form will not launch until it is complete', { tag: CREDITS }, async ({ page }) => {
+    await openEditor(page);
 
       await expect(scanConfigEditor(page).submit).toHaveText(words.generate);
       await expect(scanConfigEditor(page).submit).toBeDisabled();

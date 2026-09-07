@@ -213,11 +213,11 @@ bun run casebook run scenarios/workflows/build-synaptome --headed  # flags go on
 than inventing structure:
 
 ```ts
-import { PRIVATE_SPENDS } from '@fixtures/tags';
+import { CREDITS } from '@fixtures/tags';
 import { test } from '@fixtures/test';
 
 test.describe('Synaptome build', () => {
-  test.fixme('The form will not launch until it is complete', { tag: PRIVATE_SPENDS }, async () => {
+  test.fixme('The form will not launch until it is complete', { tag: CREDITS }, async () => {
     // Precondition: Inside my project, on the Workflows page
     // Step: Start the "Build" workflow for "Synaptome"
     // Step: Choose the ME-model the seed names
@@ -236,7 +236,7 @@ the loop this repo already writes. It reads the `seed.json` beside the spec:
 
 ```ts
   for (const configuration of loadSeed(import.meta.dir).cases) {
-    test.fixme(`Generate a build campaign: ${configuration.name}`, { tag: PRIVATE_SPENDS }, async () => {
+    test.fixme(`Generate a build campaign: ${configuration.name}`, { tag: CREDITS }, async () => {
 ```
 
 Run it again after the scenario changes. It reads the spec with oxc and:
