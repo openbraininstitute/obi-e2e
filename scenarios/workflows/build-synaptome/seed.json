@@ -11,6 +11,9 @@
     "mode": "single",
     "entities": ["MEM__jy180314_B_idA__dNAD_ltb_VPM_TC"]
   },
+  "requires": {
+    "featureFlag": "build_synaptome_campaign"
+  },
   "cases": [
     {
       "name": "one excitatory synapse group",

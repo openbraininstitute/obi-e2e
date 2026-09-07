@@ -3,6 +3,7 @@ import { scanConfigWords } from '@fixtures/scan-config/activities';
 import { addLocationsFromViewer, ScanConfigDriver } from '@fixtures/scan-config/driver';
 import { campaignTags, campaignTimeout, runCampaign } from '@fixtures/steps/campaign';
 import { pretendNoCredits } from '@fixtures/steps/credits';
+import { enableFeature } from '@fixtures/steps/feature-flags';
 import { chooseEntities, openWorkflowsHub, startWorkflow } from '@fixtures/steps/workflows';
 import { PRIVATE_SPENDS } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
@@ -41,7 +42,11 @@ async function addExplicitLocations(page: Page): Promise<void> {
 }
 
 test.describe('Synaptome build', () => {
-  test.beforeEach(async ({ page, workspace }) => {
+  /* The flag goes on before the first load: the hub draws the card disabled otherwise. */
+  test.beforeEach(async ({ page, context, workspace, baseURL }) => {
+    const flag = fixture.requires?.featureFlag;
+    if (flag && baseURL) await enableFeature(context, flag, baseURL);
+
     await openWorkflowsHub(page, workspace);
   });
 
