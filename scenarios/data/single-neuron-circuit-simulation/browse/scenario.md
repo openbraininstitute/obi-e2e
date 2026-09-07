@@ -2,7 +2,7 @@
 
 The Synaptome listing, under the simulations section of the Data page.
 
-User: lab member
+User: authenticated
 
 ## See the Synaptome table
 

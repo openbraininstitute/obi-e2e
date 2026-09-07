@@ -135,7 +135,7 @@ export async function checkCasebook(
     if (user === undefined) {
       error('no-user', testCase.line, 'This case does not say who runs it.', {
         expected: `User: ${USER_VALUES.slice(0, 3).join(' | ')} …`,
-        fix: 'write "User: lab member" under the file title, or under this case',
+        fix: 'write "User: authenticated" under the file title, or under this case',
         why: 'a case with no User never runs, and nothing else warns you',
       });
     }
@@ -238,18 +238,14 @@ export async function checkCasebook(
     for (const item of [...actions, ...results]) checkItemText(item, warn);
 
     for (const item of actions) {
-      if (
-        LAUNCHES.test(item.text) &&
-        userValue !== null &&
-        !userValue.includes('spending credits')
-      ) {
+      if (LAUNCHES.test(item.text) && userValue !== null && userValue !== 'credits') {
         warn(
           'launch-without-credits',
           item.line,
-          'This step launches something, but the User is not spending credits.',
+          'This step launches something, but the User is not the one that spends credits.',
           {
             found: item.text,
-            fix: `write "User: ${userValue.split(',')[0]?.trim() ?? 'lab member'}, spending credits"`,
+            fix: 'write "User: credits"',
             why: 'otherwise the test runs before the credit check, and fails when the lab is empty',
           }
         );
@@ -422,7 +418,7 @@ function checkFields(fields: Field[], report: Report): void {
 }
 
 function nearestUser(value: string): string {
-  let best = USER_VALUES[0] ?? 'lab member';
+  let best = USER_VALUES[0] ?? 'authenticated';
   let bestScore = Number.POSITIVE_INFINITY;
   for (const known of USER_VALUES) {
     const score = distance(value, known);

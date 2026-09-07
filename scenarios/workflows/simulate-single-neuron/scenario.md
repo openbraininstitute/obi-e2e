@@ -11,7 +11,7 @@ deployments the workflow runs on, so no line here does.
 An ME-model campaign has no cost estimator behind it, so launching starts the
 simulation straight away rather than asking what it will cost first.
 
-User: lab member, spending credits
+User: credits
 Seed: seed.json
 
 ## The form will not launch until it is complete

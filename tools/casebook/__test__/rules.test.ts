@@ -55,27 +55,25 @@ describe('checkCasebook', () => {
   });
 
   test('User is read loosely and compared strictly', async () => {
-    expect(normalizeUser('  Lab  Member ,  Spending Credits ')).toBe(
-      'lab member, spending credits'
-    );
+    expect(normalizeUser('  Credits  ')).toBe('credits');
 
     const found = await check(
-      '# T\n\nUser: Lab Member, spending credits\n\n## C\n\nSteps:\n1. Launch it\n\nExpected:\n- Done "x"\n'
+      '# T\n\nUser: Credits\n\n## C\n\nSteps:\n1. Launch it\n\nExpected:\n- Done "x"\n'
     );
     expect(found).toEqual([]);
   });
 
   test('a bad User suggests the nearest good one', async () => {
     const found = await check(
-      '# T\n\nUser: lab memver\n\n## C\n\nSteps:\n1. Go\n\nExpected:\n- Done "x"\n'
+      '# T\n\nUser: authenticted\n\n## C\n\nSteps:\n1. Go\n\nExpected:\n- Done "x"\n'
     );
 
-    expect(found[0]?.fix).toBe('write "User: lab member"');
+    expect(found[0]?.fix).toBe('write "User: authenticated"');
   });
 
-  test('a launch under a user who is not spending credits is flagged', async () => {
+  test('a launch under a user who does not spend credits is flagged', async () => {
     const found = await check(
-      '# T\n\nUser: lab member\n\n## C\n\nSteps:\n1. Press "Launch builds"\n\nExpected:\n- Done "x"\n'
+      '# T\n\nUser: authenticated\n\n## C\n\nSteps:\n1. Press "Launch builds"\n\nExpected:\n- Done "x"\n'
     );
 
     expect(found).toEqual([
@@ -83,7 +81,7 @@ describe('checkCasebook', () => {
         rule: 'launch-without-credits',
         severity: 'warning',
         line: 8,
-        fix: 'write "User: lab member, spending credits"',
+        fix: 'write "User: credits"',
       }),
     ]);
   });

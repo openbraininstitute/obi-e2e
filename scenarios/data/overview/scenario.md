@@ -3,7 +3,7 @@
 The Data page inside a project: the scopes, the sections, and the data types
 each section holds.
 
-User: lab member
+User: authenticated
 
 ## See the experimental data types
 

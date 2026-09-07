@@ -1,5 +1,5 @@
 import { routes } from '@fixtures/routes';
-import { PRIVATE_READONLY } from '@fixtures/tags';
+import { AUTHENTICATED } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { dataPage } from '@locators/data';
 
@@ -11,7 +11,7 @@ test.describe('Data page', () => {
     await expect(dataPage(page).typeCounter('cell_morphology')).toBeVisible();
   });
 
-  test('See the experimental data types', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('See the experimental data types', { tag: AUTHENTICATED }, async ({ page }) => {
     const data = dataPage(page);
 
     await expect(data.layout).toBeVisible();
@@ -26,7 +26,7 @@ test.describe('Data page', () => {
     await expect(data.typeCounter('cell_morphology')).toContainText(/\d/);
   });
 
-  test('Switch to the model data types', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('Switch to the model data types', { tag: AUTHENTICATED }, async ({ page }) => {
     const data = dataPage(page);
 
     await data.section('models').click();
@@ -35,7 +35,7 @@ test.describe('Data page', () => {
     await expect(data.dataType(/^Morphology/)).toBeHidden();
   });
 
-  test("Switch to my project's data", { tag: PRIVATE_READONLY }, async ({ page, workspace }) => {
+  test("Switch to my project's data", { tag: AUTHENTICATED }, async ({ page, workspace }) => {
     const data = dataPage(page);
 
     await data.scope.project.click();

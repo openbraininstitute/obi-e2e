@@ -2,7 +2,7 @@
 
 The Single cell electrophysiology listing, under the experimental section of the Data page.
 
-User: lab member
+User: authenticated
 
 ## See the Single cell electrophysiology table
 

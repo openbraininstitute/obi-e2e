@@ -2,7 +2,7 @@ import { checkFilter } from '@fixtures/checks/filter';
 import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
 import { routes } from '@fixtures/routes';
 import { toggleCount } from '@fixtures/steps/listing-columns';
-import { PRIVATE_READONLY } from '@fixtures/tags';
+import { AUTHENTICATED } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { WIDE_VIEWPORT } from '@fixtures/viewport';
 import { entityListing } from '@locators/listing';
@@ -63,7 +63,7 @@ test.describe('Synapse per connection listing', () => {
     await expect(entityListing(page).table).toBeVisible();
   });
 
-  test('See the Synapse per connection table', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('See the Synapse per connection table', { tag: AUTHENTICATED }, async ({ page }) => {
     const listing = entityListing(page);
 
     for (const column of COLUMNS) {
@@ -73,7 +73,7 @@ test.describe('Synapse per connection listing', () => {
 
   test(
     'The Synapse per connection table offers no columns beyond these',
-    { tag: PRIVATE_READONLY },
+    { tag: AUTHENTICATED },
     async ({ page }) => {
       const listing = entityListing(page);
 
@@ -93,7 +93,7 @@ test.describe('Synapse per connection listing', () => {
 
   test(
     'Add a hidden column to the Synapse per connection table',
-    { tag: PRIVATE_READONLY },
+    { tag: AUTHENTICATED },
     async ({ page }) => {
       const listing = entityListing(page);
 
@@ -117,14 +117,14 @@ test.describe('Synapse per connection listing', () => {
     }
   );
 
-  test('See the Synapse per connection results', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('See the Synapse per connection results', { tag: AUTHENTICATED }, async ({ page }) => {
     const listing = entityListing(page);
 
     await expect(listing.resultCount).toBeVisible();
     await expect(listing.cells.first()).toBeVisible();
   });
 
-  test('Search the Synapse per connection listing', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('Search the Synapse per connection listing', { tag: AUTHENTICATED }, async ({ page }) => {
     const listing = entityListing(page);
     await expect(listing.cells.first()).toBeVisible();
     const before = await listing.resultCount.innerText();
@@ -138,7 +138,7 @@ test.describe('Synapse per connection listing', () => {
 
   test(
     'Every Synapse per connection filter narrows the listing',
-    { tag: PRIVATE_READONLY },
+    { tag: AUTHENTICATED },
     async ({ page }) => {
       test.slow();
       await expect(entityListing(page).table).toBeVisible();

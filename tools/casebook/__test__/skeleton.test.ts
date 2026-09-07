@@ -6,7 +6,7 @@ import { scanSpec } from '../validator/spec-scan';
 
 const SCENARIO = `# Viewer
 
-User: lab member
+User: authenticated
 
 ## Turn the axon on and off
 
@@ -18,7 +18,7 @@ Expected:
 
 ## Add a zoom slider
 
-User: lab member, spending credits
+User: credits
 
 Precondition:
 1. On the viewer
@@ -41,7 +41,7 @@ describe('skeleton', () => {
     expect(text).toContain("import { test } from '@fixtures/test';");
     expect(text).toContain("test.describe('Viewer', () => {");
     expect(text).toContain(
-      "test.fixme('Turn the axon on and off', { tag: PRIVATE_READONLY }, async () => {"
+      "test.fixme('Turn the axon on and off', { tag: AUTHENTICATED }, async () => {"
     );
     expect(text).toContain('    // Step: Open the viewer settings');
     expect(text).toContain('    // Expect: The axon toggle is off');
@@ -61,11 +61,11 @@ describe('skeleton', () => {
   });
 
   test('an existing spec keeps its tests and gains only the missing case', () => {
-    const existing = `import { PRIVATE_READONLY } from '@fixtures/tags';
+    const existing = `import { AUTHENTICATED } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 
 test.describe('Viewer', () => {
-  test('Turn the axon on and off', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('Turn the axon on and off', { tag: AUTHENTICATED }, async ({ page }) => {
     await expect(page).toBeVisible();
   });
 });
@@ -135,7 +135,7 @@ test.describe('Viewer', () => {
 
 const WORKFLOW = `# Synaptome build
 
-User: lab member, spending credits
+User: credits
 Seed: build-synaptome.json
 
 ## The form will not launch until it is complete
@@ -205,7 +205,7 @@ test.describe('Synaptome build', () => {
 
 describe('scanSpec', () => {
   test('reads describes, test titles of every kind, and the tag import', () => {
-    const spec = `import { PRIVATE, PUBLIC } from '@fixtures/tags';
+    const spec = `import { AUTHENTICATED, VISITOR } from '@fixtures/tags';
 test.describe.configure({ mode: 'serial' });
 test.describe('Group', () => {
   test('a', async () => {});
@@ -225,7 +225,7 @@ test.describe('Group', () => {
       { title: 'c', fixme: true },
       { title: 'd', fixme: false },
     ]);
-    expect(scan.imports['@fixtures/tags']?.names).toEqual(['PRIVATE', 'PUBLIC']);
+    expect(scan.imports['@fixtures/tags']?.names).toEqual(['AUTHENTICATED', 'VISITOR']);
   });
 
   test('a spec that does not parse says so', () => {

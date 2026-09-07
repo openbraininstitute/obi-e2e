@@ -1,7 +1,7 @@
 import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
 import { routes } from '@fixtures/routes';
 import { showAllSpecies } from '@fixtures/steps/choose-species';
-import { PRIVATE_READONLY } from '@fixtures/tags';
+import { AUTHENTICATED } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { WIDE_VIEWPORT } from '@fixtures/viewport';
 import { dataView } from '@locators/data-view';
@@ -36,7 +36,7 @@ test.describe('Single neuron (legacy) details', () => {
 
   test(
     'Open one Single neuron (legacy) beside the listing',
-    { tag: PRIVATE_READONLY },
+    { tag: AUTHENTICATED },
     async ({ page }) => {
       const view = dataView(page);
 
@@ -48,7 +48,7 @@ test.describe('Single neuron (legacy) details', () => {
     }
   );
 
-  test('Open the full Single neuron (legacy) page', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('Open the full Single neuron (legacy) page', { tag: AUTHENTICATED }, async ({ page }) => {
     test.slow();
     const view = dataView(page);
 

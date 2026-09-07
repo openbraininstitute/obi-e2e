@@ -1,7 +1,7 @@
 import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
 import { routes } from '@fixtures/routes';
 import { showAllSpecies } from '@fixtures/steps/choose-species';
-import { PRIVATE_READONLY } from '@fixtures/tags';
+import { AUTHENTICATED } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { WIDE_VIEWPORT } from '@fixtures/viewport';
 import { dataView } from '@locators/data-view';
@@ -27,21 +27,17 @@ test.describe('Neuron density details', () => {
     await expect(dataView(page).viewDetails).toBeVisible();
   });
 
-  test(
-    'Open one Neuron density beside the listing',
-    { tag: PRIVATE_READONLY },
-    async ({ page }) => {
-      const view = dataView(page);
+  test('Open one Neuron density beside the listing', { tag: AUTHENTICATED }, async ({ page }) => {
+    const view = dataView(page);
 
-      await expect(view.miniName).toBeVisible();
-      for (const property of PROPERTIES) {
-        await expect(view.miniProperty(property)).toBeVisible();
-      }
-      await expect(view.miniDownload).toBeVisible();
+    await expect(view.miniName).toBeVisible();
+    for (const property of PROPERTIES) {
+      await expect(view.miniProperty(property)).toBeVisible();
     }
-  );
+    await expect(view.miniDownload).toBeVisible();
+  });
 
-  test('Open the full Neuron density page', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('Open the full Neuron density page', { tag: AUTHENTICATED }, async ({ page }) => {
     test.slow();
     const view = dataView(page);
 

@@ -1,6 +1,6 @@
 # Two
 
-User: lab member
+User: authenticated
 
 ## It checks the second thing
 

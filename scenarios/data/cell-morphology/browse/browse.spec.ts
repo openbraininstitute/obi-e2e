@@ -4,7 +4,7 @@ import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-t
 import { routes } from '@fixtures/routes';
 import { showAllSpecies } from '@fixtures/steps/choose-species';
 import { toggleCount } from '@fixtures/steps/listing-columns';
-import { PRIVATE_READONLY } from '@fixtures/tags';
+import { AUTHENTICATED } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { WIDE_VIEWPORT } from '@fixtures/viewport';
 import { entityListing } from '@locators/listing';
@@ -62,7 +62,7 @@ test.describe('Morphology listing', () => {
     await showAllSpecies(page);
   });
 
-  test('See the Morphology table', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('See the Morphology table', { tag: AUTHENTICATED }, async ({ page }) => {
     const listing = entityListing(page);
 
     for (const column of COLUMNS) {
@@ -72,7 +72,7 @@ test.describe('Morphology listing', () => {
 
   test(
     'The Morphology table offers no columns beyond these',
-    { tag: PRIVATE_READONLY },
+    { tag: AUTHENTICATED },
     async ({ page }) => {
       const listing = entityListing(page);
 
@@ -90,40 +90,36 @@ test.describe('Morphology listing', () => {
     }
   );
 
-  test(
-    'Add a hidden column to the Morphology table',
-    { tag: PRIVATE_READONLY },
-    async ({ page }) => {
-      const listing = entityListing(page);
+  test('Add a hidden column to the Morphology table', { tag: AUTHENTICATED }, async ({ page }) => {
+    const listing = entityListing(page);
 
-      await listing.columns.click();
-      await expect(listing.columnsMenu).toBeVisible();
+    await listing.columns.click();
+    await expect(listing.columnsMenu).toBeVisible();
 
-      for (const column of SHOWN_COLUMNS.slice(2)) {
-        await listing.columnToggle(column).click();
-      }
-
-      for (const column of HIDDEN_COLUMNS) {
-        const toggle = listing.columnToggle(column);
-
-        await toggle.click();
-        await expect(toggle).toBeChecked();
-        await expect(listing.columnHeader(column)).toBeVisible();
-
-        await toggle.click();
-        await expect(toggle).not.toBeChecked();
-      }
+    for (const column of SHOWN_COLUMNS.slice(2)) {
+      await listing.columnToggle(column).click();
     }
-  );
 
-  test('See the Morphology results', { tag: PRIVATE_READONLY }, async ({ page }) => {
+    for (const column of HIDDEN_COLUMNS) {
+      const toggle = listing.columnToggle(column);
+
+      await toggle.click();
+      await expect(toggle).toBeChecked();
+      await expect(listing.columnHeader(column)).toBeVisible();
+
+      await toggle.click();
+      await expect(toggle).not.toBeChecked();
+    }
+  });
+
+  test('See the Morphology results', { tag: AUTHENTICATED }, async ({ page }) => {
     const listing = entityListing(page);
 
     await expect(listing.resultCount).toBeVisible();
     await expect(listing.cells.first()).toBeVisible();
   });
 
-  test('Search the Morphology listing', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('Search the Morphology listing', { tag: AUTHENTICATED }, async ({ page }) => {
     const listing = entityListing(page);
     await expect(listing.cells.first()).toBeVisible();
     const before = await listing.resultCount.innerText();
@@ -135,20 +131,16 @@ test.describe('Morphology listing', () => {
     await expect(listing.resultCount).toHaveText(before);
   });
 
-  test(
-    'Every Morphology filter narrows the listing',
-    { tag: PRIVATE_READONLY },
-    async ({ page }) => {
-      test.slow();
-      await expect(entityListing(page).table).toBeVisible();
+  test('Every Morphology filter narrows the listing', { tag: AUTHENTICATED }, async ({ page }) => {
+    test.slow();
+    await expect(entityListing(page).table).toBeVisible();
 
-      for (const column of FILTERS) {
-        await test.step(column, () => checkFilter(page, column));
-      }
+    for (const column of FILTERS) {
+      await test.step(column, () => checkFilter(page, column));
     }
-  );
+  });
 
-  test('Page through the Morphology listing', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('Page through the Morphology listing', { tag: AUTHENTICATED }, async ({ page }) => {
     await checkPagination(page);
   });
 });

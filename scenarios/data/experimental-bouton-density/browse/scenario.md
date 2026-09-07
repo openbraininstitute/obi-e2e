@@ -2,7 +2,7 @@
 
 The Bouton density listing, under the experimental section of the Data page.
 
-User: lab member
+User: authenticated
 
 ## See the Bouton density table
 

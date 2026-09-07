@@ -32,10 +32,9 @@ test.describe('EM mesh skeletonization', () => {
   test('The form will not launch until it is complete', { tag: CREDITS }, async ({ page }) => {
     await openEditor(page);
 
-      await expect(scanConfigEditor(page).submit).toHaveText(words.generate);
-      await expect(scanConfigEditor(page).submit).toBeDisabled();
-    }
-  );
+    await expect(scanConfigEditor(page).submit).toHaveText(words.generate);
+    await expect(scanConfigEditor(page).submit).toBeDisabled();
+  });
 
   for (const configuration of fixture.cases) {
     test(

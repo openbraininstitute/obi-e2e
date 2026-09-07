@@ -2,7 +2,7 @@
 
 The Ion channel listing, under the simulations section of the Data page.
 
-User: lab member
+User: authenticated
 
 ## See the Ion channel table
 

@@ -2,9 +2,11 @@
 
 import type { DeploymentEnv } from './run/env';
 
-export const PUBLIC = ['@public'];
-export const PRIVATE = ['@private'];
-export const ONBOARDING = ['@onboarding'];
+/** Signed out: the pages anyone reaches without an account. */
+export const VISITOR = ['@public'];
+
+/** Signed in as the primary user, inside the project the run made for itself. */
+export const AUTHENTICATED = ['@private'];
 
 /**
  * Signed in, and it launches something the project pays for.

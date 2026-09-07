@@ -14,7 +14,7 @@ on:
         options: [staging, production]
         default: staging
       grep:
-        description: Only run tests matching this tag or title (e.g. @readonly)
+        description: Only run tests matching this tag or title (e.g. @credits)
         type: string
         default: ''
   repository_dispatch:

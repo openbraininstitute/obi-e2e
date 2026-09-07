@@ -1,6 +1,6 @@
 # One
 
-User: lab member
+User: authenticated
 Seed: seed.json
 
 ## It checks the first thing

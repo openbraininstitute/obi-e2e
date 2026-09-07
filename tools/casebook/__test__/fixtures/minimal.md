@@ -1,6 +1,6 @@
 # Morphology listing
 
-User: lab member
+User: authenticated
 
 ## The close button keeps my search
 

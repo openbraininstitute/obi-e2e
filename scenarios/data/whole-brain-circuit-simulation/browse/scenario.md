@@ -2,7 +2,7 @@
 
 The Whole brain circuit listing, under the simulations section of the Data page.
 
-User: lab member
+User: authenticated
 
 ## See the Whole brain circuit table
 

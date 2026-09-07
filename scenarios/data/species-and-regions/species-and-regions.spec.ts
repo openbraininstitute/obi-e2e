@@ -21,7 +21,7 @@ test.describe('Species and brain regions', () => {
     for (const species of SPECIES_WITH_ATLAS) {
       test(
         `Choose a species with an atlas: ${species}`,
-        { tag: PRIVATE_READONLY },
+        { tag: AUTHENTICATED },
         async ({ page }) => {
           const controls = atlas(page);
           const counter = dataPage(page).typeCounter('cell_morphology');
@@ -39,7 +39,7 @@ test.describe('Species and brain regions', () => {
     for (const species of SPECIES_WITHOUT_ATLAS) {
       test(
         `Choose a species without an atlas: ${species}`,
-        { tag: PRIVATE_READONLY },
+        { tag: AUTHENTICATED },
         async ({ page }) => {
           const controls = atlas(page);
 
@@ -79,7 +79,7 @@ test.describe('Species and brain regions', () => {
       await expect.poll(() => listing.resultCount.innerText()).not.toBe(before);
     });
 
-    test('Change the brain region on a listing', { tag: PRIVATE_READONLY }, async ({ page }) => {
+    test('Change the brain region on a listing', { tag: AUTHENTICATED }, async ({ page }) => {
       const listing = entityListing(page);
       const controls = atlas(page);
 

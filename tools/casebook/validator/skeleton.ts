@@ -41,7 +41,7 @@ function tagFor(casebook: Casebook, testCase: Case): string {
     .toLowerCase()
     .replace(/\s+/g, ' ')
     .replace(/\s*,\s*/g, ', ');
-  return USERS[value] ?? 'PRIVATE_READONLY';
+  return USERS[value] ?? 'AUTHENTICATED';
 }
 
 function quote(text: string): string {

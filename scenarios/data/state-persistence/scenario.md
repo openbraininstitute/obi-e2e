@@ -6,7 +6,7 @@ on and the search box are kept for the tab. The column layout is kept for good.
 Leaving a listing to look at one row and coming back is the interesting case,
 because the two ways back behave differently on purpose.
 
-User: lab member
+User: authenticated
 
 ## The close button brings the listing back as it was
 

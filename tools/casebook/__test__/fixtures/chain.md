@@ -1,6 +1,6 @@
 # Chains
 
-User: lab member
+User: authenticated
 
 ## Second
 

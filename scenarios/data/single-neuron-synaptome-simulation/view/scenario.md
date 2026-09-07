@@ -9,7 +9,7 @@ No Synaptome (legacy) exists on either deployment yet, so both cases skip until 
 This is one of the legacy simulations, which does not use the scan-configuration
 editor, so nothing is claimed here about what its page holds beyond opening.
 
-User: lab member
+User: authenticated
 
 ## Open one Synaptome (legacy) beside the listing
 

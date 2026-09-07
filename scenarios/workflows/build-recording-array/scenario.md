@@ -17,7 +17,7 @@ The seed also says which deployments the workflow runs on, so no line here does.
 Launching prices the build first: the estimate is shown and has to be confirmed
 before anything starts.
 
-User: lab member, spending credits
+User: credits
 Seed: seed.json
 
 ## Generate a build campaign and launch it

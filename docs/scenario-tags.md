@@ -5,16 +5,16 @@ Every test needs to know one thing before it starts: **who is signed in.**
 You say it once, in plain English, at the top of the scenario:
 
 ```text
-User: lab member
+User: authenticated
 ```
 
 The spec then carries the matching constant, and that is what the test runner
 reads:
 
 ```ts
-import { PRIVATE_READONLY } from '@fixtures/tags';
+import { AUTHENTICATED } from '@fixtures/tags';
 
-test('See the Morphology table', { tag: PRIVATE_READONLY }, async ({ page }) => {
+test('See the Morphology table', { tag: AUTHENTICATED }, async ({ page }) => {
 ```
 
 `casebook skeleton` writes that constant for you from the `User:` line, so the
@@ -35,14 +35,13 @@ you, which is why `casebook` treats a missing `User:` as an error.
 ## How to choose
 
 1. Can a signed-out visitor see this page? → **visitor**
-2. Does it create a lab, a project or an invite? → **new user**
-3. Otherwise → **lab member**
+2. Is it signing up, or the pages a brand new user meets? → **onboarding**
+3. Does it launch something the project pays for? → **credits**
+4. Otherwise → **authenticated**
 
-Then:
-
-4. Does it only look, and change nothing? → leave it as it is.
-5. Does it change data? → add **, making changes**
-6. Does it launch something that costs credits? → **, spending credits**
+Whether a test only looks or also writes is not part of this. It said nothing
+about which project ran the test, and a label that has to be kept true by hand
+goes stale the first time someone adds a click.
 
 ## What the constants become
 
@@ -54,10 +53,13 @@ A constant is just a list of `@` labels. `CREDITS` is
 | `@public`     | run signed out                                            |
 | `@private`    | run as the primary user                                   |
 | `@onboarding` | run as the onboarding user                                |
-| `@readonly`   | the test creates nothing and deletes nothing              |
-| `@spends`     | the test spends credits, so it waits for a funded project |
+| `@credits`    | the test spends credits, so it waits for a funded project |
 | `@staging`    | run on staging **only**                                   |
 | `@production` | run on production **only**                                |
+
+`@credits` is carried on top of `@private`: the same user, waiting for a funded
+project. The `private` project leaves those tests out and the `credits` project
+picks them up, so a lab with no money loses only the tests that need it.
 
 Playwright reserves none of these words. They mean something only because
 [playwright.config.ts](../playwright.config.ts) turns each one into a project.
@@ -81,8 +83,8 @@ the configuration. See [workflow-tests.md](workflow-tests.md).
 ## Running a subset
 
 ```bash
-bun run test --grep @readonly          # only the tests that change nothing
-bun run test --grep-invert @onboarding # everything but the onboarding user
+bun run test --grep @credits           # only the tests that spend
+bun run test --grep-invert @credits    # everything that does not
 bun run test scenarios/site            # a path, which never goes stale
 ```
 
@@ -94,10 +96,9 @@ E2E_BASE_URL=https://www.openbraininstitute.org bun run test
 
 ## Common mistakes
 
-| Mistake                           | What happens                                  |
-| --------------------------------- | --------------------------------------------- |
-| No `User:` line                   | `casebook` refuses the file                   |
-| A tag written without `@`         | Playwright refuses to start                   |
-| `@staging` added out of caution   | the test never guards production again        |
-| Missing `, spending credits`      | it runs before the credit check and fails     |
-| `@readonly` on a test that writes | the label lies, and the next reader trusts it |
+| Mistake                                       | What happens                              |
+| --------------------------------------------- | ----------------------------------------- |
+| No `User:` line                               | `casebook` refuses the file               |
+| A tag written without `@`                     | Playwright refuses to start               |
+| `@staging` added out of caution               | the test never guards production again    |
+| `User: authenticated` on a test that launches | it runs before the credit check and fails |

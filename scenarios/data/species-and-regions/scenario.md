@@ -9,7 +9,7 @@ there is nothing to navigate and choosing a region does nothing.
 The species picker is remembered for the user, not for the tab, so a test that
 changes it puts it back.
 
-User: lab member
+User: authenticated
 
 ## Choose a species with an atlas
 

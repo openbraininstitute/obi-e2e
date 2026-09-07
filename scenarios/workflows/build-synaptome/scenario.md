@@ -12,7 +12,7 @@ A build costs credits, so the project's balance decides whether it can run at
 all. Both outcomes are covered. Launching prices the build first: the estimate
 is shown and has to be confirmed before anything starts.
 
-User: lab member, spending credits
+User: credits
 Seed: seed.json
 
 ## The form will not launch until it is complete

@@ -1,6 +1,6 @@
 import { DATA_TYPES, type DataSectionName } from '@fixtures/data-types';
 import { routes } from '@fixtures/routes';
-import { PRIVATE_READONLY } from '@fixtures/tags';
+import { AUTHENTICATED } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { dataPage } from '@locators/data';
 
@@ -15,7 +15,7 @@ test.describe('Data types', () => {
   for (const section of Object.keys(DATA_TYPES) as DataSectionName[]) {
     test(
       `See the data types of each section: ${section}`,
-      { tag: PRIVATE_READONLY },
+      { tag: AUTHENTICATED },
       async ({ page }) => {
         const data = dataPage(page);
 

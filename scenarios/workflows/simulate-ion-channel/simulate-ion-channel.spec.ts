@@ -35,12 +35,11 @@ test.describe('Ion channel simulation', () => {
   test('The form will not launch until it is complete', { tag: CREDITS }, async ({ page }) => {
     await startWorkflow(page, fixture.activity, fixture.workflow);
 
-      await expect(page).toHaveURL(FORM_URL);
+    await expect(page).toHaveURL(FORM_URL);
 
-      await expect(scanConfigEditor(page).submit).toHaveText(words.generate);
-      await expect(scanConfigEditor(page).submit).toBeDisabled();
-    }
-  );
+    await expect(scanConfigEditor(page).submit).toHaveText(words.generate);
+    await expect(scanConfigEditor(page).submit).toBeDisabled();
+  });
 
   for (const configuration of fixture.cases) {
     test(

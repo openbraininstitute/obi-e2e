@@ -3,7 +3,7 @@
 The Synaptome build workflow, under Build on the Workflows page.
 obi-one describes the form; the seed fills it in.
 
-User: lab member, spending credits
+User: credits
 Seed: seed.json
 
 ## The form is not launchable until it is complete
@@ -52,7 +52,7 @@ Expected:
 ## Look at the morphology another way
 
 After: The form is not launchable until it is complete
-User: lab member
+User: authenticated
 
 Steps:
 1. Switch to the dendrogram
