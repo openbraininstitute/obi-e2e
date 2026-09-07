@@ -481,14 +481,17 @@ export const TEAMS_PAYLOAD_LIMIT = 25_000;
 export type Detail = 'full' | 'sections' | 'summary';
 
 export function buildCard(summary: Summary, detail: Detail = 'full', mentions = parseMentions()) {
-  const ok = summary.failed === 0 && summary.flaky === 0;
+  // A run that wrote no report has not passed; it has not reported.
+  const ok = !summary.noResults && summary.failed === 0 && summary.flaky === 0;
   const services = detail === 'summary' ? [] : (summary.services ?? []);
   const features = detail === 'summary' ? [] : (summary.features ?? []);
 
   const notice = creditNotice(summary.credits, summary.failed);
   const alert = notice && summary.credits?.problem ? mentionBlock(mentions) : null;
 
-  const outcome = OUTCOME[featureStatus(summary)];
+  const outcome = summary.noResults
+    ? ({ label: 'No results', style: 'Attention' } as const)
+    : OUTCOME[featureStatus(summary)];
   const chart = outcomeChart(summary);
 
   const body: unknown[] = [
