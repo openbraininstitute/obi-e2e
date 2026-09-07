@@ -66,7 +66,7 @@ Expected:
 - The simulations tab opens by itself
 - There are as many coordinates as the seed says
 - The first coordinate reads "created"
-- Its inputs are exactly: "circuit_config.json", "node_sets.json",
+- Its inputs are exactly: "Circuit directory", "node_sets.json",
   "obi_one_coordinate.json" and "simulation_config.json"
 - It has produced no outputs yet
 - The launch button reads "Launch simulations"

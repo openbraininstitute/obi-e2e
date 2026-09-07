@@ -122,7 +122,7 @@ Expected:
 - The coordinate leaves "created"
 - The coordinate reaches "done" (within 5 minutes)
 - Its inputs are exactly:
-  "Task configuration", "obi_one_coordinate.json" and "circuit_config.json"
+  "Task configuration", "obi_one_coordinate.json" and "Circuit directory"
 - Its outputs are exactly:
   "Task logs" and the synaptome named after the campaign
 
