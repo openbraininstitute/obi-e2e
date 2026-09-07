@@ -70,6 +70,8 @@ export type Summary = {
   services: ServiceSummary[];
   features: Feature[];
   credits?: CreditReport;
+  /** No report was written at all, so the zeros below mean "unknown", not "passed". */
+  noResults?: boolean;
 };
 
 const FAILED = new Set(['failed', 'timedOut', 'interrupted']);
@@ -312,9 +314,15 @@ export function creditNotice(credits: CreditReport | undefined, failed: number):
   return null;
 }
 
+/** A run that produced no report has not passed; it has not reported. */
+function headingIcon(summary: Summary): string {
+  if (summary.noResults) return '⚠️';
+  return summary.failed > 0 ? '❌' : '✅';
+}
+
 export function renderMarkdown(summary: Summary): string {
   const lines = [
-    `## ${summary.failed > 0 ? '❌' : '✅'} E2E — ${summary.environment}`,
+    `## ${headingIcon(summary)} E2E — ${summary.environment}`,
     '',
     `| Passed | Failed | Flaky | Skipped | Pass rate | Duration |`,
     `| --- | --- | --- | --- | --- | --- |`,
@@ -433,11 +441,45 @@ function refuseIfStale(report: Report): void {
   process.exit(1);
 }
 
+/**
+ * Says so when there is no report to summarise, rather than crashing on top of
+ * whatever went wrong.
+ *
+ * The step runs with `if: always()`, so it also runs when the run never got
+ * that far — a skipped test step, a killed job, a Playwright that gave up
+ * before its reporters. An unhandled ENOENT here then became the loudest error
+ * in the log and buried the failure that actually mattered. Exits clean: the
+ * step that failed upstream is what should fail the job.
+ *
+ * The summary itself is a real one built from an empty report, so the card and
+ * job-summary steps that read it need no special case.
+ */
+async function reportNothingRan(inputPath: string, outDir: string): Promise<void> {
+  const summary: Summary = {
+    ...buildSummary({} as Report, await loadServices(outDir), process.env),
+    noResults: true,
+  };
+  const note =
+    `\n> No results: \`${inputPath}\` was never written. Playwright writes it when a run ` +
+    'finishes, so the run did not get that far — look at the step that failed before this one.\n';
+  const markdown = `${renderMarkdown(summary)}\n${note}`;
+
+  await Bun.write(`${outDir}/summary.md`, `${markdown}\n`);
+  await Bun.write(`${outDir}/summary.json`, `${JSON.stringify(summary, null, 2)}\n`);
+
+  console.error(markdown);
+}
+
 async function main(): Promise<void> {
   const [inputPath, outDir = 'test-results'] = Bun.argv.slice(2);
   if (!inputPath) {
     console.error('usage: bun scripts/ci/summarize-results.ts <results.json> [outDir]');
     process.exit(2);
+  }
+
+  if (!(await Bun.file(inputPath).exists())) {
+    await reportNothingRan(inputPath, outDir);
+    return;
   }
 
   const report = (await Bun.file(inputPath).json()) as Report;

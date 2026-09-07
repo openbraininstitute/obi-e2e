@@ -8,6 +8,8 @@ import {
   featureStatus,
   formatDuration,
   passRate,
+  renderMarkdown,
+  type Summary,
 } from './summarize-results';
 
 const suites = [
@@ -152,5 +154,23 @@ describe('creditNotice', () => {
     );
     expect(notice).toContain('p-1');
     expect(notice).toContain('could not be deleted');
+  });
+});
+
+const empty = (): Summary => ({
+  ...buildSummary({} as never, [], { E2E_ENVIRONMENT: 'staging' } as never),
+  noResults: true,
+});
+
+describe('a run that wrote no report', () => {
+  test('does not read as a pass', () => {
+    const markdown = renderMarkdown(empty());
+    expect(markdown).toContain('⚠️');
+    expect(markdown).not.toContain('✅');
+  });
+
+  test('still reads as a pass when a real run reported no failures', () => {
+    const summary = { ...empty(), noResults: false };
+    expect(renderMarkdown(summary)).toContain('✅');
   });
 });
