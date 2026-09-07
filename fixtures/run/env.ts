@@ -238,7 +238,13 @@ const MEMORY_PER_WORKER_GB = 1.5;
 
 const MAX_WORKERS = 8;
 
-const MAX_WORKERS_AGAINST_A_LOCAL_SERVER = 4;
+/**
+ * A local server is a Next dev server: one process, compiling each route the
+ * first time a test asks for it. Four workers pull twenty listings through it
+ * at once and every page takes ten times as long, until `goto` gives up at its
+ * minute and assertions miss elements that were only slow. Two keeps it honest.
+ */
+const MAX_WORKERS_AGAINST_A_LOCAL_SERVER = 2;
 
 function servedLocally(): boolean {
   const host = URL.canParse(baseURL) ? new URL(baseURL).hostname : '';
