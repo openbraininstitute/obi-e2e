@@ -5,7 +5,7 @@ Opening one Single cell electrophysiology from its listing, under the experiment
 A row opens a small panel beside the listing. That panel has a way through to
 the full page, which is where the whole record lives.
 
-User: lab member
+User: authenticated
 
 ## Open one Single cell electrophysiology beside the listing
 

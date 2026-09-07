@@ -2,7 +2,7 @@ import { checkFilter } from '@fixtures/checks/filter';
 import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
 import { routes } from '@fixtures/routes';
 import { toggleCount } from '@fixtures/steps/listing-columns';
-import { PRIVATE_READONLY } from '@fixtures/tags';
+import { AUTHENTICATED } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { WIDE_VIEWPORT } from '@fixtures/viewport';
 import { entityListing } from '@locators/listing';
@@ -73,7 +73,7 @@ test.describe('Circuit listing', () => {
     await expect(entityListing(page).table).toBeVisible();
   });
 
-  test('See the Circuit table', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('See the Circuit table', { tag: AUTHENTICATED }, async ({ page }) => {
     const listing = entityListing(page);
 
     for (const column of COLUMNS) {
@@ -83,7 +83,7 @@ test.describe('Circuit listing', () => {
 
   test(
     'The Circuit table offers no columns beyond these',
-    { tag: PRIVATE_READONLY },
+    { tag: AUTHENTICATED },
     async ({ page }) => {
       const listing = entityListing(page);
 
@@ -101,7 +101,7 @@ test.describe('Circuit listing', () => {
     }
   );
 
-  test('Add a hidden column to the Circuit table', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('Add a hidden column to the Circuit table', { tag: AUTHENTICATED }, async ({ page }) => {
     const listing = entityListing(page);
 
     await listing.columns.click();
@@ -123,14 +123,14 @@ test.describe('Circuit listing', () => {
     }
   });
 
-  test('See the Circuit results', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('See the Circuit results', { tag: AUTHENTICATED }, async ({ page }) => {
     const listing = entityListing(page);
 
     await expect(listing.resultCount).toBeVisible();
     await expect(listing.cells.first()).toBeVisible();
   });
 
-  test('Search the Circuit listing', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('Search the Circuit listing', { tag: AUTHENTICATED }, async ({ page }) => {
     const listing = entityListing(page);
     await expect(listing.cells.first()).toBeVisible();
     const before = await listing.resultCount.innerText();
@@ -142,7 +142,7 @@ test.describe('Circuit listing', () => {
     await expect(listing.resultCount).toHaveText(before);
   });
 
-  test('Every Circuit filter narrows the listing', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('Every Circuit filter narrows the listing', { tag: AUTHENTICATED }, async ({ page }) => {
     test.slow();
     await expect(entityListing(page).table).toBeVisible();
 
@@ -151,22 +151,18 @@ test.describe('Circuit listing', () => {
     }
   });
 
-  test(
-    'Switch between the flat and hierarchy views',
-    { tag: PRIVATE_READONLY },
-    async ({ page }) => {
-      const listing = entityListing(page);
-      const subcircuits = listing.columnHeader('Subcircuits');
-      const lifecycle = listing.columnHeader('Lifecycle status');
+  test('Switch between the flat and hierarchy views', { tag: AUTHENTICATED }, async ({ page }) => {
+    const listing = entityListing(page);
+    const subcircuits = listing.columnHeader('Subcircuits');
+    const lifecycle = listing.columnHeader('Lifecycle status');
 
-      await expect(subcircuits).toBeVisible();
+    await expect(subcircuits).toBeVisible();
 
-      await listing.viewToggle.click();
-      await expect(subcircuits).toBeHidden();
-      await expect(lifecycle).toBeVisible();
+    await listing.viewToggle.click();
+    await expect(subcircuits).toBeHidden();
+    await expect(lifecycle).toBeVisible();
 
-      await listing.viewToggle.click();
-      await expect(subcircuits).toBeVisible();
-    }
-  );
+    await listing.viewToggle.click();
+    await expect(subcircuits).toBeVisible();
+  });
 });

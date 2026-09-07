@@ -45,7 +45,7 @@ A scenario is a title, one `User:` line, and one `## ` case per test:
 ```markdown
 # Morphology listing
 
-User: lab member
+User: authenticated
 
 ## The close button keeps my search
 
@@ -70,15 +70,12 @@ Three habits:
 
 `User:` says who is signed in:
 
-| `User:`                        | Who                                                 |
-| ------------------------------ | --------------------------------------------------- |
-| `visitor`                      | nobody, only looking                                |
-| `visitor, making changes`      | nobody, and the test changes something              |
-| `lab member`                   | the QA user, inside its lab, only looking           |
-| `lab member, making changes`   | same, and the test creates or edits data            |
-| `lab member, spending credits` | same, and the test launches a build or a run        |
-| `new user`                     | a user who owns nothing yet, only looking           |
-| `new user, making changes`     | same, and the test creates a lab, project or invite |
+| `User:`         | Who                                                     |
+| --------------- | ------------------------------------------------------- |
+| `visitor`       | nobody, signed out                                      |
+| `authenticated` | the QA user, inside the project the run made for itself |
+| `credits`       | same, and the test launches a build or a run            |
+| `onboarding`    | a user who owns nothing yet: signing up, and after      |
 
 Every test runs on both staging and production. A scenario that cannot says
 `Only on: staging` or `Only on: production`.
@@ -131,7 +128,7 @@ Failed` is a bug, not a test update.
 ```bash
 bun run test                          # everything, on staging
 bun run test scenarios/data           # one section, or one scenario folder
-bun run test --grep @readonly         # by tag
+bun run test --grep @credits          # by tag
 bun run test:headed                   # watch the browser
 bun run test:ui                       # Playwright UI mode
 bun run report                        # open the last HTML report

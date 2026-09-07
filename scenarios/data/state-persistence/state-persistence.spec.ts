@@ -2,7 +2,7 @@ import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-t
 import { routes } from '@fixtures/routes';
 import { showAllSpecies } from '@fixtures/steps/choose-species';
 import { setColumn } from '@fixtures/steps/listing-columns';
-import { PRIVATE_READONLY } from '@fixtures/tags';
+import { AUTHENTICATED } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { WIDE_VIEWPORT } from '@fixtures/viewport';
 import { dataView } from '@locators/data-view';
@@ -46,7 +46,7 @@ test.describe('What the listing remembers', () => {
 
   test(
     'The close button brings the listing back as it was',
-    { tag: PRIVATE_READONLY },
+    { tag: AUTHENTICATED },
     async ({ page }) => {
       const listing = entityListing(page);
       const filtered = await searchAndOpenOne(page);
@@ -59,7 +59,7 @@ test.describe('What the listing remembers', () => {
     }
   );
 
-  test('The breadcrumb starts the listing fresh', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('The breadcrumb starts the listing fresh', { tag: AUTHENTICATED }, async ({ page }) => {
     const listing = entityListing(page);
     await searchAndOpenOne(page);
 
@@ -72,7 +72,7 @@ test.describe('What the listing remembers', () => {
 
   test(
     'Leaving the section keeps the listing as it was',
-    { tag: PRIVATE_READONLY },
+    { tag: AUTHENTICATED },
     async ({ page, workspace }) => {
       const listing = entityListing(page);
 
@@ -88,7 +88,7 @@ test.describe('What the listing remembers', () => {
     }
   );
 
-  test('The column layout outlives a fresh start', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('The column layout outlives a fresh start', { tag: AUTHENTICATED }, async ({ page }) => {
     const listing = entityListing(page);
     const column = 'Contributors';
 

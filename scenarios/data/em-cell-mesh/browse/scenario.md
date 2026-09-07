@@ -2,7 +2,7 @@
 
 The EM mesh listing, under the experimental section of the Data page.
 
-User: lab member
+User: authenticated
 
 ## See the EM mesh table
 

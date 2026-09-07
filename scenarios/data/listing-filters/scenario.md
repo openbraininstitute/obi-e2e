@@ -3,7 +3,7 @@
 Searching and filtering on one listing. The Morphology listing stands in for
 them all, because every listing shares the same search box and filter panel.
 
-User: lab member
+User: authenticated
 
 ## Search narrows the results
 

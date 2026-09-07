@@ -2,7 +2,7 @@ Some prose above the title, which is only a warning.
 
 # Written loosely, and still readable
 
-User: lab member
+User: authenticated
 
 ## The close button keeps my search
 

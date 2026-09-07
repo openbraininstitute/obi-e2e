@@ -5,7 +5,7 @@ Opening one Ion channel model from its listing, under the models section.
 A row opens a small panel beside the listing. That panel has a way through to
 the full page, which is where the whole record lives.
 
-User: lab member
+User: authenticated
 
 ## Open one Ion channel model beside the listing
 

@@ -10,7 +10,7 @@ You do not need to know Playwright, TypeScript, or how the page is built.
 ```markdown
 # Morphology listing
 
-User: lab member
+User: authenticated
 
 ## The close button keeps my search
 
@@ -61,15 +61,12 @@ leaves it at that.
 Every file needs one `User:` line. Put it under the title. A case can have its
 own `User:` line to be different from the file.
 
-| Write                          | Means                               |
-| ------------------------------ | ----------------------------------- |
-| `visitor`                      | not signed in, just looking         |
-| `visitor, making changes`      | not signed in, changes something    |
-| `lab member`                   | signed in, just looking             |
-| `lab member, making changes`   | signed in, changes something        |
-| `lab member, spending credits` | launches a build or a simulation    |
-| `new user`                     | owns nothing yet, just looking      |
-| `new user, making changes`     | creates a lab, a project, an invite |
+| Write           | Means                                   |
+| --------------- | --------------------------------------- |
+| `visitor`       | not signed in                           |
+| `authenticated` | signed in, inside the run's own project |
+| `credits`       | launches a build or a simulation        |
+| `onboarding`    | owns nothing yet: signing up, and after |
 
 Nothing else works. A test with a wrong `User` never runs, so the checker
 stops you.
@@ -180,7 +177,7 @@ being stopped for:
 **Everything else is a warning, and a warning never stops you.** It says what
 it would rather see and moves on: a dash where a number reads better, a
 typo in a field name, `xxxxx`, "before" with nothing noted, a step that
-launches under a user who is not `spending credits`, a quoted value that
+launches under a user other than `credits`, a quoted value that
 looks like an id, more than ten steps.
 
 The tool is here to catch what breaks quietly. It is not here to argue about

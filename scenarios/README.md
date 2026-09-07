@@ -1,96 +1,102 @@
 # Scenarios
 
-Scenarios are grouped by the section of the product they cover. Inside a
-section, one folder per scenario holds everything that scenario needs.
+A scenario is one folder. It holds the English description and the test that
+implements it.
 
 ```text
 scenarios/
-  data/                      the Data section
-    overview/
-      scenario.md            the English scenario
-      locators.ts            locators only this scenario uses
-      overview.spec.ts       the test
-    browse-morphology/
-      scenario.md
-      locators.ts
-      browse-morphology.spec.ts
-      config/scan.json       artifacts the test feeds to the app
-  site/                      public pages, outside a lab
+  site/                       public pages, outside a lab
     home/
+      scenario.md             the English scenario
+      locators.ts             locators only this scenario uses
+      home.spec.ts            the test
+  data/                       the Data section
+    cell-morphology/
+      browse/                 the listing
+      view/                   one entity's page
+  workflows/                  the Workflows section
+    build-synaptome/
+      scenario.md
+      seed.json               the form values the test fills in
+      build-synaptome.spec.ts
 ```
 
-Sections follow the product: `data`, `workflows`, `notebooks`, `reports`,
-`workspace` for the lab and project shell, and `site` for the public pages a
-visitor sees. A section folder appears when its first scenario does.
+Three sections exist today: `data`, `site` and `workflows`. A new one appears
+when its first scenario does.
 
-A scenario driven by a file keeps that file beside its spec, named `seed.json`.
-Nothing is shared between folders, so a scenario can be read, moved or split on
-its own. The workflow scenarios all work this way; see
-[docs/workflow-tests.md](../docs/workflow-tests.md).
+Nothing is shared between folders, so a scenario can be read, moved or deleted
+on its own. A locator moves to the top-level `locators/` folder only once a
+second scenario needs it. Not before.
 
-A feature can hold more than one scenario folder — one per group of tests, each
-with its own `scenario.md`, `seed.json` and spec.
-
-## Skipping what a deployment does not have
-
-A workflow can be absent from one environment and present in another: it may sit
-behind a feature flag, or postdate the build under test. A test says so and skips
-rather than failing, because a red suite should mean the application is broken.
-
-```ts
-const unavailable = await startWorkflow(page, fixture.activity, fixture.workflow);
-test.skip(unavailable !== null, unavailable ?? '');
-```
-
-The reason reaches the report, so a skipped run still says which environment was
-missing what. Never skip to hide a real failure.
-
-A locator moves to the shared `locators/` folder at the root once a second
-scenario needs it. Not before.
+A workflow scenario is driven by a file beside it, always called `seed.json`.
+See [docs/workflow-tests.md](../docs/workflow-tests.md).
 
 ## Writing the scenario
 
-Plain English, Gherkin style. Describe what a **user** does and sees, never how
-the code works.
+Write what a **user** does and sees. Never how the code works.
 
-| Word  | Meaning            |
-| ----- | ------------------ |
-| Given | starting situation |
-| When  | what the user does |
-| Then  | what the user sees |
-| And   | one more line      |
+A file is a title, a `User:` line, and one `## ` heading per test:
+
+```markdown
+# What the listing remembers
+
+User: authenticated
+
+## The close button brings the listing back as it was
+
+Precondition:
+
+1. On the "Morphology" listing
+
+Steps:
+
+1. Search for "Sst-IRES", and note how many results it leaves
+2. Open one result, and go through to its details page
+3. Close the details page
+
+Expected:
+
+- The search box still reads "Sst-IRES"
+- The number of results is the same as noted
+```
+
+Three parts. `Steps:` and `Expected:` are required. `Precondition:` is optional.
+
+| Part           | Holds                         |
+| -------------- | ----------------------------- |
+| `Precondition` | where the user starts         |
+| `Steps`        | what the user does, in order  |
+| `Expected`     | what the user sees afterwards |
 
 Rules:
 
-- Quote the exact text shown on screen: `"Simulate"`.
-- One scenario checks one thing. Keep it under 10 lines.
-- Per important feature: 1 to 3 happy paths and 1 to 3 error paths.
+- Quote the exact words on screen: `Click "Close"`.
+- One case checks one thing. Keep it under ten steps.
+- An `Expected` line only changes when the product changes. Never to make a
+  failing run pass.
 
-A `Then` line is an expected result. Only a product decision changes it, never a
-failing run. See the healing rule in the repository README.
+The test title must match the `## ` heading **exactly**. That is the only thing
+tying a case to its test.
 
-## Choosing the context with tags
+Other lines you can add under the title, or under one case:
 
-A test declares the contexts it runs in. Every project reads the same folders and
-picks its tests by tag, so one scenario can run signed out and signed in without
-being written twice.
+| Line        | Says                                           |
+| ----------- | ---------------------------------------------- |
+| `Page:`     | where the test starts, e.g. `/`                |
+| `Seed:`     | the file that fills the form, e.g. `seed.json` |
+| `Only on:`  | `staging` or `production`, when only one works |
+| `After:`    | the case this one continues from               |
+| `For each:` | one test per configuration in the seed         |
 
-| Tag           | Runs as                                      | Covers                                                   |
-| ------------- | -------------------------------------------- | -------------------------------------------------------- |
-| `@public`     | nobody, signed out                           | pages any visitor can reach, outside `/app/virtual-lab/` |
-| `@private`    | the primary user, inside its established lab | workflows, data, notebooks: the work inside a lab        |
-| `@onboarding` | the onboarding user, owning nothing          | creating a lab, creating projects, inviting members      |
-| `@spends`     | added to `@private`                          | launches something and spends the project's credits      |
-| `@staging`    | added to any of the above                    | staging only; kept off production                        |
-| `@production` | added to any of the above                    | production only; kept off staging                        |
-| `@readonly`   | added to any of the above                    | creates nothing                                          |
+Check your file before you commit:
 
-Every test runs against staging and production both. `@staging` and
-`@production` are for the few that cannot; leaving both off is right nearly
-every time. A workflow says where it runs in its fixture's `env` list instead.
+```bash
+bun run casebook scenarios
+```
 
-Public pages carry `@public` and run signed out, because that is what a visitor
-actually sees. Checking them while signed in would test a different page.
+The full format is in [tools/casebook/README.md](../tools/casebook/README.md).
+
+## Who runs it
 
 Each test says who is signed in. The `User:` line does this in the scenario, and
 a tag does it in the spec.
@@ -103,9 +109,9 @@ a tag does it in the spec.
 | `onboarding`    | `ONBOARDING`    | the second user, who owns nothing              |
 
 ```ts
-import { PRIVATE_READONLY } from '@fixtures/tags';
+import { AUTHENTICATED } from '@fixtures/tags';
 
-test('opens the Simulate workflows', { tag: PRIVATE_READONLY }, async ({ page }) => {
+test('opens the Simulate workflows', { tag: AUTHENTICATED }, async ({ page }) => {
   // ...
 });
 ```
@@ -147,8 +153,11 @@ Never skip to hide a real failure.
 
 ## Every listing starts from all species
 
-A scenario that should hold in more than one context carries more than one tag,
-or extracts its steps into a function that each tagged test calls.
+The species picker narrows a listing. The app remembers that choice for the
+**user**, not for the tab. Every signed-in test uses the same user, so whichever
+species another test picked last is still in force — and a listing with nothing
+for it shows "0 results" on a page that otherwise looks fine.
 
-A test with no context tag never runs, and nothing warns you. See
-[docs/scenario-tags.md](../docs/scenario-tags.md) for the full rules.
+So `routes.dataEntity` asks for all species in the URL, which beats the saved
+choice. A scenario that opens a listing needs to say nothing. One that means to
+change the species says so and picks it, the way `species-and-regions` does.

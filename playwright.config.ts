@@ -1,7 +1,7 @@
 /**
  * Playwright configuration.
  *
- * Setup runs in order: health, sign-in, workspace, credits. Each scenario
+ * Setup runs in order: health, sign-in, workspace, funding. Each scenario
  * project then picks its tests by tag, and skips the other deployment's.
  */
 
@@ -84,7 +84,7 @@ export default defineConfig({
       testMatch: /workspace\.teardown\.ts/,
     },
     {
-      name: 'credits',
+      name: 'funding',
       testDir: './setup',
       testMatch: /credits\.setup\.ts/,
       dependencies: ['workspace'],
@@ -100,16 +100,16 @@ export default defineConfig({
       name: 'private',
       testDir: './scenarios',
       grep: /@private/,
-      grepInvert: excluding(/@spends/),
+      grepInvert: excluding(/@credits/),
       dependencies: ['workspace'],
       use: { storageState: authStatePath('primary') },
     },
     {
-      name: 'spends',
+      name: 'credits',
       testDir: './scenarios',
-      grep: /@spends/,
+      grep: /@credits/,
       grepInvert: excluding(/@slow\b/),
-      dependencies: ['credits'],
+      dependencies: ['funding'],
       use: { storageState: authStatePath('primary') },
     },
     /**
@@ -124,7 +124,7 @@ export default defineConfig({
       testDir: './scenarios',
       grep: /@slow/,
       grepInvert: excluding(),
-      dependencies: ['credits'],
+      dependencies: ['funding'],
       use: { storageState: authStatePath('primary') },
     },
     {

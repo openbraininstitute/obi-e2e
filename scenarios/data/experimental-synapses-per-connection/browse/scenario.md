@@ -2,7 +2,7 @@
 
 The Synapse per connection listing, under the experimental section of the Data page.
 
-User: lab member
+User: authenticated
 
 ## See the Synapse per connection table
 

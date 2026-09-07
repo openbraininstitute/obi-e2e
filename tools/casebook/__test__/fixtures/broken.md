@@ -1,6 +1,6 @@
 # Broken in many ways
 
-Users: lab member
+Users: authenticated
 Page: /app/virtual-lab/6f3a1c2e-9b21-4d5e-8f70-1a2b3c4d5e6f/9b21f0aa-1c2e-4d5e-8f70-6f3a1a2b3c4d/data
 
 ## A case with a step written wrong

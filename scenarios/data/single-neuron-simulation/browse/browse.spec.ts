@@ -2,7 +2,7 @@ import { checkFilter } from '@fixtures/checks/filter';
 import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
 import { routes } from '@fixtures/routes';
 import { toggleCount } from '@fixtures/steps/listing-columns';
-import { PRIVATE_READONLY } from '@fixtures/tags';
+import { AUTHENTICATED } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { WIDE_VIEWPORT } from '@fixtures/viewport';
 import { entityListing } from '@locators/listing';
@@ -58,7 +58,7 @@ test.describe('Single neuron (legacy) listing', () => {
     await expect(entityListing(page).table).toBeVisible();
   });
 
-  test('See the Single neuron (legacy) table', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('See the Single neuron (legacy) table', { tag: AUTHENTICATED }, async ({ page }) => {
     const listing = entityListing(page);
 
     for (const column of COLUMNS) {
@@ -68,7 +68,7 @@ test.describe('Single neuron (legacy) listing', () => {
 
   test(
     'The Single neuron (legacy) table offers no columns beyond these',
-    { tag: PRIVATE_READONLY },
+    { tag: AUTHENTICATED },
     async ({ page }) => {
       const listing = entityListing(page);
 
@@ -86,7 +86,7 @@ test.describe('Single neuron (legacy) listing', () => {
     }
   );
 
-  test('See the Single neuron (legacy) results', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('See the Single neuron (legacy) results', { tag: AUTHENTICATED }, async ({ page }) => {
     const listing = entityListing(page);
 
     await expect(listing.resultCount).toHaveText(/^0 results/);
@@ -95,7 +95,7 @@ test.describe('Single neuron (legacy) listing', () => {
 
   test(
     'Every Single neuron (legacy) filter narrows the listing',
-    { tag: PRIVATE_READONLY },
+    { tag: AUTHENTICATED },
     async ({ page }) => {
       test.slow();
       await expect(entityListing(page).table).toBeVisible();

@@ -2,7 +2,7 @@
 
 The Single neuron listing, under the simulations section of the Data page.
 
-User: lab member
+User: authenticated
 
 ## See the Single neuron table
 

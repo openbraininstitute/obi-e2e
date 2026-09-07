@@ -147,7 +147,7 @@ seed.
 ## Credits
 
 A campaign costs credits — about ten for one synaptome build. Those tests are
-tagged `@spends`, run behind the credit check, and write only inside the lab
+tagged `@credits`, run behind the credit check, and write only inside the lab
 named by `LAB_ID`, in the project the run creates for itself.
 
 A project at zero cannot generate a campaign at all. That is what the

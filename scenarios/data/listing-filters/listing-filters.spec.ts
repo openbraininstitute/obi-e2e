@@ -1,6 +1,6 @@
 import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
 import { routes } from '@fixtures/routes';
-import { PRIVATE_READONLY } from '@fixtures/tags';
+import { AUTHENTICATED } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { entityListing } from '@locators/listing';
 
@@ -12,7 +12,7 @@ test.describe('Filtering a listing', () => {
     await expect(entityListing(page).cells.first()).toBeVisible();
   });
 
-  test('Search narrows the results', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('Search narrows the results', { tag: AUTHENTICATED }, async ({ page }) => {
     const listing = entityListing(page);
     const before = await listing.resultCount.innerText();
 
@@ -22,7 +22,7 @@ test.describe('Filtering a listing', () => {
     await expect(listing.cells.first()).toBeVisible();
   });
 
-  test('Clearing the search restores the results', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('Clearing the search restores the results', { tag: AUTHENTICATED }, async ({ page }) => {
     const listing = entityListing(page);
     const before = await listing.resultCount.innerText();
 
@@ -34,7 +34,7 @@ test.describe('Filtering a listing', () => {
     await expect(listing.resultCount).toHaveText(before);
   });
 
-  test('A search that matches nothing', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('A search that matches nothing', { tag: AUTHENTICATED }, async ({ page }) => {
     const listing = entityListing(page);
 
     await listing.search.fill('zzzz-no-such-entity');
@@ -42,7 +42,7 @@ test.describe('Filtering a listing', () => {
     await expect(listing.resultCount).toHaveText(/^0 results/);
   });
 
-  test('The additional filters are offered', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('The additional filters are offered', { tag: AUTHENTICATED }, async ({ page }) => {
     const listing = entityListing(page);
 
     await listing.filters.click();
@@ -55,7 +55,7 @@ test.describe('Filtering a listing', () => {
     }
   });
 
-  test('Opening a filter shows its control', { tag: PRIVATE_READONLY }, async ({ page }) => {
+  test('Opening a filter shows its control', { tag: AUTHENTICATED }, async ({ page }) => {
     const listing = entityListing(page);
 
     await listing.filters.click();

@@ -24,7 +24,7 @@ because none is started.
 The seed says so too, with `launch: false` on the configuration. It also says
 which deployments the workflow runs on, so no line here does.
 
-User: lab member, spending credits
+User: credits
 Seed: seed.json
 
 ## The form will not launch until it is complete

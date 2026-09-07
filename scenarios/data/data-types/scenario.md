@@ -2,7 +2,7 @@
 
 Every section of the Data page offers its own list of data types.
 
-User: lab member
+User: authenticated
 
 ## See the data types of each section
 

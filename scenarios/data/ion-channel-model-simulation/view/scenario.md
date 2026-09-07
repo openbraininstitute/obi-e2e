@@ -10,7 +10,7 @@ The full page is a scan-configuration editor, and which sections it holds
 depends on the configuration behind each run, so only the parts every simulation
 page carries are checked here.
 
-User: lab member
+User: authenticated
 
 ## Open one Ion channel beside the listing
 

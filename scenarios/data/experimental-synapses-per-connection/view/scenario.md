@@ -5,7 +5,7 @@ Opening one Synapse per connection from its listing, under the experimental sect
 A row opens a small panel beside the listing. That panel has a way through to
 the full page, which is where the whole record lives.
 
-User: lab member
+User: authenticated
 
 ## Open one Synapse per connection beside the listing
 

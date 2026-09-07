@@ -10,7 +10,7 @@ describe('parseCasebook', () => {
 
     expect(diagnostics).toEqual([]);
     expect(casebook.title).toBe('Morphology listing');
-    expect(casebook.fields).toEqual([{ key: 'User', value: 'lab member', line: 3 }]);
+    expect(casebook.fields).toEqual([{ key: 'User', value: 'authenticated', line: 3 }]);
     expect(casebook.cases).toHaveLength(1);
 
     const [only] = casebook.cases;
@@ -56,7 +56,7 @@ describe('parseCasebook', () => {
     const { casebook } = parseCasebook(await fixture('workflow.md'), 'workflow.md');
     const viewer = casebook.cases[3];
 
-    expect(viewer?.fields.find((f) => f.key === 'User')?.value).toBe('lab member');
+    expect(viewer?.fields.find((f) => f.key === 'User')?.value).toBe('authenticated');
   });
 
   test('a gherkin file is legacy and is not parsed', async () => {
@@ -92,7 +92,7 @@ describe('parseCasebook', () => {
   });
 
   test('a typo, a stray title and a missing title are warnings, not errors', () => {
-    const typo = parseCasebook('# T\n\nUsers: lab member\n', 't.md').diagnostics;
+    const typo = parseCasebook('# T\n\nUsers: authenticated\n', 't.md').diagnostics;
     expect(typo[0]).toMatchObject({ rule: 'unknown-field', severity: 'warning' });
 
     const missing = parseCasebook('## C\n\nExpected:\n- Done "x"\n', 't.md').diagnostics;
@@ -110,12 +110,12 @@ describe('parseCasebook', () => {
   });
 
   test('a typo in a field says which field was meant', () => {
-    const { diagnostics } = parseCasebook('# T\n\nUsers: lab member\n', 't.md');
+    const { diagnostics } = parseCasebook('# T\n\nUsers: authenticated\n', 't.md');
 
     expect(diagnostics[0]).toMatchObject({
       rule: 'unknown-field',
       line: 3,
-      fix: 'write "User: lab member"',
+      fix: 'write "User: authenticated"',
     });
   });
 

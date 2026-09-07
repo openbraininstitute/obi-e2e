@@ -2,7 +2,7 @@
 
 The Ion channel model listing, under the models section of the Data page.
 
-User: lab member
+User: authenticated
 
 ## See the Ion channel model table
 

@@ -5,7 +5,7 @@ Opening one Neuron density from its listing, under the experimental section.
 A row opens a small panel beside the listing. That panel has a way through to
 the full page, which is where the whole record lives.
 
-User: lab member
+User: authenticated
 
 ## Open one Neuron density beside the listing
 

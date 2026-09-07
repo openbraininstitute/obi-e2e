@@ -141,7 +141,7 @@ describe('cli', () => {
 
     expect(code).toBe(1);
     expect(out).toContain('broken.md:6\n  error no-user');
-    expect(out).toContain('Fix:      write "User: lab member" under the file title');
+    expect(out).toContain('Fix:      write "User: authenticated" under the file title');
   });
 
   test('a file with only warnings exits 0', () => {

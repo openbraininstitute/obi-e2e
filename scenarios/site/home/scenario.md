@@ -1,14 +1,19 @@
 # Home page
 
-Scenarios for the public landing page.
+The public landing page. It is the first thing a visitor sees, and the only
+page these tests open while signed out.
 
-```gherkin
-Feature: Home page
+User: visitor
+Page: /
 
-@readonly
-Scenario: Open the home page
-  When I open the home page
-  Then I see the "Create your Virtual Lab" headline
-  And I see a "Login" link
-  And I see a "Go to Virtual Labs" link
-```
+## Open the home page
+
+Steps:
+
+1. Open the home page
+
+Expected:
+
+- The "Create your Virtual Lab" headline is showing
+- There is a "Login" link
+- There is a "Go to Virtual Labs" link

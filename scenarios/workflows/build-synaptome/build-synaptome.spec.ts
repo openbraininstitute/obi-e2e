@@ -53,10 +53,9 @@ test.describe('Synaptome build', () => {
   test('The form will not launch until it is complete', { tag: CREDITS }, async ({ page }) => {
     await openEditor(page);
 
-      await expect(scanConfigEditor(page).submit).toHaveText(words.generate);
-      await expect(scanConfigEditor(page).submit).toBeDisabled();
-    }
-  );
+    await expect(scanConfigEditor(page).submit).toHaveText(words.generate);
+    await expect(scanConfigEditor(page).submit).toBeDisabled();
+  });
 
   test(
     'A project with no credits cannot generate a campaign',
@@ -146,22 +145,21 @@ test.describe('Synaptome build', () => {
   test('Look at the morphology as a dendrogram and back', { tag: CREDITS }, async ({ page }) => {
     const viewer = morphologyViewer(page);
 
-      await openEditor(page);
-      await expect(viewer.scene).toBeVisible();
+    await openEditor(page);
+    await expect(viewer.scene).toBeVisible();
 
-      await expect(viewer.mode.visualization).toHaveAttribute('aria-pressed', 'true');
-      await expect(viewer.mode.dendrogram).toHaveAttribute('aria-pressed', 'false');
+    await expect(viewer.mode.visualization).toHaveAttribute('aria-pressed', 'true');
+    await expect(viewer.mode.dendrogram).toHaveAttribute('aria-pressed', 'false');
 
-      await viewer.mode.dendrogram.click();
+    await viewer.mode.dendrogram.click();
 
-      await expect(viewer.mode.dendrogram).toHaveAttribute('aria-pressed', 'true');
-      await expect(viewer.mode.visualization).toHaveAttribute('aria-pressed', 'false');
+    await expect(viewer.mode.dendrogram).toHaveAttribute('aria-pressed', 'true');
+    await expect(viewer.mode.visualization).toHaveAttribute('aria-pressed', 'false');
 
-      await viewer.mode.visualization.click();
+    await viewer.mode.visualization.click();
 
-      await expect(viewer.mode.visualization).toHaveAttribute('aria-pressed', 'true');
-    }
-  );
+    await expect(viewer.mode.visualization).toHaveAttribute('aria-pressed', 'true');
+  });
 
   test('Turn the axon on and off', { tag: CREDITS }, async ({ page }) => {
     const viewer = morphologyViewer(page);
