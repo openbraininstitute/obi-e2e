@@ -42,7 +42,7 @@ test.describe('Whole brain simulation', () => {
 
   for (const configuration of fixture.cases) {
     test(
-      `Generate a simulation campaign and launch it: ${configuration.name}`,
+      `Generate a simulation campaign without launching it: ${configuration.name}`,
       { tag: campaignTags(configuration) },
       async ({ page }) => {
         await openEditor(page);
