@@ -4,11 +4,13 @@ The Microcircuit simulation workflow, under Simulate on the Workflows page.
 obi-one describes the form, and the seed fills it in, following obi-one's own
 circuit simulation example: a neuron set, a clamp on it, and a recording of it.
 
-A microcircuit takes tens of minutes to simulate, far longer than a browser
-test can sit through. So the launch case stops once the coordinate leaves
-"created", and nothing here says what the run produces.
+A microcircuit is priced at roughly 2,300 credits a run, more than a nightly
+suite should spend on one workflow. So this scenario covers the form and the
+generated campaign and stops with the launch button offered but unpressed.
+Nothing here says what a run produces, because none is started.
 
-The seed also says which deployments the workflow runs on, so no line here does.
+The seed says so too, with `launch: false` on the configuration. It also says
+which deployments the workflow runs on, so no line here does.
 
 Launching prices the simulation first: the estimate is shown and has to be
 confirmed before anything starts.
@@ -31,7 +33,7 @@ Expected:
 
 - "Generate simulation(s)" is disabled
 
-## Generate a simulation campaign and launch it
+## Generate a simulation campaign without launching it
 
 For each: configuration in the seed
 
@@ -73,16 +75,7 @@ Expected:
 Steps:
 
 1. Open the simulations tab again
-2. Press "Launch simulations"
 
 Expected:
 
-- An estimated cost breakdown is shown, with a "Confirm" to press
-
-Steps:
-
-1. Press "Confirm"
-
-Expected:
-
-- The coordinate leaves "created"
+- The launch button still reads "Launch simulations", and is left unpressed

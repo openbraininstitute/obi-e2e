@@ -7,11 +7,14 @@ circuit simulation example: a neuron set, a clamp on it, and a recording of it.
 The workflow sits behind a feature flag, which the seed names. The flag is set
 before the page loads, because the hub renders the card disabled otherwise.
 
-A whole region takes far longer to simulate than a browser test can sit
-through, so the campaign is only asked to start. The seed names no files, and
-nothing here says what the run produces, because nobody has watched one finish.
+A whole region is priced past two hundred thousand credits a run, several times
+what the virtual lab holds, so no run of it can be started here at all. This
+scenario covers the form and the generated campaign and stops with the launch
+button offered but unpressed. Nothing here says what a run produces, because
+none is started.
 
-The seed also says which deployments the workflow runs on, so no line here does.
+The seed says so too, with `launch: false` on the configuration. It also says
+which deployments the workflow runs on, so no line here does.
 
 Launching prices the simulation first: the estimate is shown and has to be
 confirmed before anything starts.
@@ -35,7 +38,7 @@ Expected:
 
 - "Generate simulation(s)" is disabled
 
-## Generate a simulation campaign and launch it
+## Generate a simulation campaign without launching it
 
 For each: configuration in the seed
 
@@ -79,16 +82,7 @@ Expected:
 Steps:
 
 1. Open the simulations tab again
-2. Press "Launch simulations"
 
 Expected:
 
-- An estimated cost breakdown is shown, with a "Confirm" to press
-
-Steps:
-
-1. Press "Confirm"
-
-Expected:
-
-- The coordinate leaves "created"
+- The launch button still reads "Launch simulations", and is left unpressed
