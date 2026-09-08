@@ -3,6 +3,10 @@
 export const routes = {
   data: (labId: string, projectId: string) => `/app/virtual-lab/${labId}/${projectId}/data`,
 
+  /** The Data page, showing every species — `?s=all`, for the reason `dataEntity` gives. */
+  dataAllSpecies: (labId: string, projectId: string) =>
+    `/app/virtual-lab/${labId}/${projectId}/data?s=all`,
+
   /**
    * A listing, showing every species.
    *

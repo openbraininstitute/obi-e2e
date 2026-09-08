@@ -1,5 +1,5 @@
 import { routes } from '@fixtures/routes';
-import { chooseSpecies, showAllSpecies } from '@fixtures/steps/choose-species';
+import { chooseSpecies } from '@fixtures/steps/choose-species';
 import { AUTHENTICATED } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { WIDE_VIEWPORT } from '@fixtures/viewport';
@@ -11,11 +11,11 @@ test.use(WIDE_VIEWPORT);
 
 test.describe('Species and brain regions', () => {
   test.describe('on the Data page', () => {
+    // Every species by URL rather than through the selector: one load, not two.
     test.beforeEach(async ({ page, workspace }) => {
-      await page.goto(routes.data(workspace.labId, workspace.projectId));
-      await page.waitForURL(/[?&]s=/);
+      await page.goto(routes.dataAllSpecies(workspace.labId, workspace.projectId));
       await expect(dataPage(page).typeCounter('cell_morphology')).toBeVisible();
-      await showAllSpecies(page);
+      await expect(atlas(page).speciesSelector).toContainText('All');
     });
 
     for (const species of SPECIES_WITH_ATLAS) {
@@ -54,6 +54,7 @@ test.describe('Species and brain regions', () => {
     test('Every species can be chosen', { tag: AUTHENTICATED }, async ({ page }) => {
       const controls = atlas(page);
 
+      await expect(controls.speciesGrid).toBeVisible();
       await expect(controls.speciesCards).toHaveCount(EVERY_SPECIES.length);
 
       for (const species of EVERY_SPECIES) {
@@ -66,7 +67,7 @@ test.describe('Species and brain regions', () => {
   test.describe('on a listing', () => {
     test.beforeEach(async ({ page, workspace }) => {
       await page.goto(routes.dataEntity(workspace.labId, workspace.projectId, 'cell-morphology'));
-      await showAllSpecies(page);
+      await expect(atlas(page).speciesSelector).toContainText('All');
       await expect(entityListing(page).cells.first()).toBeVisible();
     });
 
