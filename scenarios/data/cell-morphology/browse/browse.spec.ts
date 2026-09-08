@@ -2,7 +2,6 @@ import { checkFilter } from '@fixtures/checks/filter';
 import { checkPagination } from '@fixtures/checks/pagination';
 import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
 import { routes } from '@fixtures/routes';
-import { showAllSpecies } from '@fixtures/steps/choose-species';
 import { toggleCount } from '@fixtures/steps/listing-columns';
 import { AUTHENTICATED } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
@@ -59,7 +58,6 @@ test.describe('Morphology listing', () => {
       routes.dataEntity(workspace.labId, workspace.projectId, entitySlug(Type.CellMorphology))
     );
     await expect(entityListing(page).table).toBeVisible();
-    await showAllSpecies(page);
   });
 
   test('See the Morphology table', { tag: AUTHENTICATED }, async ({ page }) => {
