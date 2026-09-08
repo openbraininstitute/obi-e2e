@@ -1,6 +1,7 @@
 /** Filling a scan config from its seed, generating the campaign, and following it. */
 
 import { scanConfigEditor, scanConfigResults } from '@locators/scan-config';
+import { lowCredits } from '@locators/workflows';
 import { expect, type Locator, type Page } from '@playwright/test';
 
 import { checkCompletedOutput, checkGeneratedFiles } from '../checks/campaign-output';
@@ -83,8 +84,24 @@ export async function runCampaign(
 
   await editor.submit.click();
 
-  // Generating opens the results by itself.
-  await expect(editor.tab(words.resultsTab)).toBeEnabled();
+  /*
+   * Generating opens the results by itself — unless the app refuses first.
+   * With no credits the button shows a notice and sends nothing, and the tab
+   * then sits disabled for the whole assertion timeout: a nightly lost fourteen
+   * launches that way, every one reported as a tab that never enabled. The
+   * notice is the cause, so it is what gets reported.
+   */
+  await Promise.race([
+    expect(editor.tab(words.resultsTab)).toBeEnabled(),
+    lowCredits(page)
+      .notice.waitFor({ state: 'visible' })
+      .then(() => {
+        throw new Error(
+          'The app refused to generate: the project has no credits. The run funds its ' +
+            'project at setup, so look at the funding step and the credit report.'
+        );
+      }),
+  ]);
 
   await expect(results.coordinates).toHaveCount(configuration.expect.coordinateCount);
 
