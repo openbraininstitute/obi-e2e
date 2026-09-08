@@ -5,17 +5,20 @@
 | Trigger                               | Target             | What runs   | Result                                |
 | ------------------------------------- | ------------------ | ----------- | ------------------------------------- |
 | Schedule, 07:00 UTC                   | staging            | full suite  | Teams card                            |
-| Schedule, 07:00 UTC                   | production         | full suite  | Teams card                            |
 | Push / PR in this repo                | staging            | full suite  | PR check                              |
 | `repository_dispatch` (`e2e-preview`) | the PR preview URL | full suite  | comment on the source PR + Teams card |
 | Manual run                            | your choice        | your choice | Teams card                            |
 
-Both scheduled runs run everything. A test only stays out of one of them by
-carrying `@staging` or `@production`, and a workflow only by leaving that
-deployment out of its fixture's `env` list. See
+The scheduled run runs everything. A test only stays out of it by carrying
+`@staging` or `@production`, and a workflow only by leaving that deployment out
+of its fixture's `env` list. See
 [docs/scenario-tags.md](../../docs/scenario-tags.md).
 
-Production runs are no longer read-only: they create a project in the production
+Production is not scheduled: it has no credentials yet. The tags, the `env`
+lists and the `production` project all stay as they are, and a manual run can
+still target it — see the note in `e2e.yml` to put it back on the schedule.
+
+Production runs are not read-only: they create a project in the production
 lab, move credits into it, and delete it at the end, the same as staging.
 
 ## `e2e-slow.yml`
