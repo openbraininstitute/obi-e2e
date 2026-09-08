@@ -215,6 +215,49 @@ export function scanConfigControl(field: Locator): Locator {
   return field.getByTestId('scan-config-control').or(field.locator(RENDERED_PART)).last();
 }
 
+/** Quotes a value so it can sit inside an attribute selector. */
+export function cssEscape(value: string): string {
+  return value.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
+}
+
+/**
+ * The options one control offers.
+ *
+ * antd leaves every dropdown it has opened in the page, so a page-wide search
+ * for an option reaches into a field filled minutes ago and clicks whatever
+ * that one is holding. The app ties an option to the select that offers it, and
+ * this narrows the search to that select. A deployment without the marker —
+ * staging, until the app ships — falls back to the option that is on screen.
+ */
+export async function scanConfigOptions(control: Locator) {
+  const page = control.page();
+  const id = await control.getAttribute('data-scan-config-options');
+  const mine = id === null ? '' : `[data-scan-config-option-of="${cssEscape(id)}"]`;
+
+  return {
+    option: (value: string): Locator => {
+      const marked = page.locator(`${mine}[data-testid="scan-config-option-${cssEscape(value)}"]`);
+      // The title is antd's own, so it is the fallback only where the marker is missing.
+      const anywhere = marked.or(page.getByTitle(value, { exact: true }));
+      return (id === null ? anywhere : marked).filter({ visible: true }).first();
+    },
+
+    /**
+     * What this dropdown holds besides the value that was asked for.
+     *
+     * Scoped to the dropdown the picked option sits in — antd portals each one
+     * into its own child of `<body>` — so a list that was open a moment ago is
+     * out of reach whether or not the marker is there.
+     */
+    chosenBesides: (value: string, picked: Locator): Locator =>
+      picked
+        .locator('xpath=ancestor::*[parent::body]')
+        .locator(
+          `[data-selected="true"]:not([data-testid="scan-config-option-${cssEscape(value)}"])`
+        ),
+  };
+}
+
 export function scanConfigSweepValues(field: Locator): Locator {
   const marked = field.getByTestId('scan-config-sweep-value');
   return marked.or(field.getByRole('spinbutton'));

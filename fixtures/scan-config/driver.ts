@@ -5,6 +5,7 @@ import {
   scanConfigEditor,
   scanConfigField,
   scanConfigModelPicker,
+  scanConfigOptions,
   scanConfigSweep,
   scanConfigSweepValues,
   uiElementOf,
@@ -19,21 +20,19 @@ import { ScanConfigUiElement } from './ui-elements';
 /** More than this many unasked-for values means the list is not behaving as a list. */
 const MAX_EXTRA_SELECTIONS = 20;
 
+/**
+ * Nothing in the editor navigates.
+ *
+ * A click otherwise waits for navigations the page has in flight, and this page
+ * keeps some: the whole-brain option click and the microcircuit variant click
+ * each spent their action timeout being told "waiting for scheduled navigations
+ * to finish" after the click had already landed. Playwright says this option
+ * becomes the default.
+ */
+const NO_NAVIGATION = { noWaitAfter: true } as const;
+
 /** A control that holds several values at once, rather than one. */
 const MULTIPLE_VALUE_CONTROL = '[data-scan-config-block-element$="__multiple"]';
-
-/**
- * An option the list is currently holding.
- *
- * antd gives its options no role and never says which are chosen, so the app
- * marks them: see the entity property dropdown in core-web-app.
- */
-const CHOSEN_OPTION = '[data-selected="true"]';
-
-/** Quotes a value so it can sit inside an attribute selector. */
-function cssEscape(value: string): string {
-  return value.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
-}
 
 export class ScanConfigDriver {
   private readonly editor: ReturnType<typeof scanConfigEditor>;
@@ -50,16 +49,30 @@ export class ScanConfigDriver {
       if (rootElement === 'type') continue;
       if (!isRecord(value)) throw new Error(`Root element "${rootElement}" must be an object.`);
 
-      await this.page.keyboard.press('Escape');
-      await this.editor.rootElement(rootElement).click();
-
       if (typeof value.type === 'string') {
+        await this.openRootElement(rootElement, this.editor.block());
         await this.fillBlock(this.editor.block(), value, rootElement);
         continue;
       }
 
+      await this.openRootElement(rootElement, this.editor.addEntry(rootElement));
       await this.fillDictionary(rootElement, value);
     }
+  }
+
+  /**
+   * Opens one root element, and clicks again if the editor did not follow.
+   *
+   * A popper closing under the pointer swallows the click, and clicking once
+   * and then staring spends the whole assertion timeout on a menu that never
+   * changed. Escape dismisses what is showing; the retry is what gets there.
+   */
+  private async openRootElement(rootElement: string, shows: Locator): Promise<void> {
+    await expect(async () => {
+      await this.page.keyboard.press('Escape');
+      await this.editor.rootElement(rootElement).click(NO_NAVIGATION);
+      await expect(shows).toBeVisible({ timeout: 5_000 });
+    }, `The editor never opened "${rootElement}".`).toPass();
   }
 
   private async fillDictionary(
@@ -71,7 +84,7 @@ export class ScanConfigDriver {
         throw new Error(`Entry "${rootElement}.${key}" must carry a "type".`);
       }
 
-      await this.editor.addEntry(rootElement).click();
+      await this.editor.addEntry(rootElement).click(NO_NAVIGATION);
 
       const title = typeof entry.$variant === 'string' ? entry.$variant : undefined;
       const variant = this.editor.variant(entry.type, title);
@@ -86,7 +99,7 @@ export class ScanConfigDriver {
             'Name the one to pick with "$variant" in the fixture.'
         );
       }
-      await variant.click();
+      await variant.click(NO_NAVIGATION);
 
       const created = await this.selectedEntryName(rootElement);
       this.entryNames.set(`${rootElement}/${key}`, created);
@@ -149,8 +162,8 @@ export class ScanConfigDriver {
 
       case ScanConfigUiElement.BooleanInput: {
         const checkbox = field.getByRole('checkbox');
-        if (value === true) await checkbox.check();
-        else await checkbox.uncheck();
+        if (value === true) await checkbox.check(NO_NAVIGATION);
+        else await checkbox.uncheck(NO_NAVIGATION);
         return;
       }
 
@@ -215,9 +228,9 @@ export class ScanConfigDriver {
     }
 
     const sweep = scanConfigSweep(field);
-    await sweep.expand.click();
+    await sweep.expand.click(NO_NAVIGATION);
     for (let index = 1; index < value.length; index += 1) {
-      await sweep.add.click();
+      await sweep.add.click(NO_NAVIGATION);
     }
 
     const inputs = scanConfigSweepValues(field);
@@ -257,7 +270,7 @@ export class ScanConfigDriver {
     }
 
     const picker = scanConfigModelPicker(this.page);
-    await field.getByRole('button', { name: /^Add / }).first().click();
+    await field.getByRole('button', { name: /^Add / }).first().click(NO_NAVIGATION);
 
     const catalogue = picker.panel;
     await expect(catalogue).toBeVisible();
@@ -277,8 +290,7 @@ export class ScanConfigDriver {
       await expect(picker.confirm).toBeEnabled({ timeout: 3_000 });
     }, `${at}: the picks never held.`).toPass({ timeout: 45_000 });
 
-    await picker.confirm.click();
-    await expect(picker.overlay).toHaveCount(0);
+    await confirmPicker(picker, at);
 
     for (const entry of value) {
       await expect(field).toContainText((entry as { name: string }).name);
@@ -307,7 +319,7 @@ export class ScanConfigDriver {
         box,
         `The chosen recordings offer no "${protocol}" protocol for ${at}.`
       ).toBeVisible();
-      await box.check();
+      await box.check(NO_NAVIGATION);
     }
   }
 
@@ -317,7 +329,7 @@ export class ScanConfigDriver {
     }
 
     const picker = scanConfigModelPicker(this.page);
-    await field.getByRole('button', { name: /^Select / }).click();
+    await field.getByRole('button', { name: /^Select / }).click(NO_NAVIGATION);
 
     const catalogue = picker.panel;
     await expect(catalogue).toBeVisible();
@@ -330,8 +342,7 @@ export class ScanConfigDriver {
       await expect(picker.confirm).toBeEnabled({ timeout: 3_000 });
     }, `${at}: "${name}" never stayed picked.`).toPass({ timeout: 30_000 });
 
-    await picker.confirm.click();
-    await expect(picker.overlay).toHaveCount(0);
+    await confirmPicker(picker, at);
   }
 
   private async setSelection(field: Locator, value: unknown, at: string): Promise<void> {
@@ -359,9 +370,12 @@ export class ScanConfigDriver {
      * one, and the option has to be genuinely visible before it is clicked.
      * Retrying an attempt that toggled the list shut is what used to hang.
      */
+    const options = await scanConfigOptions(control);
+    const wanted = options.option(option);
+
     await expect(async () => {
       await this.page.keyboard.press('Escape');
-      await control.click({ force: true, timeout: 3_000 });
+      await control.click({ ...NO_NAVIGATION, force: true, timeout: 3_000 });
 
       /*
        * Forced, like the click that opened the list. An antd list is a portal
@@ -372,17 +386,12 @@ export class ScanConfigDriver {
        * the actionability checks to establish — and a click that lands on
        * nothing still fails the assertion below.
        */
-      await this.page
-        .getByTestId(`scan-config-option-${option}`)
-        .or(this.page.getByTitle(option, { exact: true }))
-        .filter({ visible: true })
-        .first()
-        .click({ force: true, timeout: 5_000 });
+      await wanted.click({ ...NO_NAVIGATION, force: true, timeout: 5_000 });
 
       await expect(control).not.toHaveText(/^Select /, { timeout: 3_000 });
     }, `${at}: "${option}" never became selectable`).toPass({ timeout: 30_000 });
 
-    await this.keepOnly(field, option);
+    await this.keepOnly(field, options.chosenBesides(option, wanted));
 
     await expect(control).not.toHaveText(/^Select /);
   }
@@ -400,27 +409,16 @@ export class ScanConfigDriver {
    * A single-value list has closed by now, or holds exactly what was asked
    * for, so there is nothing here for it to do.
    */
-  private async keepOnly(field: Locator, option: string): Promise<void> {
-    /*
-     * Only a list that takes several values, and only the options on screen.
-     * Every list this driver has opened is still in the page, holding whatever
-     * was picked in it, so an unscoped search reaches back into a field filled
-     * minutes ago and tries to click an option scrolled far out of view.
-     */
+  private async keepOnly(field: Locator, extra: Locator): Promise<void> {
+    // Only a list that takes several values; a single-value one has closed by now.
     const multiple = field
       .locator(MULTIPLE_VALUE_CONTROL)
       .or(field.and(this.page.locator(MULTIPLE_VALUE_CONTROL)));
     if ((await multiple.count()) === 0) return;
 
-    // The marker sits on the option itself, so the one that was asked for is
-    // excluded by name rather than by what it contains.
-    const extra = this.page
-      .locator(`${CHOSEN_OPTION}:not([data-testid="scan-config-option-${cssEscape(option)}"])`)
-      .filter({ visible: true });
-
     for (let dropped = 0; dropped < MAX_EXTRA_SELECTIONS; dropped += 1) {
       if ((await extra.count()) === 0) return;
-      await extra.first().click({ force: true, timeout: 5_000 });
+      await extra.first().click({ ...NO_NAVIGATION, force: true, timeout: 5_000 });
     }
 
     expect(await extra.count(), 'The list kept offering values that were never asked for.').toBe(0);
@@ -446,6 +444,23 @@ export class ScanConfigDriver {
   }
 }
 
+/**
+ * Confirms a picker, and clicks again if the overlay is still there.
+ *
+ * Confirm can be re-disabled between the check that it is enabled and the
+ * click, which leaves the overlay open and the run staring at it for the whole
+ * assertion timeout. Once it has closed there is nothing left to click.
+ */
+async function confirmPicker(
+  picker: ReturnType<typeof scanConfigModelPicker>,
+  at: string
+): Promise<void> {
+  await expect(async () => {
+    await picker.confirm.click({ ...NO_NAVIGATION, timeout: 5_000 });
+    await expect(picker.overlay).toHaveCount(0, { timeout: 5_000 });
+  }, `${at}: the picker never closed.`).toPass();
+}
+
 async function tickRow(catalogue: Locator, name: string, at: string): Promise<void> {
   const row = catalogue.getByRole('row').filter({ hasText: name }).first();
   await expect(row, `No "${name}" to pick for ${at}.`).toBeVisible({ timeout: 5_000 });
@@ -454,7 +469,7 @@ async function tickRow(catalogue: Locator, name: string, at: string): Promise<vo
     .locator(`[role="row"][row-index="${await row.getAttribute('row-index')}"]`)
     .getByRole('checkbox')
     .first()
-    .check({ timeout: 5_000 });
+    .check({ ...NO_NAVIGATION, timeout: 5_000 });
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
