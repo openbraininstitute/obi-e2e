@@ -75,7 +75,7 @@
         "coordinateCount": 1,
         "generated": {
           "inputs": [
-            "Circuit directory",
+            "circuit_config.json",
             "Stimulus 0_spikes.h5",
             "node_sets.json",
             "obi_one_coordinate.json",
@@ -85,7 +85,7 @@
         },
         "completed": {
           "inputs": [
-            "Circuit directory",
+            "circuit_config.json",
             "Stimulus 0_spikes.h5",
             "node_sets.json",
             "obi_one_coordinate.json",
