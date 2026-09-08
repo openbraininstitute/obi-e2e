@@ -4,6 +4,7 @@ import { entityListing } from '@locators/listing';
 import { workflowBrowse, workflowsHub, workspaceNav } from '@locators/workflows';
 import { expect, type Locator, type Page } from '@playwright/test';
 
+import { NO_NAVIGATION } from '../interactions';
 import { routes } from '../routes';
 import type { ScanConfigSelection } from '../scan-config';
 
@@ -69,7 +70,7 @@ export async function startWorkflow(
   await expect(hub.category(activity), `The hub offers no ${activity} workflows.`).toBeVisible();
 
   await expect(async () => {
-    await hub.category(activity).click();
+    await hub.category(activity).click(NO_NAVIGATION);
     await expect(hub.typeMenu(activity)).toBeVisible({ timeout: 2_000 });
   }).toPass();
 
@@ -106,11 +107,11 @@ export async function chooseEntities(
   if (selection.mode === 'none') return null;
 
   if (selection.scope) {
-    await browse.scope(selection.scope).click();
+    await browse.scope(selection.scope).click(NO_NAVIGATION);
   }
 
   if (selection.mode === 'multiple' && selection.prerequisite) {
-    await browse.prerequisite(selection.prerequisite).click();
+    await browse.prerequisite(selection.prerequisite).click(NO_NAVIGATION);
   }
 
   await expect(listing.table).toBeVisible();
@@ -129,11 +130,11 @@ export async function chooseEntities(
       if ((await checkbox.count()) === 0) {
         return `The "${name}" listing offers nothing to tick, so nothing can be selected.`;
       }
-      await checkbox.check();
+      await checkbox.check(NO_NAVIGATION);
       continue;
     }
 
-    await row.getByRole('gridcell').filter({ hasText: name }).first().click();
+    await row.getByRole('gridcell').filter({ hasText: name }).first().click(NO_NAVIGATION);
   }
 
   await (selection.mode === 'single' ? browse.useModel : browse.useSelection).click();

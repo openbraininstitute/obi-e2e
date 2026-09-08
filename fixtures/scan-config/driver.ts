@@ -13,23 +13,13 @@ import {
 import { morphologyLocations, morphologyViewer } from '@locators/viewer';
 import { expect, type Locator, type Page } from '@playwright/test';
 
+import { NO_NAVIGATION } from '../interactions';
 import type { ScanConfigCase } from './index';
 import { ScanConfigUiElement } from './ui-elements';
 
 /** Types one configuration into the editor, field by field. */
 /** More than this many unasked-for values means the list is not behaving as a list. */
 const MAX_EXTRA_SELECTIONS = 20;
-
-/**
- * Nothing in the editor navigates.
- *
- * A click otherwise waits for navigations the page has in flight, and this page
- * keeps some: the whole-brain option click and the microcircuit variant click
- * each spent their action timeout being told "waiting for scheduled navigations
- * to finish" after the click had already landed. Playwright says this option
- * becomes the default.
- */
-const NO_NAVIGATION = { noWaitAfter: true } as const;
 
 /** A control that holds several values at once, rather than one. */
 const MULTIPLE_VALUE_CONTROL = '[data-scan-config-block-element$="__multiple"]';
@@ -93,12 +83,27 @@ export class ScanConfigDriver {
         .then(() => true)
         .catch(() => false);
       if (!offered) {
+        // Reading the page can fail too, when the page is what went wrong.
+        const choices = await this.editor.variants.allInnerTexts().catch(() => []);
         throw new Error(
           `The "${rootElement}" chooser offers no "${title ?? entry.type}". It offers: ` +
-            `${(await this.editor.variants.allInnerTexts()).join(', ')}. ` +
+            `${choices.join(', ') || 'nothing, and could not be read at all'}. ` +
             'Name the one to pick with "$variant" in the fixture.'
         );
       }
+      /*
+       * The editor disables a variant the circuit does not support, and it
+       * reads support from a call of its own. When that call fails the card
+       * stays disabled for good, with nothing on the page to say so, and a
+       * plain click reports thirty seconds of "element is not enabled".
+       */
+      await expect(
+        variant,
+        `The "${title ?? entry.type}" card is offered but disabled, so it cannot be picked. ` +
+          'The editor disables a variant the circuit does not support — check whether the ' +
+          'circuit properties call failed.'
+      ).toBeEnabled();
+
       await variant.click(NO_NAVIGATION);
 
       const created = await this.selectedEntryName(rootElement);

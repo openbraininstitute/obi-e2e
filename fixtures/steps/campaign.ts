@@ -5,6 +5,7 @@ import { lowCredits } from '@locators/workflows';
 import { expect, type Locator, type Page, type Request, type Response } from '@playwright/test';
 
 import { checkCompletedOutput, checkGeneratedFiles } from '../checks/campaign-output';
+import { NO_NAVIGATION } from '../interactions';
 import { pageProblems } from '../run/page-problems';
 import type { ScanConfigCase, ScanConfigFixture } from '../scan-config';
 import { scanConfigWords } from '../scan-config/activities';
@@ -106,7 +107,7 @@ export async function runCampaign(
   await expect(editor.submit).toBeEnabled();
 
   const generated = callSent(page, GENERATES_THE_CAMPAIGN);
-  await editor.submit.click({ noWaitAfter: true });
+  await editor.submit.click(NO_NAVIGATION);
   await expectAccepted(page, generated, 'Generating the campaign');
 
   // Accepted, so the results open by themselves.
@@ -132,11 +133,11 @@ export async function runCampaign(
   if (configuration.launch === false) return;
 
   const launched = callSent(page, LAUNCHES_THE_CAMPAIGN);
-  await results.launch.click({ noWaitAfter: true });
+  await results.launch.click(NO_NAVIGATION);
 
   if (fixture.workflow.confirmsCost) {
     await expect(results.costConfirm).toBeVisible();
-    await results.costConfirm.click({ noWaitAfter: true });
+    await results.costConfirm.click(NO_NAVIGATION);
   }
 
   await expectAccepted(page, launched, 'Launching the campaign');
@@ -246,7 +247,7 @@ async function openTab(
   id: string
 ): Promise<void> {
   await page.keyboard.press('Escape');
-  await editor.tab(id).click({ noWaitAfter: true });
+  await editor.tab(id).click(NO_NAVIGATION);
 }
 
 /**

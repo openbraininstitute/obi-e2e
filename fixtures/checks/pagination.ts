@@ -1,6 +1,7 @@
 import { entityListing } from '@locators/listing';
 import { expect, type Page } from '@playwright/test';
 
+import { NO_NAVIGATION } from '../interactions';
 import { expectListing } from './listing';
 
 async function pageSignature(page: Page): Promise<string> {
@@ -24,7 +25,7 @@ export async function checkPagination(page: Page): Promise<void> {
   const firstPage = await pageSignature(page);
   expect(firstPage).not.toBe('');
 
-  await listing.pageLink(2).click();
+  await listing.pageLink(2).click(NO_NAVIGATION);
   await expect(listing.cells.first()).toBeVisible();
   await expect
     .poll(() => pageSignature(page), { message: 'page 2 shows the same rows as page 1' })
@@ -32,6 +33,6 @@ export async function checkPagination(page: Page): Promise<void> {
 
   await expect(listing.resultCount).toHaveText(total);
 
-  await listing.pageLink(1).click();
+  await listing.pageLink(1).click(NO_NAVIGATION);
   await expect.poll(() => pageSignature(page)).toBe(firstPage);
 }
