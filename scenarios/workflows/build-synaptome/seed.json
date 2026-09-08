@@ -82,7 +82,7 @@
           "outputs": []
         },
         "completed": {
-          "inputs": ["Task configuration", "obi_one_coordinate.json", "Circuit directory"],
+          "inputs": ["Task configuration", "obi_one_coordinate.json", "circuit_config.json"],
           "outputs": ["Task logs", "E2E synaptome build"]
         }
       }
@@ -157,7 +157,7 @@
           "outputs": []
         },
         "completed": {
-          "inputs": ["Task configuration", "obi_one_coordinate.json", "Circuit directory"],
+          "inputs": ["Task configuration", "obi_one_coordinate.json", "circuit_config.json"],
           "outputs": ["Task logs", "E2E synaptome explicit locations"],
           "views": {
             "E2E synaptome explicit locations": {
