@@ -117,6 +117,8 @@ export default defineConfig({
       grep: /@credits/,
       grepInvert: excluding(/@slow\b/),
       dependencies: ['funding'],
+      // A launch spends the project's credits; a retry launches it again.
+      retries: 0,
       use: { storageState: authStatePath('primary') },
     },
     /**
@@ -132,6 +134,7 @@ export default defineConfig({
       grep: /@slow/,
       grepInvert: excluding(),
       dependencies: ['funding'],
+      retries: 0,
       use: { storageState: authStatePath('primary') },
     },
     {
