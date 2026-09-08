@@ -1,10 +1,24 @@
 /** Shared check for one column filter of a listing. */
 
 import { columnFilter, filterKind } from '@locators/column-filter';
-import { entityListing } from '@locators/listing';
+import { entityListing, listingError } from '@locators/listing';
 import { expect, type Locator, type Page } from '@playwright/test';
 
+import { expectListing } from './listing';
+
 const NO_MATCH = 'zzzz-no-such-value';
+
+/** Asserts the count, unless the listing gave up — then it reports that instead. */
+async function expectCount(page: Page, pattern: RegExp, message: string): Promise<void> {
+  const failed = listingError(page);
+
+  await Promise.race([
+    expect(entityListing(page).resultCount, message).toHaveText(pattern),
+    failed.waitFor({ state: 'visible' }).then(async () => {
+      throw new Error(`${message}: the listing gave up — ${(await failed.innerText()).trim()}`);
+    }),
+  ]);
+}
 
 async function resultCount(page: Page): Promise<number> {
   const text = await entityListing(page).resultCount.innerText();
@@ -68,9 +82,7 @@ async function clickInPanel(
 
 /** Filters the listing by one column, checks the count, then resets it. */
 export async function checkFilter(page: Page, column: string): Promise<void> {
-  const listing = entityListing(page);
-
-  await listing.table.waitFor();
+  await expectListing(page);
   const before = await settledCount(page);
   const filter = await open(page, column);
   const kind = await filterKind(filter.panel);
@@ -87,27 +99,27 @@ export async function checkFilter(page: Page, column: string): Promise<void> {
 
       if (!arrived) break;
       applied = true;
-      const expected = Number(
-        (
-          await filter.options
-            .first()
-            .innerText()
-            .catch(() => '')
-        )
-          .trim()
-          .split(/\s+/)
-          .at(-1)
-          ?.replace(/[^\d]/g, '')
-      );
 
-      await filter.options.first().getByRole('checkbox').click();
+      const option = filter.options.first();
+      const badge = filter.optionCount(option);
+      const shown =
+        (await badge.count()) > 0
+          ? await badge.innerText().catch(() => '')
+          : ((await option.innerText().catch(() => '')).trim().split(/\s+/).at(-1) ?? '');
+      const expected = Number(shown.replace(/[^\d]/g, ''));
+
+      await option
+        .getByTestId('column-filter-option-checkbox')
+        .or(option.getByRole('checkbox'))
+        .click();
       await filter.apply.click();
 
       if (Number.isFinite(expected) && expected > 0) {
-        await expect(
-          listing.resultCount,
+        await expectCount(
+          page,
+          new RegExp(`^${expected.toLocaleString('en-US')} results`),
           `the "${column}" facet promised ${expected} results`
-        ).toHaveText(new RegExp(`^${expected.toLocaleString('en-US')} results`));
+        );
       }
       break;
     }
@@ -116,10 +128,11 @@ export async function checkFilter(page: Page, column: string): Promise<void> {
       applied = true;
       await filter.value.fill(NO_MATCH);
       await filter.apply.click();
-      await expect(
-        listing.resultCount,
+      await expectCount(
+        page,
+        /^0 results/,
         `the "${column}" filter matched something it should not have`
-      ).toHaveText(/^0 results/);
+      );
       break;
     }
 
@@ -128,10 +141,11 @@ export async function checkFilter(page: Page, column: string): Promise<void> {
       await filter.min.fill('999999999');
       await filter.max.fill('1');
       await filter.apply.click();
-      await expect(
-        listing.resultCount,
+      await expectCount(
+        page,
+        /^0 results/,
         `the "${column}" range accepted a minimum above its maximum`
-      ).toHaveText(/^0 results/);
+      );
       break;
     }
 
