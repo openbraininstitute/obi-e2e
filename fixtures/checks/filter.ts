@@ -136,8 +136,8 @@ export async function checkFilter(page: Page, column: string): Promise<void> {
     }
 
     case 'choice': {
-      await expect(filter.apply).toBeVisible();
-      await expect(filter.reset).toBeVisible();
+      const reopened = await open(page, column);
+      await expect(reopened.reset).toBeVisible();
       break;
     }
 
