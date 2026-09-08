@@ -1,6 +1,5 @@
 import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
 import { routes } from '@fixtures/routes';
-import { showAllSpecies } from '@fixtures/steps/choose-species';
 import { setColumn } from '@fixtures/steps/listing-columns';
 import { AUTHENTICATED } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
@@ -19,7 +18,6 @@ test.describe('What the listing remembers', () => {
 
     await page.goto(routes.dataEntity(workspace.labId, workspace.projectId, SLUG));
 
-    await showAllSpecies(page);
     await expect(listing.cells.first()).toBeVisible();
 
     await listing.search.clear();

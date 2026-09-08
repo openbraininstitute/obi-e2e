@@ -37,8 +37,3 @@ export async function chooseSpecies(page: Page, name: SpeciesChoice): Promise<vo
 
   await expect(controls.speciesSelector).toContainText(name);
 }
-
-/** Every species, through the selector — for pages that reach it without `?s=all`. */
-export async function showAllSpecies(page: Page): Promise<void> {
-  await chooseSpecies(page, 'All');
-}

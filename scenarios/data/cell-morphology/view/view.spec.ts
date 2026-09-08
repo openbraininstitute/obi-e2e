@@ -1,6 +1,5 @@
 import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
 import { routes } from '@fixtures/routes';
-import { showAllSpecies } from '@fixtures/steps/choose-species';
 import { AUTHENTICATED } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { WIDE_VIEWPORT } from '@fixtures/viewport';
@@ -26,7 +25,6 @@ test.describe('Morphology details', () => {
     const listing = entityListing(page);
 
     await page.goto(routes.dataEntity(workspace.labId, workspace.projectId, SLUG));
-    await showAllSpecies(page);
     await expect(listing.cells.first()).toBeVisible();
 
     await listing.cells.filter({ hasText: /\S/ }).first().click();
