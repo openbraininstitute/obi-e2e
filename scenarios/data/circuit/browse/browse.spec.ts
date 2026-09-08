@@ -1,4 +1,5 @@
 import { checkFilter } from '@fixtures/checks/filter';
+import { expectListing } from '@fixtures/checks/listing';
 import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
 import { routes } from '@fixtures/routes';
 import { toggleCount } from '@fixtures/steps/listing-columns';
@@ -70,7 +71,7 @@ test.describe('Circuit listing', () => {
     await page.goto(
       routes.dataEntity(workspace.labId, workspace.projectId, entitySlug(Type.Circuit))
     );
-    await expect(entityListing(page).table).toBeVisible();
+    await expectListing(page);
   });
 
   test('See the Circuit table', { tag: AUTHENTICATED }, async ({ page }) => {
@@ -144,7 +145,7 @@ test.describe('Circuit listing', () => {
 
   test('Every Circuit filter narrows the listing', { tag: AUTHENTICATED }, async ({ page }) => {
     test.slow();
-    await expect(entityListing(page).table).toBeVisible();
+    await expectListing(page);
 
     for (const column of FILTERS) {
       await test.step(column, () => checkFilter(page, column));

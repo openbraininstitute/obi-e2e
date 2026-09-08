@@ -6,6 +6,12 @@ function startsWith(name: string): RegExp {
   return new RegExp(`^${name.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')}`);
 }
 
+export function listingError(page: Page) {
+  return page
+    .getByText(/An error occurred while fetching|don't have permission to access/i)
+    .first();
+}
+
 export function entityListing(page: Page) {
   const table = page.getByTestId('data-table-container');
   const toolbar = page.getByTestId('data-grid-toolbar');
