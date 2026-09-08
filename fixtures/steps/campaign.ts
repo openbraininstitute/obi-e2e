@@ -2,9 +2,10 @@
 
 import { scanConfigEditor, scanConfigResults } from '@locators/scan-config';
 import { lowCredits } from '@locators/workflows';
-import { expect, type Locator, type Page } from '@playwright/test';
+import { expect, type Locator, type Page, type Request, type Response } from '@playwright/test';
 
 import { checkCompletedOutput, checkGeneratedFiles } from '../checks/campaign-output';
+import { pageProblems } from '../run/page-problems';
 import type { ScanConfigCase, ScanConfigFixture } from '../scan-config';
 import { scanConfigWords } from '../scan-config/activities';
 import { ScanConfigDriver } from '../scan-config/driver';
@@ -30,8 +31,30 @@ const CONFIGURATION_TAB = 'configuration';
 /** How often the page is asked again while a run is in flight. */
 const POLL_INTERVAL = 15_000;
 
+/**
+ * How long the call behind a button may take.
+ *
+ * Generating a grid is server work, not an element appearing, and the two do
+ * not belong on the same clock. A brain-region circuit was measured at 39s
+ * against staging on 2026-09-08 — under the assertion default of 30s the run
+ * reported it as a results tab that never enabled, and every wait downstream
+ * of it failed the same way. The editor's own assertions keep the 30s.
+ */
+const CALL_TIMEOUT = 120_000;
+
 /** Statuses a coordinate stops at. */
 const SETTLED = /^(done|error)$/i;
+
+/** The POST behind the Generate button. Each activity has a grid endpoint of its own. */
+const GENERATES_THE_CAMPAIGN = /scan-config-generate-grid/;
+
+/**
+ * The POST behind the Launch button.
+ *
+ * Which service runs a campaign depends on the workflow: obi-one launches a
+ * declared task, the small-scale simulator runs a batch of its own.
+ */
+const LAUNCHES_THE_CAMPAIGN = /\/declared\/task\/launch|\/circuit\/simulation\/run-batch/;
 
 /** Whether this case is followed to the end at all. */
 function isFollowed(configuration: ScanConfigCase): boolean {
@@ -82,30 +105,12 @@ export async function runCampaign(
   await expect(editor.submit).toHaveText(words.generate);
   await expect(editor.submit).toBeEnabled();
 
-  await editor.submit.click();
+  const generated = callSent(page, GENERATES_THE_CAMPAIGN);
+  await editor.submit.click({ noWaitAfter: true });
+  await expectAccepted(page, generated, 'Generating the campaign');
 
-  /*
-   * Generating opens the results by itself — unless the app refuses first.
-   * With no credits the button shows a notice and sends nothing, and the tab
-   * then sits disabled for the whole assertion timeout: a nightly lost fourteen
-   * launches that way, every one reported as a tab that never enabled. The
-   * notice is the cause, so it is what gets reported.
-   */
-  try {
-    await Promise.race([
-      expect(editor.tab(words.resultsTab)).toBeEnabled(),
-      lowCredits(page)
-        .notice.waitFor({ state: 'visible' })
-        .then(() => {
-          throw new Error(
-            'The app refused to generate: the project has no credits. The run funds its ' +
-              'project at setup, so look at the funding step and the credit report.'
-          );
-        }),
-    ]);
-  } catch (error) {
-    throw new Error(await whyGenerationFailed(page, error), { cause: error });
-  }
+  // Accepted, so the results open by themselves.
+  await expect(editor.tab(words.resultsTab)).toBeEnabled();
 
   await expect(results.coordinates).toHaveCount(configuration.expect.coordinateCount);
 
@@ -126,18 +131,19 @@ export async function runCampaign(
   // A case the lab cannot afford to run stops with the button offered, unpressed.
   if (configuration.launch === false) return;
 
-  await results.launch.click();
+  const launched = callSent(page, LAUNCHES_THE_CAMPAIGN);
+  await results.launch.click({ noWaitAfter: true });
 
   if (fixture.workflow.confirmsCost) {
     await expect(results.costConfirm).toBeVisible();
-    await results.costConfirm.click();
+    await results.costConfirm.click({ noWaitAfter: true });
   }
 
-  /* The app swallows a refused launch: a 403 lands in the console only, never on the page. */
+  await expectAccepted(page, launched, 'Launching the campaign');
+
   await expect(
     status,
-    'The launch never took. The project is most likely out of credits — the refusal is ' +
-      'only visible as a console error, so check the trace for POST /task/launch.'
+    'The launch was accepted, but the coordinate never left "created".'
   ).not.toHaveText(/^created$/i);
 
   if (!isFollowed(configuration)) return;
@@ -148,23 +154,80 @@ export async function runCampaign(
   await checkCompletedOutput(page, configuration);
 }
 
-async function whyGenerationFailed(page: Page, error: unknown): Promise<string> {
-  if (error instanceof Error && error.message.startsWith('The app refused')) return error.message;
+/**
+ * The call a button sends, watched from before the click.
+ *
+ * The app swallows what these answer — a 403 refusing a launch reaches the
+ * console and nothing else, a 500 refusing to generate leaves the results tab
+ * disabled and nothing on the page — so a run that watches only the editor
+ * reports every backend refusal as an element that never moved. The call is
+ * where the reason is.
+ */
+function callSent(page: Page, url: RegExp): Promise<CallOutcome> {
+  const matches = (request: Request) => request.method() === 'POST' && url.test(request.url());
 
-  const notice = page.getByRole('alert').filter({ hasText: /\S/ }).first();
+  const answered = page
+    .waitForResponse((response) => matches(response.request()), { timeout: CALL_TIMEOUT })
+    .then((response): CallOutcome => ({ response }))
+    .catch(() => null);
+
+  // A request the browser drops answers nothing, so the response wait alone
+  // reports it as a button that sent nothing at all.
+  const dropped = page
+    .waitForEvent('requestfailed', { predicate: matches, timeout: CALL_TIMEOUT })
+    .then((request): CallOutcome => ({ dropped: request.failure()?.errorText ?? 'failed' }))
+    .catch(() => null);
+
+  return Promise.race([answered, dropped]);
+}
+
+/** What a call did: answered, dropped by the browser, or never sent. */
+type CallOutcome = { response: Response } | { dropped: string } | null;
+
+/** Fails naming what the service said, rather than what the editor did not do. */
+async function expectAccepted(page: Page, call: Promise<CallOutcome>, what: string): Promise<void> {
+  const outcome = await call;
+
+  if (outcome === null) {
+    // The app refused before sending: no credits shows a notice and stops here.
+    throw new Error(`${what} sent no request${await whatTheAppSaid(page)}.${alsoSeen(page)}`);
+  }
+
+  if ('dropped' in outcome) {
+    // The app catches this one and puts it in a notification.
+    throw new Error(
+      `${what} never reached the service: ${outcome.dropped}` +
+        `${await whatTheAppSaid(page)}.${alsoSeen(page)}`
+    );
+  }
+
+  if (!outcome.response.ok()) {
+    const said = await outcome.response
+      .text()
+      .then((body) => body.replaceAll(/\s+/g, ' ').trim())
+      .catch(() => '');
+    throw new Error(
+      `${what} was refused: ${outcome.response.status()} ${outcome.response.url()} ${said}`
+    );
+  }
+}
+
+async function whatTheAppSaid(page: Page): Promise<string> {
+  const notice = lowCredits(page)
+    .notice.or(page.getByRole('alert').filter({ hasText: /\S/ }))
+    .first();
+
   const said = await notice
     .innerText()
     .then((text) => text.trim().replaceAll(/\s+/g, ' '))
     .catch(() => '');
 
-  if (said === '') {
-    return (
-      'Generating never opened the results, and the app said nothing. Look at the trace for ' +
-      `the POST that generates the campaign.\n\n${String(error)}`
-    );
-  }
+  return said === '' ? '' : `, and said "${said}"`;
+}
 
-  return `The app refused to generate: "${said}"`;
+function alsoSeen(page: Page): string {
+  const problems = pageProblems(page);
+  return problems.length === 0 ? '' : `\nThe page also saw:\n${problems.join('\n')}`;
 }
 
 /**
@@ -183,7 +246,7 @@ async function openTab(
   id: string
 ): Promise<void> {
   await page.keyboard.press('Escape');
-  await editor.tab(id).click();
+  await editor.tab(id).click({ noWaitAfter: true });
 }
 
 /**
