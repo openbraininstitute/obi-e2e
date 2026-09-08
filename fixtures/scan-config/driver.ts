@@ -16,6 +16,25 @@ import type { ScanConfigCase } from './index';
 import { ScanConfigUiElement } from './ui-elements';
 
 /** Types one configuration into the editor, field by field. */
+/** More than this many unasked-for values means the list is not behaving as a list. */
+const MAX_EXTRA_SELECTIONS = 20;
+
+/** A control that holds several values at once, rather than one. */
+const MULTIPLE_VALUE_CONTROL = '[data-scan-config-block-element$="__multiple"]';
+
+/**
+ * An option the list is currently holding.
+ *
+ * antd gives its options no role and never says which are chosen, so the app
+ * marks them: see the entity property dropdown in core-web-app.
+ */
+const CHOSEN_OPTION = '[data-selected="true"]';
+
+/** Quotes a value so it can sit inside an attribute selector. */
+function cssEscape(value: string): string {
+  return value.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
+}
+
 export class ScanConfigDriver {
   private readonly editor: ReturnType<typeof scanConfigEditor>;
 
@@ -366,7 +385,48 @@ export class ScanConfigDriver {
         .click({ force: true, timeout: 5_000 });
     }, `${at}: "${option}" never became selectable`).toPass({ timeout: 30_000 });
 
+    await this.keepOnly(field, option);
+
     await expect(control).not.toHaveText(/^Select /);
+  }
+
+  /**
+   * Leaves a multi-value list holding only what the fixture asked for.
+   *
+   * A field that takes one value or several renders as a list that adds rather
+   * than replaces, and the app picks its first option as soon as the field is
+   * empty. Asking for one value therefore left two — the whole-brain drive was
+   * generated for "All" as well as the sugar set it named, which is a sweep
+   * over two coordinates and, for the "All" one, every neuron of the
+   * connectome. Clicking a selected option again is how such a list drops it.
+   *
+   * A single-value list has closed by now, or holds exactly what was asked
+   * for, so there is nothing here for it to do.
+   */
+  private async keepOnly(field: Locator, option: string): Promise<void> {
+    /*
+     * Only a list that takes several values, and only the options on screen.
+     * Every list this driver has opened is still in the page, holding whatever
+     * was picked in it, so an unscoped search reaches back into a field filled
+     * minutes ago and tries to click an option scrolled far out of view.
+     */
+    const multiple = field
+      .locator(MULTIPLE_VALUE_CONTROL)
+      .or(field.and(this.page.locator(MULTIPLE_VALUE_CONTROL)));
+    if ((await multiple.count()) === 0) return;
+
+    // The marker sits on the option itself, so the one that was asked for is
+    // excluded by name rather than by what it contains.
+    const extra = this.page
+      .locator(`${CHOSEN_OPTION}:not([data-testid="scan-config-option-${cssEscape(option)}"])`)
+      .filter({ visible: true });
+
+    for (let dropped = 0; dropped < MAX_EXTRA_SELECTIONS; dropped += 1) {
+      if ((await extra.count()) === 0) return;
+      await extra.first().click({ force: true, timeout: 5_000 });
+    }
+
+    expect(await extra.count(), 'The list kept offering values that were never asked for.').toBe(0);
   }
 
   private optionValue(value: unknown, at: string): string | null {
