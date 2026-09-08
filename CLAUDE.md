@@ -19,8 +19,13 @@ bun run test    # or a single spec while iterating
 - Import by alias (`@/`, `@fixtures/`, `@locators/`, `@api/`), never `../../..`.
 - Tags come from `@fixtures/tags`. Entity types come from `@fixtures/entity-types`,
   and listing slugs are derived from them with `kebabCase`.
-- Locators: `getByRole`, `getByLabel`, `getByText`. Never CSS classes.
-  `first()` / `nth()` need a comment explaining why.
+- Locators: `getByTestId` first. Add the test id to core-web-app when it is
+  missing; where a component cannot carry one, use a data attribute. Fall back
+  to `getByRole` / `getByLabel` / `getByText` with `.or()` only until the id
+  ships — staging lags the app, and a test id-only locator fails there. Never
+  CSS classes. `first()` / `nth()` need a comment explaining why.
+  Keep the two halves of an `.or()` on one element: when the fallback is an
+  ancestor of the marked element, both match and the locator is not strict.
 - Locators live in the scenario's own `locators.ts`. Move one to the root
   `locators/` folder only once a second scenario needs it.
 - Assertions live in the spec, never in a locator module.

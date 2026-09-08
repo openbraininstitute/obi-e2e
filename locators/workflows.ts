@@ -3,11 +3,17 @@
 import type { Locator, Page } from '@playwright/test';
 
 export function lowCredits(page: Page) {
-  const notice = page.getByRole('alert').filter({ hasText: /credit/i });
+  const marked = page.getByTestId('low-credits-notice');
+  const notice = marked.or(
+    page
+      .getByRole('alert')
+      .filter({ hasText: /credit/i })
+      .filter({ hasNot: marked })
+  );
 
   return {
     notice,
-    action: notice.getByRole('button'),
+    action: notice.getByTestId('low-credits-action').or(notice.getByRole('button')),
   };
 }
 
