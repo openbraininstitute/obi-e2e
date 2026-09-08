@@ -44,6 +44,9 @@ export function envOfUrl(url: string | undefined): 'staging' | 'production' | un
   }
 }
 
+/** Names the keys that came from a file, so a real override is never mistaken for one. */
+const INJECTED_KEYS = 'E2E_ENV_KEYS_FROM_FILES';
+
 function loadEnvFiles(): void {
   const read = (name: string) => parseEnvFile(path.resolve(process.cwd(), name));
   const shared = read('.env');
@@ -61,18 +64,31 @@ function loadEnvFiles(): void {
     shared,
   ];
 
-  const other = deployment === 'staging' ? 'production' : 'staging';
-  const fromAFile = [...layers, read(`.env.${other}.local`), read(`.env.${other}`)];
+  /*
+   * Which keys this process (or the one that spawned it) took from a file.
+   *
+   * A worker inherits everything the parent injected and cannot otherwise tell
+   * those apart from a variable someone exported, so the parent writes the list
+   * down and passes it on. What used to stand in for this was "the current
+   * value appears in some .env file", which quietly threw away a deliberate
+   * override whenever it happened to match one: exporting the real staging URL
+   * ran the suite against localhost, because .env.staging names that same URL.
+   */
+  const injected = new Set((process.env[INJECTED_KEYS] ?? '').split(',').filter(Boolean));
 
   for (const [index, layer] of layers.entries()) {
     for (const [key, value] of layer) {
       if (layers.slice(0, index).some((higher) => higher.has(key))) continue;
 
       const current = process.env[key];
-      const wasRead = fromAFile.some((file) => file.get(key) === current);
-      if (current === undefined || current === '' || wasRead) process.env[key] = value;
+      if (current === undefined || current === '' || injected.has(key)) {
+        process.env[key] = value;
+        injected.add(key);
+      }
     }
   }
+
+  process.env[INJECTED_KEYS] = [...injected].join(',');
 }
 
 loadEnvFiles();
