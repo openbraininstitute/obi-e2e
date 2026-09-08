@@ -43,6 +43,8 @@ export function atlas(page: Page) {
 
     viewer: page.getByTestId('three-d-area'),
     canvas: page.getByTestId('three-d-area').locator('canvas'),
+    // Rendered only once every atlas is known; a loader with no test id stands in before.
+    speciesGrid: page.getByTestId('all-species-atlas-grid'),
     speciesCards: page.locator('[data-testid^="all-species-atlas-card__"]'),
     speciesCard: (species: SpeciesName) => page.getByTestId(speciesCardId(species)),
   };
