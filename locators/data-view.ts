@@ -32,14 +32,16 @@ export function dataView(page: Page) {
     delete: actions.getByTestId('data-view-action-delete'),
 
     mini,
-    miniName: mini.getByRole('heading', { level: 1 }),
+    miniName: mini.getByTestId('mini-detail-name').or(mini.getByRole('heading', { level: 1 })),
     miniProperty: (field: string) =>
       mini
         .getByTestId(`mini-detail-property-${field}`)
         .or(mini.getByText(propertyLabel(field)))
         .first(),
-    miniDownload: mini.getByTitle('download'),
-    viewDetails: mini.getByTitle('Go to details page'),
+    miniDownload: mini.getByTestId('mini-detail-download').or(mini.getByTitle('download')),
+    viewDetails: mini
+      .getByTestId('mini-detail-view-details')
+      .or(mini.getByTitle('Go to details page')),
 
     section: (name: string) => page.getByTestId(name),
   };

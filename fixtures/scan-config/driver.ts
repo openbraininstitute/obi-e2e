@@ -50,6 +50,7 @@ export class ScanConfigDriver {
       if (rootElement === 'type') continue;
       if (!isRecord(value)) throw new Error(`Root element "${rootElement}" must be an object.`);
 
+      await this.page.keyboard.press('Escape');
       await this.editor.rootElement(rootElement).click();
 
       if (typeof value.type === 'string') {
@@ -261,26 +262,21 @@ export class ScanConfigDriver {
     const catalogue = picker.panel;
     await expect(catalogue).toBeVisible();
 
-    for (const [index, entry] of value.entries()) {
+    const names = value.map((entry, index) => {
       if (!isRecord(entry) || typeof entry.name !== 'string') {
         throw new Error(`${at}[${index}]: needs a { "name": … } naming the entity to pick`);
       }
+      return entry.name;
+    });
 
-      await catalogue.getByRole('textbox', { name: 'Search' }).fill(entry.name);
+    await expect(async () => {
+      for (const name of names) {
+        await catalogue.getByRole('textbox', { name: 'Search' }).fill(name);
+        await tickRow(catalogue, name, at);
+      }
+      await expect(picker.confirm).toBeEnabled({ timeout: 3_000 });
+    }, `${at}: the picks never held.`).toPass({ timeout: 45_000 });
 
-      const row = catalogue.getByRole('row').filter({ hasText: entry.name }).first();
-      await expect(row, `No "${entry.name}" to pick for ${at}.`).toBeVisible();
-
-      // The grid pins its tick boxes into a row of their own, so the row holding
-      // the name holds none; both halves carry the same index.
-      await catalogue
-        .locator(`[role="row"][row-index="${await row.getAttribute('row-index')}"]`)
-        .getByRole('checkbox')
-        .first()
-        .check();
-    }
-
-    await expect(picker.confirm).toBeEnabled();
     await picker.confirm.click();
     await expect(picker.overlay).toHaveCount(0);
 
@@ -326,15 +322,14 @@ export class ScanConfigDriver {
     const catalogue = picker.panel;
     await expect(catalogue).toBeVisible();
 
-    await catalogue.getByRole('textbox', { name: 'Search' }).fill(value.name);
-    await expect(
-      catalogue.getByRole('row').filter({ hasText: value.name }).first(),
-      `No "${value.name}" to pick for ${at}.`
-    ).toBeVisible();
+    const name = value.name;
+    await catalogue.getByRole('textbox', { name: 'Search' }).fill(name);
 
-    await catalogue.getByRole('checkbox').last().check();
+    await expect(async () => {
+      await tickRow(catalogue, name, at);
+      await expect(picker.confirm).toBeEnabled({ timeout: 3_000 });
+    }, `${at}: "${name}" never stayed picked.`).toPass({ timeout: 30_000 });
 
-    await expect(picker.confirm).toBeEnabled();
     await picker.confirm.click();
     await expect(picker.overlay).toHaveCount(0);
   }
@@ -383,6 +378,8 @@ export class ScanConfigDriver {
         .filter({ visible: true })
         .first()
         .click({ force: true, timeout: 5_000 });
+
+      await expect(control).not.toHaveText(/^Select /, { timeout: 3_000 });
     }, `${at}: "${option}" never became selectable`).toPass({ timeout: 30_000 });
 
     await this.keepOnly(field, option);
@@ -447,6 +444,17 @@ export class ScanConfigDriver {
 
     throw new Error(`${at}: cannot select from ${JSON.stringify(value)}`);
   }
+}
+
+async function tickRow(catalogue: Locator, name: string, at: string): Promise<void> {
+  const row = catalogue.getByRole('row').filter({ hasText: name }).first();
+  await expect(row, `No "${name}" to pick for ${at}.`).toBeVisible({ timeout: 5_000 });
+
+  await catalogue
+    .locator(`[role="row"][row-index="${await row.getAttribute('row-index')}"]`)
+    .getByRole('checkbox')
+    .first()
+    .check({ timeout: 5_000 });
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -75,7 +75,7 @@
         "coordinateCount": 1,
         "generated": {
           "inputs": [
-            "circuit_config.json",
+            "Circuit directory",
             "node_sets.json",
             "obi_one_coordinate.json",
             "simulation_config.json"

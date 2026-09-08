@@ -1,6 +1,8 @@
 import { entityListing } from '@locators/listing';
 import { expect, type Page } from '@playwright/test';
 
+import { expectListing } from './listing';
+
 async function pageSignature(page: Page): Promise<string> {
   const cells = await entityListing(page).cells.allInnerTexts();
   return cells
@@ -14,6 +16,7 @@ async function pageSignature(page: Page): Promise<string> {
 export async function checkPagination(page: Page): Promise<void> {
   const listing = entityListing(page);
 
+  await expectListing(page);
   await expect(listing.cells.first()).toBeVisible();
   await page.waitForLoadState('networkidle').catch(() => {});
 

@@ -40,7 +40,9 @@ export function normalizeLabel(text: string): string {
 }
 
 export function scanConfigEditor(page: Page) {
-  const middle = page.locator('#scan-config-middle-content');
+  const middle = page
+    .getByTestId('scan-config-middle-content')
+    .or(page.locator('#scan-config-middle-content'));
 
   return {
     tab: (id: string): Locator =>
@@ -49,9 +51,12 @@ export function scanConfigEditor(page: Page) {
         .or(page.getByRole('button', { name: id, exact: true })),
 
     submit: page.getByTestId('scan-config-submit').or(
-      page.locator('#scan-config-controls-left').getByRole('button', {
-        name: /^(Generate|Build|Run|Process)/,
-      })
+      page
+        .getByTestId('scan-config-controls-left')
+        .or(page.locator('#scan-config-controls-left'))
+        .getByRole('button', {
+          name: /^(Generate|Build|Run|Process)/,
+        })
     ),
 
     rootElement: (key: string): Locator =>
@@ -124,7 +129,7 @@ function variantPattern(type: string): RegExp {
 }
 
 export function scanConfigResults(page: Page) {
-  const results = page.locator('#scan-config-results');
+  const results = page.getByTestId('scan-config-results').or(page.locator('#scan-config-results'));
   const mini = page.getByTestId('mini-viewer');
   const view = page
     .getByTestId('scan-config-file-view')
@@ -134,12 +139,18 @@ export function scanConfigResults(page: Page) {
   return {
     coordinates: page.locator('[data-testid^="scan-config-coordinate-"]'),
 
-    status: results.getByRole('status'),
+    status: results.getByTestId('scan-config-status'),
 
-    launch: results.getByRole('button', { name: /^Launch/ }),
+    launch: results
+      .getByTestId('scan-config-launch')
+      .or(results.getByRole('button', { name: /^Launch/ })),
 
-    costConfirm: page.getByRole('dialog').getByRole('button', { name: /^(Launch|Confirm|Yes)/ }),
-    costCancel: page.getByRole('dialog').getByRole('button', { name: /^(Cancel|No)/ }),
+    costConfirm: page
+      .getByTestId('scan-config-cost-confirm')
+      .or(page.getByRole('dialog').getByRole('button', { name: /^(Launch|Confirm|Yes)/ })),
+    costCancel: page
+      .getByTestId('scan-config-cost-cancel')
+      .or(page.getByRole('dialog').getByRole('button', { name: /^(Cancel|No)/ })),
 
     inputs: page.getByTestId('scan-config-inputs'),
     outputs: page.getByTestId('scan-config-outputs'),
@@ -153,9 +164,11 @@ export function scanConfigResults(page: Page) {
     preview: {
       entity: {
         card: mini,
-        name: mini.getByRole('heading', { level: 1 }),
-        viewDetails: mini.getByTitle('Go to details page'),
-        download: mini.getByTitle('download'),
+        name: mini.getByTestId('mini-detail-name').or(mini.getByRole('heading', { level: 1 })),
+        viewDetails: mini
+          .getByTestId('mini-detail-view-details')
+          .or(mini.getByTitle('Go to details page')),
+        download: mini.getByTestId('mini-detail-download').or(mini.getByTitle('download')),
         property: (label: string): Locator =>
           mini
             .getByText(new RegExp(`^${label.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'))
@@ -166,14 +179,22 @@ export function scanConfigResults(page: Page) {
 }
 
 export function scanConfigModelPicker(page: Page) {
-  const overlay = page.locator('#scan-config-model-selection-overlay');
+  const overlay = page
+    .getByTestId('scan-config-model-picker')
+    .or(page.locator('#scan-config-model-selection-overlay'));
 
   return {
-    open: page.getByRole('button', { name: /^Select / }),
+    open: page
+      .getByTestId('scan-config-select-model')
+      .or(page.getByRole('button', { name: /^Select / })),
     overlay,
     panel: overlay.getByTestId('data-table-container'),
-    confirm: overlay.getByRole('button', { name: /^Confirm/ }),
-    cancel: overlay.getByRole('button', { name: 'Cancel' }),
+    confirm: overlay
+      .getByTestId('scan-config-confirm-model')
+      .or(overlay.getByRole('button', { name: /^Confirm/ })),
+    cancel: overlay
+      .getByTestId('scan-config-cancel-model')
+      .or(overlay.getByRole('button', { name: 'Cancel' })),
   };
 }
 

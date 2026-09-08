@@ -91,17 +91,21 @@ export async function runCampaign(
    * launches that way, every one reported as a tab that never enabled. The
    * notice is the cause, so it is what gets reported.
    */
-  await Promise.race([
-    expect(editor.tab(words.resultsTab)).toBeEnabled(),
-    lowCredits(page)
-      .notice.waitFor({ state: 'visible' })
-      .then(() => {
-        throw new Error(
-          'The app refused to generate: the project has no credits. The run funds its ' +
-            'project at setup, so look at the funding step and the credit report.'
-        );
-      }),
-  ]);
+  try {
+    await Promise.race([
+      expect(editor.tab(words.resultsTab)).toBeEnabled(),
+      lowCredits(page)
+        .notice.waitFor({ state: 'visible' })
+        .then(() => {
+          throw new Error(
+            'The app refused to generate: the project has no credits. The run funds its ' +
+              'project at setup, so look at the funding step and the credit report.'
+          );
+        }),
+    ]);
+  } catch (error) {
+    throw new Error(await whyGenerationFailed(page, error), { cause: error });
+  }
 
   await expect(results.coordinates).toHaveCount(configuration.expect.coordinateCount);
 
@@ -142,6 +146,25 @@ export async function runCampaign(
   await expect(status).toHaveText(/^done$/i);
 
   await checkCompletedOutput(page, configuration);
+}
+
+async function whyGenerationFailed(page: Page, error: unknown): Promise<string> {
+  if (error instanceof Error && error.message.startsWith('The app refused')) return error.message;
+
+  const notice = page.getByRole('alert').filter({ hasText: /\S/ }).first();
+  const said = await notice
+    .innerText()
+    .then((text) => text.trim().replaceAll(/\s+/g, ' '))
+    .catch(() => '');
+
+  if (said === '') {
+    return (
+      'Generating never opened the results, and the app said nothing. Look at the trace for ' +
+      `the POST that generates the campaign.\n\n${String(error)}`
+    );
+  }
+
+  return `The app refused to generate: "${said}"`;
 }
 
 /**

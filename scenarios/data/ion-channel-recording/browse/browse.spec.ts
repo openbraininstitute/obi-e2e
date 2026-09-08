@@ -1,4 +1,5 @@
 import { checkFilter } from '@fixtures/checks/filter';
+import { expectListing } from '@fixtures/checks/listing';
 import { checkPagination } from '@fixtures/checks/pagination';
 import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
 import { routes } from '@fixtures/routes';
@@ -63,7 +64,7 @@ test.describe('Ion channel electrophysiology listing', () => {
     await page.goto(
       routes.dataEntity(workspace.labId, workspace.projectId, entitySlug(Type.IonChannelRecording))
     );
-    await expect(entityListing(page).table).toBeVisible();
+    await expectListing(page);
   });
 
   test('See the Ion channel electrophysiology table', { tag: AUTHENTICATED }, async ({ page }) => {
@@ -152,7 +153,7 @@ test.describe('Ion channel electrophysiology listing', () => {
     { tag: AUTHENTICATED },
     async ({ page }) => {
       test.slow();
-      await expect(entityListing(page).table).toBeVisible();
+      await expectListing(page);
 
       for (const column of FILTERS) {
         await test.step(column, () => checkFilter(page, column));
