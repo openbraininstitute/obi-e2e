@@ -42,8 +42,9 @@ jobs:
         run: |
           case "$EVENT" in
             schedule)
-              runs=$(jq -cn '[{name:"staging",environment:"staging",grep:""},
-                              {name:"production",environment:"production",grep:""}]') ;;
+              # Production is off until its credentials exist. To bring it back, add
+              # {name:"production",environment:"production",grep:""} to this list.
+              runs=$(jq -cn '[{name:"staging",environment:"staging",grep:""}]') ;;
             repository_dispatch)
               runs=$(jq -cn --arg url "$PREVIEW_URL" \
                 '[{name:"pr-preview",environment:"preview",grep:"",base_url:$url}]') ;;
