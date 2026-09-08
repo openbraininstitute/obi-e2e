@@ -1,3 +1,4 @@
+import { NO_NAVIGATION } from '@fixtures/interactions';
 import { loadSeed, notDeployedHere, runsOnThisDeployment } from '@fixtures/scan-config';
 import { scanConfigWords } from '@fixtures/scan-config/activities';
 import { addLocationsFromViewer, ScanConfigDriver } from '@fixtures/scan-config/driver';
@@ -34,9 +35,9 @@ async function openEditor(page: Page): Promise<void> {
 async function addExplicitLocations(page: Page): Promise<void> {
   const editor = scanConfigEditor(page);
 
-  await editor.rootElement('morphology_locations').click();
-  await editor.addEntry('morphology_locations').click();
-  await editor.variant('ExplicitMorphologyLocations').click();
+  await editor.rootElement('morphology_locations').click(NO_NAVIGATION);
+  await editor.addEntry('morphology_locations').click(NO_NAVIGATION);
+  await editor.variant('ExplicitMorphologyLocations').click(NO_NAVIGATION);
 
   await expect(morphologyLocations(page).panel).toBeVisible();
 }
@@ -74,7 +75,7 @@ test.describe('Synaptome build', () => {
       await expect(editor.submit).toHaveText(words.generate);
       await expect(editor.submit).toBeEnabled();
 
-      await editor.submit.click();
+      await editor.submit.click(NO_NAVIGATION);
 
       await expect(lowCredits(page).notice).toBeVisible();
       await expect(editor.tab(words.resultsTab)).toBeDisabled();
@@ -136,7 +137,7 @@ test.describe('Synaptome build', () => {
     await addExplicitLocations(page);
     await addLocationsFromViewer(page, 2);
 
-    await locations.remove(0).click();
+    await locations.remove(0).click(NO_NAVIGATION);
 
     await expect(locations.rows).toHaveCount(1);
     await expect(locations.remove(0)).toHaveCount(0);
@@ -151,12 +152,12 @@ test.describe('Synaptome build', () => {
     await expect(viewer.mode.visualization).toHaveAttribute('aria-pressed', 'true');
     await expect(viewer.mode.dendrogram).toHaveAttribute('aria-pressed', 'false');
 
-    await viewer.mode.dendrogram.click();
+    await viewer.mode.dendrogram.click(NO_NAVIGATION);
 
     await expect(viewer.mode.dendrogram).toHaveAttribute('aria-pressed', 'true');
     await expect(viewer.mode.visualization).toHaveAttribute('aria-pressed', 'false');
 
-    await viewer.mode.visualization.click();
+    await viewer.mode.visualization.click(NO_NAVIGATION);
 
     await expect(viewer.mode.visualization).toHaveAttribute('aria-pressed', 'true');
   });
@@ -167,16 +168,16 @@ test.describe('Synaptome build', () => {
     await openEditor(page);
     await expect(viewer.scene).toBeVisible();
 
-    await viewer.settings.click();
+    await viewer.settings.click(NO_NAVIGATION);
 
     await expect(viewer.toggle.axons).toBeVisible();
     await expect(viewer.toggle.axons).not.toBeChecked();
 
-    await viewer.toggle.axons.click();
+    await viewer.toggle.axons.click(NO_NAVIGATION);
 
     await expect(viewer.toggle.axons).toBeChecked();
 
-    await viewer.toggle.axons.click();
+    await viewer.toggle.axons.click(NO_NAVIGATION);
 
     await expect(viewer.toggle.axons).not.toBeChecked();
   });
@@ -189,16 +190,16 @@ test.describe('Synaptome build', () => {
 
     await expect(viewer.zoomSlider).toHaveCount(0);
 
-    await viewer.settings.click();
+    await viewer.settings.click(NO_NAVIGATION);
 
     await expect(viewer.toggle.zoomSlider).not.toBeChecked();
 
-    await viewer.toggle.zoomSlider.click();
+    await viewer.toggle.zoomSlider.click(NO_NAVIGATION);
 
     await expect(viewer.toggle.zoomSlider).toBeChecked();
     await expect(viewer.zoomSlider).toBeVisible();
 
-    await viewer.toggle.zoomSlider.click();
+    await viewer.toggle.zoomSlider.click(NO_NAVIGATION);
 
     await expect(viewer.zoomSlider).toHaveCount(0);
   });
@@ -212,7 +213,7 @@ test.describe('Synaptome build', () => {
       await openEditor(page);
       await expect(viewer.scene).toBeVisible();
 
-      await viewer.settings.click();
+      await viewer.settings.click(NO_NAVIGATION);
 
       await expect(viewer.toggle.scaleBar).toBeChecked();
       await expect(viewer.slider.neuronOpacity).toContainText('100%');

@@ -3,6 +3,7 @@
 import { scanConfigResults } from '@locators/scan-config';
 import { expect, type Locator, type Page } from '@playwright/test';
 
+import { NO_NAVIGATION } from '../interactions';
 import type { ScanConfigCase, ScanConfigView } from '../scan-config';
 
 const LOG_FILE = 'Task logs';
@@ -47,13 +48,13 @@ export async function checkCompletedOutput(
   await checkFiles(results.outputs, completed.outputs);
 
   if (completed.outputs.includes(LOG_FILE)) {
-    await results.file(LOG_FILE).click();
+    await results.file(LOG_FILE).click(NO_NAVIGATION);
     await expect(results.logs).toContainText('Task execution completed.');
     await expect(results.preview.entity.card).toHaveCount(0);
   }
 
   for (const [file, shown] of Object.entries(completed.views ?? {})) {
-    await results.file(file).click();
+    await results.file(file).click(NO_NAVIGATION);
     await checkView(page, shown);
   }
 }

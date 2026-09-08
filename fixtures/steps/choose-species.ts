@@ -1,6 +1,8 @@
 import { atlas, type SpeciesChoice } from '@locators/atlas';
 import { expect, type Page } from '@playwright/test';
 
+import { NO_NAVIGATION } from '../interactions';
+
 /**
  * Picks a species in the atlas selector.
  *
@@ -29,10 +31,10 @@ export async function chooseSpecies(page: Page, name: SpeciesChoice): Promise<vo
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   }
 
-  await trigger.click();
+  await trigger.click(NO_NAVIGATION);
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
-  await controls.speciesOption(name).click();
+  await controls.speciesOption(name).click(NO_NAVIGATION);
   await expect(trigger).toHaveAttribute('aria-expanded', 'false');
 
   await expect(controls.speciesSelector).toContainText(name);

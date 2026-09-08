@@ -4,6 +4,7 @@ import { columnFilter, filterKind } from '@locators/column-filter';
 import { entityListing, listingError } from '@locators/listing';
 import { expect, type Locator, type Page } from '@playwright/test';
 
+import { NO_NAVIGATION } from '../interactions';
 import { expectListing } from './listing';
 
 const NO_MATCH = 'zzzz-no-such-value';
@@ -58,7 +59,7 @@ async function open(page: Page, column: string) {
 
   await expect(async () => {
     if (!(await filter.panel.isVisible().catch(() => false))) {
-      await filter.trigger(column).click();
+      await filter.trigger(column).click(NO_NAVIGATION);
     }
     await expect(filter.apply).toBeVisible({ timeout: 1_500 });
   }).toPass({ timeout: 45_000 });
@@ -74,9 +75,9 @@ async function clickInPanel(
   await expect(async () => {
     const filter = columnFilter(page);
     if (!(await filter.panel.isVisible().catch(() => false))) {
-      await filter.trigger(column).click();
+      await filter.trigger(column).click(NO_NAVIGATION);
     }
-    await button(filter).click({ timeout: 3_000 });
+    await button(filter).click({ ...NO_NAVIGATION, timeout: 3_000 });
   }).toPass({ timeout: 45_000 });
 }
 
@@ -111,8 +112,8 @@ export async function checkFilter(page: Page, column: string): Promise<void> {
       await option
         .getByTestId('column-filter-option-checkbox')
         .or(option.getByRole('checkbox'))
-        .click();
-      await filter.apply.click();
+        .click(NO_NAVIGATION);
+      await filter.apply.click(NO_NAVIGATION);
 
       if (Number.isFinite(expected) && expected > 0) {
         await expectCount(
@@ -127,7 +128,7 @@ export async function checkFilter(page: Page, column: string): Promise<void> {
     case 'value': {
       applied = true;
       await filter.value.fill(NO_MATCH);
-      await filter.apply.click();
+      await filter.apply.click(NO_NAVIGATION);
       await expectCount(
         page,
         /^0 results/,
@@ -140,7 +141,7 @@ export async function checkFilter(page: Page, column: string): Promise<void> {
       applied = true;
       await filter.min.fill('999999999');
       await filter.max.fill('1');
-      await filter.apply.click();
+      await filter.apply.click(NO_NAVIGATION);
       await expectCount(
         page,
         /^0 results/,
@@ -165,7 +166,7 @@ export async function checkFilter(page: Page, column: string): Promise<void> {
 
   const panel = columnFilter(page);
   if (await panel.apply.isVisible().catch(() => false)) {
-    await panel.apply.click().catch(() => {});
+    await panel.apply.click(NO_NAVIGATION).catch(() => {});
   }
 
   await expect
