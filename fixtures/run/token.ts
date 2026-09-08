@@ -34,8 +34,10 @@ function cookieHeader(role: Role, hostname: string): string | null {
  *
  * Asks the application for it rather than reading the one sign-in wrote an hour
  * ago. NextAuth holds the refresh token and renews the access token inside its
- * `jwt` callback, so every read of `/api/auth/session` comes back current; the
- * session cookie behind it outlives the token by days. The tests never noticed
+ * `jwt` callback, so every read of `/api/auth/session` comes back current for
+ * as long as the Keycloak session behind it is alive — which a run keeps alive
+ * by using it, and a teardown follows within minutes. A session left idle for
+ * hours answers with no token at all, and the file is what is left. The tests never noticed
  * the difference because a browser goes through the app for everything. Only
  * the scripts that call the virtual lab API directly read the file, and at
  * seventy minutes that file is a dead string: the teardown could not delete its
