@@ -70,14 +70,7 @@ export function scanConfigEditor(page: Page) {
         .first(),
 
     addEntry: (rootElement: string): Locator =>
-      page
-        .getByTestId(`scan-config-add-entry-${rootElement}`)
-        .or(
-          page
-            .locator(`[data-scan-config-menu="${rootElement}-menu-block-dictionary-sub-entry"]`)
-            .getByRole('button', { name: /^Add\b/ })
-        )
-        .first(),
+      page.getByTestId(`scan-config-add-entry-${rootElement}`),
 
     variant: (type: string, title?: string): Locator =>
       middle
@@ -189,6 +182,7 @@ export function scanConfigModelPicker(page: Page) {
       .or(page.getByRole('button', { name: /^Select / })),
     overlay,
     panel: overlay.getByTestId('data-table-container'),
+    row: (name: string): Locator => overlay.getByTestId(`data-grid-row-${name}`),
     confirm: overlay
       .getByTestId('scan-config-confirm-model')
       .or(overlay.getByRole('button', { name: /^Confirm/ })),
@@ -237,9 +231,12 @@ export async function scanConfigOptions(control: Locator) {
   return {
     option: (value: string): Locator => {
       const marked = page.locator(`${mine}[data-testid="scan-config-option-${cssEscape(value)}"]`);
-      // The title is antd's own, so it is the fallback only where the marker is missing.
-      const anywhere = marked.or(page.getByTitle(value, { exact: true }));
-      return (id === null ? anywhere : marked).filter({ visible: true }).first();
+      const semanticOption = page.getByRole('option', {
+        name: value,
+        exact: true,
+      });
+      const anywhere = marked.or(semanticOption);
+      return (id === null ? anywhere : marked).filter({ visible: true });
     },
 
     /**

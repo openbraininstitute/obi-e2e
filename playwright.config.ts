@@ -19,6 +19,7 @@ import {
 import { excludedEnvironmentTag } from './fixtures/tags';
 
 const ASSERTION_TIMEOUT = 30_000;
+const SCENARIO_USE = { contextOptions: { reducedMotion: 'reduce' as const } };
 
 /** Tags to skip: the other deployment's, plus any named here. */
 function excluding(...also: RegExp[]): RegExp {
@@ -102,6 +103,7 @@ export default defineConfig({
       grep: /@public/,
       grepInvert: excluding(),
       dependencies: ['health'],
+      use: SCENARIO_USE,
     },
     {
       name: 'private',
@@ -109,7 +111,7 @@ export default defineConfig({
       grep: /@private/,
       grepInvert: excluding(/@credits/),
       dependencies: ['workspace'],
-      use: { storageState: authStatePath('primary') },
+      use: { ...SCENARIO_USE, storageState: authStatePath('primary') },
     },
     {
       name: 'credits',
@@ -119,7 +121,7 @@ export default defineConfig({
       dependencies: ['funding'],
       // A launch spends the project's credits; a retry launches it again.
       retries: 0,
-      use: { storageState: authStatePath('primary') },
+      use: { ...SCENARIO_USE, storageState: authStatePath('primary') },
     },
     /**
      * Runs that take longer than the nightly suite can hold: a microcircuit
@@ -135,7 +137,7 @@ export default defineConfig({
       grepInvert: excluding(),
       dependencies: ['funding'],
       retries: 0,
-      use: { storageState: authStatePath('primary') },
+      use: { ...SCENARIO_USE, storageState: authStatePath('primary') },
     },
     {
       name: 'onboarding',
@@ -143,7 +145,7 @@ export default defineConfig({
       grep: /@onboarding/,
       grepInvert: excluding(),
       dependencies: ['setup'],
-      use: { storageState: authStatePath('onboarding') },
+      use: { ...SCENARIO_USE, storageState: authStatePath('onboarding') },
     },
   ],
 });
