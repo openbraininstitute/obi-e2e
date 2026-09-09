@@ -18,14 +18,23 @@
 import * as fs from 'node:fs';
 
 import { workspacePath } from '@fixtures/run/env';
+import { teardownOnboardingWorkspace } from '@fixtures/run/onboarding-workspace';
 import { alive, teardownWorkspace } from '@fixtures/run/workspace';
 
 export default async function globalTeardown(): Promise<void> {
-  const result = await teardownWorkspace();
-  if (result?.removed === 'failed') {
+  const primary = await teardownWorkspace();
+  if (primary?.removed === 'failed') {
     throw new Error(
-      `Project ${result.projectId} is still in the lab. It counts against the lab's forty ` +
+      `Project ${primary.projectId} is still in the lab. It counts against the lab's forty ` +
         'until someone deletes it. `bun run reclaim` does that.'
+    );
+  }
+
+  const onboarding = await teardownOnboardingWorkspace();
+  if (onboarding?.removed === 'failed') {
+    throw new Error(
+      'Onboarding resources created by this run are still present. The manifest was retained ' +
+        'for reclaim.'
     );
   }
 }

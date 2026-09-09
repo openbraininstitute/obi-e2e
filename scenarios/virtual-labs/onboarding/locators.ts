@@ -1,0 +1,42 @@
+import { by } from '@locators/helpers';
+import type { Page } from '@playwright/test';
+
+export function onboardingLocators(page: Page) {
+  return {
+    homeHeading: by.testId(page, 'home-hero-heading'),
+    virtualLabsLink: by.testId(page, 'virtual-labs-link'),
+    profileButton: by.testId(page, 'user-profile-button'),
+    currentVirtualLab: by.testId(page, 'current-virtual-lab-name'),
+    currentProject: by.testId(page, 'current-project-name'),
+    projectItem: by.testId(page, 'project-item-selector'),
+    addProject: by.testId(page, 'add-project-btn'),
+    modalShell: by.testId(page, 'workspace-manager-modal-shell'),
+    modalClose: by.testId(page, 'workspace-manager-modal-close'),
+    projectName: by.testId(page, 'project-creation-name'),
+    projectDescription: by.testId(page, 'project-creation-description'),
+    createProject: by.testId(page, 'create-project-btn'),
+    projectCredits: by.testId(page, 'project-credits'),
+    buyCredits: by.testId(page, 'buy-credits-btn'),
+    purchaseCredits: by.testId(page, 'purchase-credits-btn'),
+    creditVerificationDialog: by.testId(page, 'request-code-form'),
+    creditVerificationHeading: by.testId(page, 'credit-verification-heading'),
+    purchaseEmail: by.testId(page, 'purchase-email'),
+    sendVerificationEmail: by.testId(page, 'send-verification-email-btn'),
+    addProjectMember: by.testId(page, 'add-member-btn'),
+    projectInviteEmail: by.testId(page, 'project-invite-email'),
+    projectInviteRole: by.testId(page, 'project-invite-role'),
+    projectInviteHeading: by.testId(page, 'project-invite-heading'),
+    addProjectMemberField: by.testId(page, 'project-invite-add-btn'),
+    sendProjectInvite: by.testId(page, 'project-invite-send-btn'),
+    labMembersTab: by.testId(page, 'workspace-manager-tab-members'),
+    teamMembers: by.testId(page, 'team-members-container'),
+    addAdministrator: by.testId(page, 'add-administrator-btn'),
+    labAdminInviteEmail: by.testId(page, 'virtual-lab-admin-invite-email'),
+    addLabAdministratorField: by.testId(page, 'virtual-lab-admin-invite-add-btn'),
+    sendLabAdministratorInvite: by.testId(page, 'virtual-lab-admin-invite-send-btn'),
+    subscriptionTab: by.testId(page, 'workspace-manager-tab-subscription'),
+    subscriptionSection: by.testId(page, 'workspace-manager-account-subscription-section'),
+    subscriptionTier: by.testId(page, 'subscription-current-tier'),
+    changeSubscription: by.testId(page, 'change-subscription-btn'),
+  };
+}

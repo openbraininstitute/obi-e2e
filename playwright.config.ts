@@ -145,7 +145,13 @@ export default defineConfig({
       grep: /@onboarding/,
       grepInvert: excluding(),
       dependencies: ['setup'],
+      teardown: 'onboarding-teardown',
       use: { ...SCENARIO_USE, storageState: authStatePath('onboarding') },
+    },
+    {
+      name: 'onboarding-teardown',
+      testDir: './setup',
+      testMatch: /onboarding\.teardown\.ts/,
     },
   ],
 });
