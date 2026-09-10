@@ -42,7 +42,8 @@ posts its own Teams card through the same webhook. See
 
 ## Configuration
 
-Repository **variables**: `E2E_BASE_URL_STAGING`, `E2E_BASE_URL_PRODUCTION`.
+Repository **variables**: `E2E_BASE_URL_STAGING`, `E2E_BASE_URL_PRODUCTION`,
+`E2E_PROJECT_CREDITS` (optional; defaults to 6,000 in the test code).
 
 Repository **secrets** (same names as the Selenium repo, plus one):
 `OBI_USERNAME`, `OBI_PASSWORD`, `LAB_ID_STAGING`, `LAB_ID_PRODUCTION`,

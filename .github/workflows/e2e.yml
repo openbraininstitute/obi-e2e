@@ -2,7 +2,7 @@ name: E2E
 
 on:
   schedule:
-    - cron: '0 7 * * *'
+    - cron: "0 7 * * *"
   push:
     branches: [main]
   pull_request:
@@ -16,7 +16,7 @@ on:
       grep:
         description: Only run tests matching this tag or title (e.g. @credits)
         type: string
-        default: ''
+        default: ""
   repository_dispatch:
     types: [e2e-preview]
 
@@ -68,7 +68,7 @@ jobs:
         run: ${{ fromJSON(needs.matrix.outputs.runs) }}
     name: ${{ matrix.run.name }}
     env:
-      CI: 'true'
+      CI: "true"
       E2E_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
       E2E_ENVIRONMENT: ${{ matrix.run.environment }}
       E2E_ENV: ${{ matrix.run.environment }}
@@ -88,6 +88,7 @@ jobs:
       LAB_ID: >-
         ${{ matrix.run.environment == 'production' && secrets.LAB_ID_PRODUCTION
             || secrets.LAB_ID_STAGING }}
+      E2E_PROJECT_CREDITS: ${{ vars.E2E_PROJECT_CREDITS }}
       PLAYWRIGHT_BROWSER: chromium
     steps:
       - uses: actions/checkout@v5
