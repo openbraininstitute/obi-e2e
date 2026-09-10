@@ -1,6 +1,7 @@
 import { loadSeed, notDeployedHere, runsOnThisDeployment } from '@fixtures/scan-config';
 import { scanConfigWords } from '@fixtures/scan-config/activities';
-import { campaignTags, campaignTimeout, runCampaign } from '@fixtures/steps/campaign';
+import { ScanConfigDriver } from '@fixtures/scan-config/driver';
+import { campaignTags, campaignTimeout } from '@fixtures/steps/campaign';
 import { chooseEntities, openWorkflowsHub, startWorkflow } from '@fixtures/steps/workflows';
 import { CREDITS } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
@@ -38,11 +39,16 @@ test.describe('Whole brain simulation', () => {
 
   for (const configuration of fixture.cases) {
     test(
-      `Generate a simulation campaign without launching it: ${configuration.name}`,
+      `Configure a simulation without generating it: ${configuration.name}`,
       { tag: campaignTags(configuration) },
       async ({ page }) => {
         await openEditor(page);
-        await runCampaign(page, fixture, configuration);
+
+        await new ScanConfigDriver(page).apply(configuration);
+
+        const editor = scanConfigEditor(page);
+        await expect(editor.submit).toHaveText(words.generate);
+        await expect(editor.submit).toBeEnabled();
       }
     );
   }

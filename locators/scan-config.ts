@@ -183,6 +183,8 @@ export function scanConfigModelPicker(page: Page) {
     overlay,
     panel: overlay.getByTestId('data-table-container'),
     row: (name: string): Locator => overlay.getByTestId(`data-grid-row-${name}`),
+    selectionControl: (rowId: string): Locator =>
+      overlay.getByTestId(`data-grid-selection-${rowId}`),
     confirm: overlay
       .getByTestId('scan-config-confirm-model')
       .or(overlay.getByRole('button', { name: /^Confirm/ })),

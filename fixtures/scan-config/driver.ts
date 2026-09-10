@@ -461,7 +461,35 @@ async function tickRow(
 ): Promise<void> {
   const row = picker.row(name);
   await expect(row, `No exact "${name}" row to pick for ${at}.`).toBeVisible();
-  await row.getByRole('checkbox').or(row.getByRole('radio')).check(NO_NAVIGATION);
+
+  // Prefer the stable core-webapp test ID. The row-id is the same schema ID used to
+  // build that test ID; keep the pinned-row fallback for deployments before this core
+  // change is released.
+  const rowId = await row.getAttribute('row-id');
+  const stableControl = picker.selectionControl(rowId ?? '');
+
+  const rowIndex = await row.getAttribute('row-index');
+  const selectionRow = picker.panel.locator(`[role="row"][row-index="${rowIndex ?? ''}"]`);
+  const legacyControl = selectionRow
+    .getByRole('checkbox')
+    .or(selectionRow.getByRole('radio'))
+    .first();
+  const control = stableControl.or(legacyControl).first();
+
+  await expect(control, `No selection control for "${name}" in ${at}.`).toBeVisible();
+  await control.click(NO_NAVIGATION);
+  await expect
+    .poll(
+      async () => {
+        const ariaChecked = await control.getAttribute('aria-checked');
+        if (ariaChecked !== null) return ariaChecked;
+        return String(await control.isChecked().catch(() => false));
+      },
+      {
+        message: `The selection control for "${name}" in ${at} was not checked.`,
+      }
+    )
+    .toBe('true');
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

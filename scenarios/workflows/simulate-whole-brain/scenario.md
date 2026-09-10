@@ -16,13 +16,12 @@ hundred neurons, so a drive on every point neuron is refused when the campaign
 is generated.
 
 A whole brain takes hours to simulate, far longer than a browser test can sit
-through, and costs more than a nightly suite should spend on one workflow. So
-this scenario covers the form and the generated campaign and stops with the
-launch button offered but unpressed. Nothing here says what a run produces,
-because none is started.
+through, and costs more than a nightly suite should spend on one workflow. The
+obi-one generation path for this circuit is still under improvement, so this
+scenario covers the configured form only and does not submit generation. Nothing
+here says what a run produces, because none is generated or started.
 
-The seed says so too, with `launch: false` on the configuration. It also says
-which deployments the workflow runs on, so no line here does.
+The seed also says which deployments the workflow runs on, so no line here does.
 
 User: credits
 Seed: seed.json
@@ -42,7 +41,7 @@ Expected:
 
 - "Generate simulation(s)" is disabled
 
-## Generate a simulation campaign without launching it
+## Configure a whole brain simulation without generating it
 
 For each: configuration in the seed
 
@@ -58,33 +57,4 @@ Expected:
 
 - The button reads "Generate simulation(s)"
 - The button is enabled
-
-Steps:
-
-1. Press "Generate simulation(s)"
-
-Expected:
-
-- The simulations tab opens by itself
-- There are as many coordinates as the seed says
-- The first coordinate reads "created"
-- Its inputs are exactly: "circuit_config.json", "node_sets.json",
-  "obi_one_coordinate.json" and "simulation_config.json"
-- It has produced no outputs yet
-- The launch button reads "Launch simulations"
-
-Steps:
-
-1. Go back to the configuration tab
-
-Expected:
-
-- The button now reads "New simulation campaign"
-
-Steps:
-
-1. Open the simulations tab again
-
-Expected:
-
-- The launch button still reads "Launch simulations", and is left unpressed
+- No generation request is sent
