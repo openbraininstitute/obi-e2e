@@ -6,8 +6,9 @@ Scientists and product owners write what should happen, in plain English, in a
 `scenario.md` file. AI turns each file into a Playwright test. A developer
 reviews that test like any other code.
 
-Runs on Bun 1.4 and Playwright 1.62. Always use `bun run …`, never
-`bunx playwright`: the tests need Bun, not Node.
+Runs on Bun 1.4 and Playwright 1.62. Common repository commands are available
+through the `Makefile`; the equivalent `bun run …` commands also remain
+supported. Never use `bunx playwright`: the tests need Bun, not Node.
 
 ## Setup
 
@@ -29,6 +30,34 @@ bun run test:local                  # the app on localhost:3001, staging behind 
 ```
 
 ## Write a scenario
+
+Create a starter scenario from a title:
+
+```bash
+bun run scenario "synaptome build"
+# created scenarios/synaptome-build/scenario.md
+```
+
+The command writes the title, `User: authenticated`, all possible user values
+as comments, and the first `## Fill your first test use case` heading. It does
+not overwrite an existing scenario. Common repository commands are also
+available in the `Makefile`, for example:
+
+```bash
+make scenario "synaptome build"
+make test scenarios/synaptome-build
+make check
+```
+
+Arguments can be passed directly after the command. For Playwright flags, put
+`--` before the flags so `make` does not parse them itself:
+
+```bash
+make test scenarios/workflows
+make test -- --grep @credits
+```
+
+The older `TITLE="..."` and `ARGS="..."` forms are still supported.
 
 One folder per scenario, under the product section it belongs to:
 
