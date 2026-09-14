@@ -1,9 +1,8 @@
 /**
  * The scan config editor, the form behind /workflows/{activity}/configure/{type}.
  *
- * The editor is generated from obi-one's schema, so its labels can change. It
- * marks every part it renders with the ui_element it came from, so these
- * locators use that attribute, then find the control inside by role and name.
+ * The editor is generated from obi-one's schema, so these locators use the
+ * stable test IDs that core-webapp exposes instead of presentation details.
  */
 
 import type { Locator, Page } from '@playwright/test';
@@ -14,8 +13,6 @@ export const UI_ELEMENT_ATTRIBUTES = [
   'data-scan-config-block-element',
 ] as const;
 
-const RENDERED_PART = UI_ELEMENT_ATTRIBUTES.map((name) => `[${name}]`).join(', ');
-
 /** The ui_element a part was rendered from. */
 export async function uiElementOf(part: Locator): Promise<string | null> {
   for (const name of UI_ELEMENT_ATTRIBUTES) {
@@ -25,125 +22,54 @@ export async function uiElementOf(part: Locator): Promise<string | null> {
   return null;
 }
 
-const ROOT_ELEMENT_LABELS: Record<string, string> = {
-  initialize: 'Initialization',
-};
-
-function rootElementLabel(key: string): string {
-  const label = ROOT_ELEMENT_LABELS[key] ?? key.replaceAll('_', ' ');
-  return label.charAt(0).toUpperCase() + label.slice(1);
-}
-
 /** Letters and digits only, so a key and a label can be compared. */
 export function normalizeLabel(text: string): string {
   return text.toLowerCase().replaceAll(/[^a-z0-9]/g, '');
 }
 
 export function scanConfigEditor(page: Page) {
-  const middle = page
-    .getByTestId('scan-config-middle-content')
-    .or(page.locator('#scan-config-middle-content'));
+  const middle = page.getByTestId('scan-config-middle-content');
 
   return {
-    tab: (id: string): Locator =>
-      page
-        .getByTestId(`scan-config-tab-${id}`)
-        .or(page.getByRole('button', { name: id, exact: true })),
+    tab: (id: string): Locator => page.getByTestId(`scan-config-tab-${id}`),
 
-    submit: page.getByTestId('scan-config-submit').or(
-      page
-        .getByTestId('scan-config-controls-left')
-        .or(page.locator('#scan-config-controls-left'))
-        .getByRole('button', {
-          name: /^(Generate|Build|Run|Process)/,
-        })
-    ),
+    submit: page.getByTestId('scan-config-submit'),
 
-    rootElement: (key: string): Locator =>
-      page
-        .getByTestId(`scan-config-root-element-${key}`)
-        .or(
-          page
-            .locator('[data-scan-config-menu="left-menu-top-item"]')
-            .filter({ hasText: rootElementLabel(key) })
-        )
-        .first(),
+    rootElement: (key: string): Locator => page.getByTestId(`scan-config-root-element-${key}`),
 
     addEntry: (rootElement: string): Locator =>
       page.getByTestId(`scan-config-add-entry-${rootElement}`),
 
-    variant: (type: string, title?: string): Locator =>
-      middle
-        .getByTestId(`scan-config-variant-${type}`)
-        .or(
-          middle
-            .locator('[data-scan-config-block-element-item="block_dictionary_item"] > span')
-            .filter({
-              hasText:
-                title === undefined
-                  ? variantPattern(type)
-                  : new RegExp(`^${title.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'),
-            })
-        )
-        .first(),
+    variant: (type: string): Locator => middle.getByTestId(`scan-config-variant-${type}`),
 
-    variants: middle.locator(
-      '[data-scan-config-block-element-item="block_dictionary_item"] > span'
-    ),
+    variants: middle.getByTestId(/^scan-config-variant-/),
 
     entry: (rootElement: string, name: string): Locator =>
-      page
-        .getByTestId(`scan-config-entry-${rootElement}-${name}`)
-        .or(
-          page
-            .locator(`#${rootElement}-menu-block-dictionary-sub-entry__container`)
-            .getByRole('button', { name, exact: true })
-        )
-        .first(),
+      page.getByTestId(`scan-config-entry-${rootElement}-${name}`),
 
     entriesOf: (rootElement: string): Locator =>
-      page
-        .locator(`#${rootElement}-menu-block-dictionary-sub-entry__container`)
-        .getByRole('button'),
+      page.getByTestId(new RegExp(`^scan-config-entry-${rootElement}-`)),
 
-    block: (): Locator => middle.locator('[data-scan-config-block="block_single"]'),
+    block: (): Locator => middle.getByTestId('scan-config-block'),
 
-    option: (value: string): Locator =>
-      page
-        .getByTestId(`scan-config-option-${value}`)
-        .or(page.getByRole('option', { name: value, exact: true }))
-        .first(),
+    option: (value: string): Locator => page.getByTestId(`scan-config-option-${value}`),
   };
 }
 
-function variantPattern(type: string): RegExp {
-  const words = type.replaceAll(/([a-z0-9])([A-Z])/g, '$1 $2');
-  return new RegExp(`^${words.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
-}
-
 export function scanConfigResults(page: Page) {
-  const results = page.getByTestId('scan-config-results').or(page.locator('#scan-config-results'));
+  const results = page.getByTestId('scan-config-results');
   const mini = page.getByTestId('mini-viewer');
-  const view = page
-    .getByTestId('scan-config-file-view')
-    .or(page.locator('#scan-config-results-right-column'))
-    .first();
+  const view = page.getByTestId('scan-config-file-view');
 
   return {
-    coordinates: page.locator('[data-testid^="scan-config-coordinate-"]'),
+    coordinates: page.getByTestId(/^scan-config-coordinate-/),
 
     status: results.getByTestId('scan-config-status'),
 
-    launch: results
-      .getByTestId('scan-config-launch')
-      .or(results.getByRole('button', { name: /^Launch/ })),
+    launch: results.getByTestId('scan-config-launch'),
 
-    costConfirm: page
-      .getByTestId('scan-config-cost-confirm')
-      .or(page.getByRole('dialog').getByRole('button', { name: /^(Launch|Confirm|Yes)/ })),
-    costCancel: page
-      .getByTestId('scan-config-cost-cancel')
-      .or(page.getByRole('dialog').getByRole('button', { name: /^(Cancel|No)/ })),
+    costConfirm: page.getByTestId('scan-config-cost-confirm'),
+    costCancel: page.getByTestId('scan-config-cost-cancel'),
 
     inputs: page.getByTestId('scan-config-inputs'),
     outputs: page.getByTestId('scan-config-outputs'),
@@ -157,11 +83,9 @@ export function scanConfigResults(page: Page) {
     preview: {
       entity: {
         card: mini,
-        name: mini.getByTestId('mini-detail-name').or(mini.getByRole('heading', { level: 1 })),
-        viewDetails: mini
-          .getByTestId('mini-detail-view-details')
-          .or(mini.getByTitle('Go to details page')),
-        download: mini.getByTestId('mini-detail-download').or(mini.getByTitle('download')),
+        name: mini.getByTestId('mini-detail-name'),
+        viewDetails: mini.getByTestId('mini-detail-view-details'),
+        download: mini.getByTestId('mini-detail-download'),
         property: (label: string): Locator =>
           mini
             .getByText(new RegExp(`^${label.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'))
@@ -172,43 +96,27 @@ export function scanConfigResults(page: Page) {
 }
 
 export function scanConfigModelPicker(page: Page) {
-  const overlay = page
-    .getByTestId('scan-config-model-picker')
-    .or(page.locator('#scan-config-model-selection-overlay'));
+  const overlay = page.getByTestId('scan-config-model-picker');
 
   return {
-    open: page
-      .getByTestId('scan-config-select-model')
-      .or(page.getByRole('button', { name: /^Select / })),
+    open: page.getByTestId('scan-config-select-model'),
     overlay,
     panel: overlay.getByTestId('data-table-container'),
     row: (name: string): Locator => overlay.getByTestId(`data-grid-row-${name}`),
     selectionControl: (rowId: string): Locator =>
       overlay.getByTestId(`data-grid-selection-${rowId}`),
-    confirm: overlay
-      .getByTestId('scan-config-confirm-model')
-      .or(overlay.getByRole('button', { name: /^Confirm/ })),
-    cancel: overlay
-      .getByTestId('scan-config-cancel-model')
-      .or(overlay.getByRole('button', { name: 'Cancel' })),
+    confirm: overlay.getByTestId('scan-config-confirm-model'),
+    cancel: overlay.getByTestId('scan-config-cancel-model'),
   };
 }
 
 /** A field inside a block, found by its property key. */
 export function scanConfigField(block: Locator, key: string): Locator {
-  return block
-    .getByTestId(`scan-config-field-${key}`)
-    .or(block.locator(RENDERED_PART).filter({ hasText: fieldPattern(key) }))
-    .first();
-}
-
-function fieldPattern(key: string): RegExp {
-  const parts = key.match(/[a-z]+|[0-9]+/gi) ?? [key];
-  return new RegExp(`^${parts.join('[^a-z0-9]*')}`, 'i');
+  return block.getByTestId(`scan-config-field-${key}`);
 }
 
 export function scanConfigControl(field: Locator): Locator {
-  return field.getByTestId('scan-config-control').or(field.locator(RENDERED_PART)).last();
+  return field.getByTestId('scan-config-control');
 }
 
 /** Quotes a value so it can sit inside an attribute selector. */
@@ -216,37 +124,20 @@ export function cssEscape(value: string): string {
   return value.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
 }
 
-/**
- * The options one control offers.
- *
- * antd leaves every dropdown it has opened in the page, so a page-wide search
- * for an option reaches into a field filled minutes ago and clicks whatever
- * that one is holding. The app ties an option to the select that offers it, and
- * this narrows the search to that select. A deployment without the marker —
- * staging, until the app ships — falls back to the option that is on screen.
- */
+/** The options one control offers. */
 export async function scanConfigOptions(control: Locator) {
   const page = control.page();
-  const id = await control.getAttribute('data-scan-config-options');
-  const mine = id === null ? '' : `[data-scan-config-option-of="${cssEscape(id)}"]`;
 
   return {
-    option: (value: string): Locator => {
-      const marked = page.locator(`${mine}[data-testid="scan-config-option-${cssEscape(value)}"]`);
-      const semanticOption = page.getByRole('option', {
-        name: value,
-        exact: true,
-      });
-      const anywhere = marked.or(semanticOption);
-      return (id === null ? anywhere : marked).filter({ visible: true });
-    },
+    option: (value: string): Locator =>
+      page.getByTestId(`scan-config-option-${value}`).filter({ visible: true }),
 
     /**
      * What this dropdown holds besides the value that was asked for.
      *
      * Scoped to the dropdown the picked option sits in — antd portals each one
      * into its own child of `<body>` — so a list that was open a moment ago is
-     * out of reach whether or not the marker is there.
+     * out of reach.
      */
     chosenBesides: (value: string, picked: Locator): Locator =>
       picked
@@ -258,23 +149,13 @@ export async function scanConfigOptions(control: Locator) {
 }
 
 export function scanConfigSweepValues(field: Locator): Locator {
-  const marked = field.getByTestId('scan-config-sweep-value');
-  return marked.or(field.getByRole('spinbutton'));
+  return field.getByTestId('scan-config-sweep-value');
 }
 
 export function scanConfigSweep(field: Locator) {
   return {
-    expand: field
-      .getByTestId('scan-config-sweep-expand')
-      .or(field.getByRole('button', { name: 'Scan over several values' }))
-      .first(),
-    add: field
-      .getByTestId('scan-config-sweep-add')
-      .or(field.getByRole('button', { name: /^Add/ }))
-      .first(),
-    remove: field
-      .getByTestId('scan-config-sweep-remove')
-      .or(field.getByRole('button', { name: /^Remove/ }))
-      .first(),
+    expand: field.getByTestId('scan-config-sweep-expand'),
+    add: field.getByTestId('scan-config-sweep-add'),
+    remove: field.getByTestId('scan-config-sweep-remove'),
   };
 }

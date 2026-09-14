@@ -33,13 +33,11 @@ const CONFIGURATION_TAB = 'configuration';
 const POLL_INTERVAL = 15_000;
 
 /**
- * How long the call behind a button may take.
+ * How long the request behind a button may take.
  *
- * Generating a grid is server work, not an element appearing, and the two do
- * not belong on the same clock. A brain-region circuit was measured at 39s
- * against staging on 2026-09-08 — under the assertion default of 30s the run
- * reported it as a results tab that never enabled, and every wait downstream
- * of it failed the same way. The editor's own assertions keep the 30s.
+ * Generating a grid is server work, not an element appearing. A brain-region
+ * circuit was measured at 39s against staging on 2026-09-08, so the request
+ * observation gets more time than ordinary editor assertions.
  */
 const CALL_TIMEOUT = 120_000;
 
@@ -110,7 +108,7 @@ export async function runCampaign(
   await editor.submit.click(NO_NAVIGATION);
   await expectAccepted(page, generated, 'Generating the campaign');
 
-  // Accepted, so the results open by themselves.
+  // The completed response includes the campaign ID the editor needs to open results.
   await expect(editor.tab(words.resultsTab)).toBeEnabled();
 
   await expect(results.coordinates).toHaveCount(configuration.expect.coordinateCount);
@@ -162,21 +160,30 @@ export async function runCampaign(
  * console and nothing else, a 500 refusing to generate leaves the results tab
  * disabled and nothing on the page — so a run that watches only the editor
  * reports every backend refusal as an element that never moved. The call is
- * where the reason is.
+ * where the reason is. `page.waitForResponse()` resolves when response headers
+ * arrive; `expectAccepted()` waits for the response body before allowing a UI
+ * assertion that depends on it.
  */
 function callSent(page: Page, url: RegExp): Promise<CallOutcome> {
   const matches = (request: Request) => request.method() === 'POST' && url.test(request.url());
 
   const answered = page
-    .waitForResponse((response) => matches(response.request()), { timeout: CALL_TIMEOUT })
+    .waitForResponse((response) => matches(response.request()), {
+      timeout: CALL_TIMEOUT,
+    })
     .then((response): CallOutcome => ({ response }))
     .catch(() => null);
 
   // A request the browser drops answers nothing, so the response wait alone
   // reports it as a button that sent nothing at all.
   const dropped = page
-    .waitForEvent('requestfailed', { predicate: matches, timeout: CALL_TIMEOUT })
-    .then((request): CallOutcome => ({ dropped: request.failure()?.errorText ?? 'failed' }))
+    .waitForEvent('requestfailed', {
+      predicate: matches,
+      timeout: CALL_TIMEOUT,
+    })
+    .then((request): CallOutcome => ({
+      dropped: request.failure()?.errorText ?? 'failed',
+    }))
     .catch(() => null);
 
   return Promise.race([answered, dropped]);
@@ -200,6 +207,14 @@ async function expectAccepted(page: Page, call: Promise<CallOutcome>, what: stri
       `${what} never reached the service: ${outcome.dropped}` +
         `${await whatTheAppSaid(page)}.${alsoSeen(page)}`
     );
+  }
+
+  // waitForResponse observes headers. The core API client decodes the body before
+  // resolving api.post<string>(), so wait for that body before checking UI state.
+  const completionError = await outcome.response.finished();
+
+  if (completionError) {
+    throw new Error(`${what} response did not finish: ${completionError}`);
   }
 
   if (!outcome.response.ok()) {

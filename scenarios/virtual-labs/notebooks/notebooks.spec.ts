@@ -53,27 +53,26 @@ test.describe('Notebooks', () => {
 
   test('Searching narrows the notebooks', { tag: AUTHENTICATED }, async ({ page }) => {
     const listing = entityListing(page);
-    const before = await stated(page).innerText();
+    const view = notebooks(page);
 
-    await listing.search.fill('Visualize');
+    await listing.search.fill(FIRST_NOTEBOOK);
 
-    await expect(stated(page)).not.toHaveText(before);
-    const after = count(await stated(page).innerText());
-    expect(after).toBeLessThan(count(before));
-    expect(after).toBeGreaterThan(0);
+    await expect(view.row(FIRST_NOTEBOOK)).toBeVisible();
+    await expect(view.row(FILTERED_NOTEBOOK)).toBeHidden();
   });
 
   test('Clearing the search brings them all back', { tag: AUTHENTICATED }, async ({ page }) => {
     const listing = entityListing(page);
-    const before = await stated(page).innerText();
+    const view = notebooks(page);
 
-    await listing.search.fill('Visualize');
-    await expect(stated(page)).not.toHaveText(before);
+    await listing.search.fill(FIRST_NOTEBOOK);
+    await expect(view.row(FILTERED_NOTEBOOK)).toBeHidden();
 
     await listing.search.fill('');
 
     await expect(listing.search).toHaveValue('');
-    await expect(stated(page)).toHaveText(before);
+    await expect(view.row(FIRST_NOTEBOOK)).toBeVisible();
+    await expect(view.row(FILTERED_NOTEBOOK)).toBeVisible();
   });
 
   test('Filtering by name narrows the notebooks', { tag: AUTHENTICATED }, async ({ page }) => {

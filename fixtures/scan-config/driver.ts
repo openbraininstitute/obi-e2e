@@ -77,7 +77,7 @@ export class ScanConfigDriver {
       await this.editor.addEntry(rootElement).click(NO_NAVIGATION);
 
       const title = typeof entry.$variant === 'string' ? entry.$variant : undefined;
-      const variant = this.editor.variant(entry.type, title);
+      const variant = this.editor.variant(entry.type);
       const offered = await variant
         .waitFor({ state: 'visible' })
         .then(() => true)
@@ -275,7 +275,7 @@ export class ScanConfigDriver {
     }
 
     const picker = scanConfigModelPicker(this.page);
-    await field.getByRole('button', { name: /^Add / }).first().click(NO_NAVIGATION);
+    await field.getByTestId('scan-config-select-model').first().click(NO_NAVIGATION);
 
     const catalogue = picker.panel;
     await expect(catalogue).toBeVisible();
@@ -288,7 +288,7 @@ export class ScanConfigDriver {
     });
 
     for (const name of names) {
-      await catalogue.getByRole('textbox', { name: 'Search' }).fill(name);
+      await catalogue.getByTestId('data-grid-search').fill(name);
       await tickRow(picker, name, at);
     }
     await expect(picker.confirm).toBeEnabled();
@@ -334,7 +334,7 @@ export class ScanConfigDriver {
     }
 
     const picker = scanConfigModelPicker(this.page);
-    await field.getByRole('button', { name: /^Select / }).click(NO_NAVIGATION);
+    await field.getByTestId('scan-config-select-model').first().click(NO_NAVIGATION);
 
     const catalogue = picker.panel;
     await expect(catalogue).toBeVisible();
@@ -462,34 +462,18 @@ async function tickRow(
   const row = picker.row(name);
   await expect(row, `No exact "${name}" row to pick for ${at}.`).toBeVisible();
 
-  // Prefer the stable core-webapp test ID. The row-id is the same schema ID used to
-  // build that test ID; keep the pinned-row fallback for deployments before this core
-  // change is released.
   const rowId = await row.getAttribute('row-id');
-  const stableControl = picker.selectionControl(rowId ?? '');
+  if (!rowId) {
+    throw new Error(`The "${name}" row for ${at} has no stable selection ID.`);
+  }
 
-  const rowIndex = await row.getAttribute('row-index');
-  const selectionRow = picker.panel.locator(`[role="row"][row-index="${rowIndex ?? ''}"]`);
-  const legacyControl = selectionRow
-    .getByRole('checkbox')
-    .or(selectionRow.getByRole('radio'))
-    .first();
-  const control = stableControl.or(legacyControl).first();
-
+  const control = picker.selectionControl(rowId);
   await expect(control, `No selection control for "${name}" in ${at}.`).toBeVisible();
   await control.click(NO_NAVIGATION);
-  await expect
-    .poll(
-      async () => {
-        const ariaChecked = await control.getAttribute('aria-checked');
-        if (ariaChecked !== null) return ariaChecked;
-        return String(await control.isChecked().catch(() => false));
-      },
-      {
-        message: `The selection control for "${name}" in ${at} was not checked.`,
-      }
-    )
-    .toBe('true');
+  await expect(row, `The "${name}" row in ${at} was not selected.`).toHaveAttribute(
+    'aria-selected',
+    'true'
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
