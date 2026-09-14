@@ -24,6 +24,14 @@ const MAX_EXTRA_SELECTIONS = 20;
 /** A control that holds several values at once, rather than one. */
 const MULTIPLE_VALUE_CONTROL = '[data-scan-config-block-element$="__multiple"]';
 
+/**
+ * How long one attempt at opening a list waits before it is tried again.
+ *
+ * Short on purpose: the whole point of retrying is not to spend the assertion
+ * timeout staring at a list the click never opened.
+ */
+const OPENS_WITHIN = 5_000;
+
 export class ScanConfigDriver {
   private readonly editor: ReturnType<typeof scanConfigEditor>;
 
@@ -368,15 +376,29 @@ export class ScanConfigDriver {
      */
     if ((await control.innerText().catch(() => '')).trim() === option) return;
 
-    await this.page.keyboard.press('Escape');
-    await control.click(NO_NAVIGATION);
+    /*
+     * Opening a control is swallowed the same way opening a root element is:
+     * every field is wrapped in a tooltip trigger, and a tooltip drawn under the
+     * pointer takes the click. Clicking once and then waiting spends the whole
+     * assertion timeout on a list that never opened — the recording array's
+     * "Calculation Method" sat at "Select option" for thirty seconds that way.
+     * Escape dismisses whatever is showing; the retry is what gets there.
+     *
+     * The ownership marker is resolved inside the retry because opening can
+     * remount a schema-driven field, which mints a new one.
+     */
+    let options = await scanConfigOptions(control);
+    let wanted = options.option(option);
 
-    // Opening can remount a schema-driven field, so resolve its useId ownership
-    // marker only after the current popover exists.
-    const options = await scanConfigOptions(control);
-    const wanted = options.option(option);
+    await expect(async () => {
+      await this.page.keyboard.press('Escape');
+      await control.click(NO_NAVIGATION);
 
-    await expect(wanted, `${at}: "${option}" was not offered by the opened control.`).toBeVisible();
+      options = await scanConfigOptions(control);
+      wanted = options.option(option);
+      await expect(wanted).toBeVisible({ timeout: OPENS_WITHIN });
+    }, `${at}: "${option}" was not offered by the opened control.`).toPass();
+
     await wanted.click(NO_NAVIGATION);
 
     const exposesSelectedValue = (await control.getAttribute('data-scan-config-value')) !== null;

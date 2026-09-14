@@ -50,7 +50,26 @@ export function scanConfigEditor(page: Page) {
     entriesOf: (rootElement: string): Locator =>
       page.getByTestId(new RegExp(`^scan-config-entry-${rootElement}-`)),
 
-    block: (): Locator => middle.getByTestId('scan-config-block'),
+    /**
+     * The block being edited.
+     *
+     * The app names a block after what it holds — `scan-config-block-{root
+     * element}`, and a dictionary entry's block after the entry as well — so
+     * there is no fixed id to ask for. A property key is only unique inside its
+     * block, which is why the id carries the block at all.
+     *
+     * Not scoped to the middle column: the column's own test id is newer than
+     * the block's, and a deployment that has one and not the other then matches
+     * nothing, so every field lookup in the campaign fails. That is not
+     * hypothetical — it is what `staging.openbraininstitute.org` serves today,
+     * and production lags further still. The editor edits one block at a time
+     * and `data-scan-config-block` marks the root of it, so the pair is enough
+     * on its own. Both marks sit on the same element, which keeps it strict —
+     * the dictionary and union wrappers carry the attribute too, but they carry
+     * no `scan-config-block-` id.
+     */
+    block: (): Locator =>
+      page.getByTestId(/^scan-config-block-/).and(page.locator('[data-scan-config-block]')),
 
     option: (value: string): Locator => page.getByTestId(`scan-config-option-${value}`),
   };
@@ -128,9 +147,30 @@ export function cssEscape(value: string): string {
 export async function scanConfigOptions(control: Locator) {
   const page = control.page();
 
+  /*
+   * Which list these options belong to.
+   *
+   * A label is not unique on the page: "Distribution 1" is offered by every
+   * reference field that can point at one, and antd portals each open dropdown
+   * into its own child of `<body>` rather than into the field. A page-wide
+   * lookup therefore matches the list that is open now together with one a
+   * field opened a moment ago, and picking between them by visibility alone is
+   * a race against the closing animation. The control names its own list and
+   * each option says which list it came from, so ask for the pair.
+   *
+   * A deployment that exposes no marker falls back to the page-wide lookup.
+   */
+  const owner = await control.getAttribute('data-scan-config-options');
+  const ownedByThisControl =
+    owner === null ? null : page.locator(`[data-scan-config-option-of="${cssEscape(owner)}"]`);
+
   return {
-    option: (value: string): Locator =>
-      page.getByTestId(`scan-config-option-${value}`).filter({ visible: true }),
+    option: (value: string): Locator => {
+      const offered = page.getByTestId(`scan-config-option-${value}`);
+      return (ownedByThisControl ? offered.and(ownedByThisControl) : offered).filter({
+        visible: true,
+      });
+    },
 
     /**
      * What this dropdown holds besides the value that was asked for.
