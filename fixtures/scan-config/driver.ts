@@ -73,6 +73,25 @@ export class ScanConfigDriver {
     }, `The editor never opened "${rootElement}".`).toPass();
   }
 
+  /**
+   * Presses "add" on one root element.
+   *
+   * The editor scrolls its middle column to the element it just opened, and a
+   * click arriving during that scroll can sit in "scrolling into view if
+   * needed" until the action timeout runs out. Scrolling first and clicking on
+   * a short clock retries while the column is still; pressing "add" twice only
+   * reopens the chooser.
+   */
+  private async addAnEntry(rootElement: string): Promise<void> {
+    const add = this.editor.addEntry(rootElement);
+
+    await expect(async () => {
+      await add.scrollIntoViewIfNeeded({ timeout: 5_000 });
+      await add.click({ ...NO_NAVIGATION, timeout: 5_000 });
+      await expect(this.editor.variants.first()).toBeVisible({ timeout: 5_000 });
+    }, `The editor never offered anything to add to "${rootElement}".`).toPass({ timeout: 60_000 });
+  }
+
   private async fillDictionary(
     rootElement: string,
     entries: Record<string, unknown>
@@ -82,7 +101,7 @@ export class ScanConfigDriver {
         throw new Error(`Entry "${rootElement}.${key}" must carry a "type".`);
       }
 
-      await this.editor.addEntry(rootElement).click(NO_NAVIGATION);
+      await this.addAnEntry(rootElement);
 
       const title = typeof entry.$variant === 'string' ? entry.$variant : undefined;
       const variant = this.editor.variant(entry.type);

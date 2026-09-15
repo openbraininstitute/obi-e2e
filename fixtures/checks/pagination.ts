@@ -2,7 +2,7 @@ import { entityListing } from '@locators/listing';
 import { expect, type Page } from '@playwright/test';
 
 import { NO_NAVIGATION } from '../interactions';
-import { expectListing } from './listing';
+import { expectListing, expectRows } from './listing';
 
 async function pageSignature(page: Page): Promise<string> {
   const cells = await entityListing(page).cells.allInnerTexts();
@@ -18,7 +18,7 @@ export async function checkPagination(page: Page): Promise<void> {
   const listing = entityListing(page);
 
   await expectListing(page);
-  await expect(listing.cells.first()).toBeVisible();
+  await expectRows(page);
   await page.waitForLoadState('networkidle').catch(() => {});
 
   const total = await listing.resultCount.innerText();
@@ -26,7 +26,7 @@ export async function checkPagination(page: Page): Promise<void> {
   expect(firstPage).not.toBe('');
 
   await listing.pageLink(2).click(NO_NAVIGATION);
-  await expect(listing.cells.first()).toBeVisible();
+  await expectRows(page);
   await expect
     .poll(() => pageSignature(page), { message: 'page 2 shows the same rows as page 1' })
     .not.toBe(firstPage);

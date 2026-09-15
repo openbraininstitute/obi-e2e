@@ -6,6 +6,9 @@ chosen region holds, and what they are made up of.
 The count can be read two ways — as a number of neurons, or as a density — and a
 switch moves between them.
 
+Only some species carry these figures, so every case here works on the mouse
+atlas.
+
 User: authenticated
 
 ## The 3D view opens with the region's neuron count
@@ -13,6 +16,7 @@ User: authenticated
 Precondition:
 
 1. Inside my project, on the Data page
+2. Looking at the mouse
 
 Steps:
 
@@ -29,7 +33,7 @@ Expected:
 
 Precondition:
 
-1. On the Data page
+1. On the Data page, looking at the mouse
 
 Steps:
 
@@ -58,7 +62,7 @@ Expected:
 
 Precondition:
 
-1. On the Data page
+1. On the Data page, looking at the mouse
 
 Steps:
 

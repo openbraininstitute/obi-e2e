@@ -108,8 +108,9 @@ export async function runCampaign(
   await editor.submit.click(NO_NAVIGATION);
   await expectAccepted(page, generated, 'Generating the campaign');
 
-  // The completed response includes the campaign ID the editor needs to open results.
-  await expect(editor.tab(words.resultsTab)).toBeEnabled();
+  // The completed response carries the campaign ID, but the editor enables the
+  // tab only once it has read the grid back: server work, so the call's clock.
+  await expect(editor.tab(words.resultsTab)).toBeEnabled({ timeout: CALL_TIMEOUT });
 
   await expect(results.coordinates).toHaveCount(configuration.expect.coordinateCount);
 
