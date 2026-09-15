@@ -21,34 +21,61 @@ async function expectCount(page: Page, pattern: RegExp, message: string): Promis
   ]);
 }
 
+/** Whether a facet option is ticked, however the panel draws it. */
+async function isTicked(box: Locator): Promise<boolean> {
+  return box
+    .isChecked()
+    .catch(async () => (await box.getAttribute('aria-checked').catch(() => null)) === 'true');
+}
+
 async function resultCount(page: Page): Promise<number> {
   const text = await entityListing(page).resultCount.innerText();
   return Number(text.replace(/[^\d]/g, ''));
 }
 
-/** The result count once it stops changing. */
-async function settledCount(page: Page): Promise<number> {
-  const listing = entityListing(page);
-  await expect(listing.resultCount).toBeVisible();
+/** How many equal readings in a row count as settled. */
+const STEADY_READINGS = 3;
 
+/** Reads the count until it holds still. */
+async function steady(
+  page: Page,
+  accept: (count: number) => boolean,
+  timeout: number
+): Promise<number> {
   let last = Number.NaN;
+  let held = 0;
+
   await expect
     .poll(
       async () => {
         const now = await resultCount(page);
-        const stable = now === last;
+        held = now === last ? held + 1 : 0;
         last = now;
-        return stable;
+        return accept(now) && held + 1 >= STEADY_READINGS;
       },
-      {
-        message: 'the result count never settled',
-        intervals: [1_000],
-        timeout: 30_000,
-      }
+      { intervals: [1_000], timeout }
     )
     .toBe(true);
 
   return last;
+}
+
+/**
+ * The result count of the unfiltered listing.
+ *
+ * A listing shows "0 results" while it fetches, including the refetch after a
+ * filter is cleared, so a non-zero figure is waited for first. A listing that
+ * really is empty gives none, and its zero is taken after that wait.
+ */
+async function settledCount(page: Page): Promise<number> {
+  await expect(entityListing(page).resultCount).toBeVisible();
+
+  // Short: an empty listing spends this once per column.
+  const populated = await steady(page, (count) => count > 0, 15_000)
+    .then((count) => count)
+    .catch(() => null);
+
+  return populated ?? (await steady(page, () => true, 30_000).catch(() => resultCount(page)));
 }
 
 /** Opens a column filter. Retried, because a re-render closes the panel. */
@@ -67,18 +94,27 @@ async function open(page: Page, column: string) {
   return filter;
 }
 
-async function clickInPanel(
+/**
+ * Runs one pass at the open panel, reopening it first when it has gone.
+ *
+ * The listing re-renders the table header when a background call lands, which
+ * unmounts the popover — a panel opened while `regions?page_size=1000` was in
+ * flight was gone a second later. `attempt` must be safe to run twice.
+ */
+async function inPanel(
   page: Page,
   column: string,
-  button: (filter: ReturnType<typeof columnFilter>) => Locator
+  attempt: (filter: ReturnType<typeof columnFilter>) => Promise<void>,
+  message: string
 ): Promise<void> {
   await expect(async () => {
     const filter = columnFilter(page);
     if (!(await filter.panel.isVisible().catch(() => false))) {
       await filter.trigger(column).click(NO_NAVIGATION);
+      await expect(filter.apply).toBeVisible({ timeout: 5_000 });
     }
-    await button(filter).click({ ...NO_NAVIGATION, timeout: 3_000 });
-  }).toPass({ timeout: 45_000 });
+    await attempt(filter);
+  }, message).toPass({ timeout: 60_000 });
 }
 
 /** Filters the listing by one column, checks the count, then resets it. */
@@ -101,19 +137,32 @@ export async function checkFilter(page: Page, column: string): Promise<void> {
       if (!arrived) break;
       applied = true;
 
-      const option = filter.options.first();
-      const badge = filter.optionCount(option);
-      const shown =
-        (await badge.count()) > 0
-          ? await badge.innerText().catch(() => '')
-          : ((await option.innerText().catch(() => '')).trim().split(/\s+/).at(-1) ?? '');
-      const expected = Number(shown.replace(/[^\d]/g, ''));
+      let expected = Number.NaN;
 
-      await option
-        .getByTestId('column-filter-option-checkbox')
-        .or(option.getByRole('checkbox'))
-        .click(NO_NAVIGATION);
-      await filter.apply.click(NO_NAVIGATION);
+      await inPanel(
+        page,
+        column,
+        async (opened) => {
+          const option = opened.options.first();
+          await expect(option).toBeVisible({ timeout: 10_000 });
+
+          const badge = opened.optionCount(option);
+          const shown =
+            (await badge.count()) > 0
+              ? await badge.innerText().catch(() => '')
+              : ((await option.innerText().catch(() => '')).trim().split(/\s+/).at(-1) ?? '');
+          expected = Number(shown.replace(/[^\d]/g, ''));
+
+          // Ticked, not clicked: a repeat pass would untick it.
+          const box = option
+            .getByTestId('column-filter-option-checkbox')
+            .or(option.getByRole('checkbox'));
+          if (!(await isTicked(box))) await box.click({ ...NO_NAVIGATION, timeout: 5_000 });
+
+          await opened.apply.click({ ...NO_NAVIGATION, timeout: 5_000 });
+        },
+        `the "${column}" facet could not be applied`
+      );
 
       if (Number.isFinite(expected) && expected > 0) {
         await expectCount(
@@ -162,17 +211,20 @@ export async function checkFilter(page: Page, column: string): Promise<void> {
 
   if (!applied) return;
 
-  await clickInPanel(page, column, (f) => f.reset);
+  // Reset, wait for the count to come back, start over when it does not.
+  // Resetting an already-reset filter changes nothing, so this repeats safely.
+  await inPanel(
+    page,
+    column,
+    async (opened) => {
+      await opened.reset.click({ ...NO_NAVIGATION, timeout: 5_000 });
 
-  const panel = columnFilter(page);
-  if (await panel.apply.isVisible().catch(() => false)) {
-    await panel.apply.click(NO_NAVIGATION).catch(() => {});
-  }
+      if (await opened.apply.isVisible().catch(() => false)) {
+        await opened.apply.click({ ...NO_NAVIGATION, timeout: 5_000 }).catch(() => {});
+      }
 
-  await expect
-    .poll(() => resultCount(page), {
-      message: `resetting the "${column}" filter did not restore the listing`,
-      timeout: 45_000,
-    })
-    .toBe(before);
+      await expect.poll(() => resultCount(page), { timeout: 15_000 }).toBe(before);
+    },
+    `resetting the "${column}" filter did not restore the listing`
+  );
 }

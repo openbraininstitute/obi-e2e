@@ -1,15 +1,19 @@
-import { routes } from '@fixtures/routes';
 import { AUTHENTICATED } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 
 import { atlasPanel, figure } from './locators';
+import { mouseAtlasRoute } from './mouse';
 
 const A_COUNT = /Neurons \[N\][\s~]*[\d,]+/;
 const A_DENSITY = /Neurons \[\/mm3\][\s~]*[\d,]+/;
 
 test.describe('The atlas and its neuron counts', () => {
   test.beforeEach(async ({ page, workspace }) => {
-    await page.goto(routes.data(workspace.labId, workspace.projectId));
+    // Draws the whole mouse brain in WebGL and reads its cell composition:
+    // over the ninety-second budget at eight workers.
+    test.slow();
+
+    await page.goto(await mouseAtlasRoute(workspace.labId, workspace.projectId));
     await expect(atlasPanel(page).view).toBeVisible();
   });
 

@@ -26,16 +26,24 @@ export async function chooseSpecies(page: Page, name: SpeciesChoice): Promise<vo
 
   await expect(trigger).toBeEnabled();
 
-  if ((await trigger.getAttribute('aria-expanded')) === 'true') {
-    await page.keyboard.press('Escape');
-    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
-  }
+  /*
+   * Asked again when the selector did not follow. Choosing a species rewrites
+   * the URL, and a pick made while that navigation is in flight is dropped
+   * silently. Each pass closes whatever is open first, so this is not the
+   * livelock that clicking a trigger under an open list used to cause.
+   */
+  await expect(async () => {
+    if ((await trigger.getAttribute('aria-expanded')) === 'true') {
+      await page.keyboard.press('Escape');
+      await expect(trigger).toHaveAttribute('aria-expanded', 'false', { timeout: 5_000 });
+    }
 
-  await trigger.click(NO_NAVIGATION);
-  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await trigger.click(NO_NAVIGATION);
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true', { timeout: 5_000 });
 
-  await controls.speciesOption(name).click(NO_NAVIGATION);
-  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await controls.speciesOption(name).click(NO_NAVIGATION);
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false', { timeout: 5_000 });
 
-  await expect(controls.speciesSelector).toContainText(name);
+    await expect(controls.speciesSelector).toContainText(name, { timeout: 20_000 });
+  }, `The species selector never came back showing "${name}".`).toPass({ timeout: 90_000 });
 }

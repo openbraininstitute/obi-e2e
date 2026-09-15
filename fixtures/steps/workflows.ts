@@ -56,6 +56,26 @@ function selectionCheckbox(
     .first();
 }
 
+/**
+ * Picks a row, and picks it again when the grid drops the click.
+ *
+ * The search is debounced, so a row that matched a moment ago can be a node the
+ * grid is about to replace; a click on it leaves no selection behind. Picking
+ * an already-picked row changes nothing, so the retry is safe.
+ */
+async function pickRow(
+  name: string,
+  pick: () => Promise<void>,
+  took: () => Promise<void>
+): Promise<void> {
+  await expect(async () => {
+    await pick();
+    await took();
+  }, `Selecting "${name}" did not take: the listing kept it unselected.`).toPass({
+    timeout: 45_000,
+  });
+}
+
 /** Why a step could not run, or null when it ran. */
 export type WorkflowUnavailable = string | null;
 
@@ -130,11 +150,19 @@ export async function chooseEntities(
       if ((await checkbox.count()) === 0) {
         return `The "${name}" listing offers nothing to tick, so nothing can be selected.`;
       }
-      await checkbox.check(NO_NAVIGATION);
+      await pickRow(
+        name,
+        () => checkbox.check(NO_NAVIGATION),
+        () => expect(checkbox).toBeChecked({ timeout: 5_000 })
+      );
       continue;
     }
 
-    await row.getByRole('gridcell').filter({ hasText: name }).first().click(NO_NAVIGATION);
+    await pickRow(
+      name,
+      () => row.getByRole('gridcell').filter({ hasText: name }).first().click(NO_NAVIGATION),
+      () => expect(browse.useModel).toBeVisible({ timeout: 5_000 })
+    );
   }
 
   await (selection.mode === 'single' ? browse.useModel : browse.useSelection).click();
