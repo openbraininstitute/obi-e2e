@@ -1,0 +1,235 @@
+<!doctype html>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>OBI E2E — last 5 days</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --line: #8883;
+    --bad: #c0392b;
+    --good: #1e8449;
+    --warn: #b7791f;
+  }
+  body {
+    margin: 0;
+    font:
+      15px/1.5 system-ui,
+      sans-serif;
+  }
+  header {
+    padding: 1rem 1.25rem 0.5rem;
+    border-bottom: 1px solid var(--line);
+  }
+  h1 {
+    font-size: 1.1rem;
+    margin: 0 0 0.75rem;
+    font-weight: 600;
+  }
+  nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  button {
+    font: inherit;
+    padding: 0.35rem 0.7rem;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+  }
+  button[aria-selected='true'] {
+    background: currentColor;
+  }
+  button[aria-selected='true'] > span {
+    filter: invert(1);
+  }
+  #tabs {
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid var(--line);
+  }
+  main {
+    padding: 1.25rem;
+  }
+  table {
+    border-collapse: collapse;
+    margin: 0 0 1.5rem;
+    width: 100%;
+    max-width: 60rem;
+  }
+  th,
+  td {
+    text-align: left;
+    padding: 0.35rem 0.75rem 0.35rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+  h2 {
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.7;
+    margin: 1.5rem 0 0.5rem;
+  }
+  .down,
+  .failed {
+    color: var(--bad);
+    font-weight: 600;
+  }
+  .healthy,
+  .passed {
+    color: var(--good);
+  }
+  .flaky,
+  .skipped {
+    color: var(--warn);
+  }
+  .meta {
+    opacity: 0.7;
+    font-size: 0.875rem;
+  }
+  pre {
+    white-space: pre-wrap;
+    margin: 0.25rem 0 1rem;
+    opacity: 0.8;
+    font-size: 0.875rem;
+  }
+  iframe {
+    width: 100%;
+    height: 80vh;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+  }
+</style>
+
+<header>
+  <h1>OBI E2E — last 5 days</h1>
+  <nav id="days"></nav>
+</header>
+<div id="tabs"></div>
+<main id="view">Loading…</main>
+
+<script type="module">
+  const TABS = [
+    ['endpoints', 'Endpoint status'],
+    ['summary', 'Summary'],
+    ['report', 'Playwright results'],
+  ];
+  const view = document.getElementById('view');
+  const esc = (s) => String(s ?? '').replace(/[<&]/g, (c) => (c === '<' ? '&lt;' : '&amp;'));
+  const dash = (s) => (s === undefined || s === '' ? '—' : esc(s));
+  const mins = (ms) => `${Math.floor(ms / 60000)}m ${Math.round((ms % 60000) / 1000)}s`;
+
+  let days = [];
+  let day = null;
+  let tab = 'endpoints';
+  const cache = new Map();
+
+  function buttons(node, items, current, onPick) {
+    node.replaceChildren(
+      ...items.map(([value, label]) => {
+        const b = document.createElement('button');
+        b.append(Object.assign(document.createElement('span'), { textContent: label }));
+        b.setAttribute('aria-selected', String(value === current));
+        b.onclick = () => onPick(value);
+        return b;
+      })
+    );
+  }
+
+  async function summaryFor(date) {
+    if (!cache.has(date)) {
+      cache.set(
+        date,
+        fetch(`runs/${date}/summary.json`).then((r) => (r.ok ? r.json() : null))
+      );
+    }
+    return cache.get(date);
+  }
+
+  function endpointsHtml(s) {
+    if (!s.services?.length) return '<p>This run recorded no service health.</p>';
+    return `<table><thead><tr><th>Service</th><th>Version</th><th>Status</th><th>Note</th></tr></thead><tbody>
+      ${s.services
+        .map(
+          (e) =>
+            `<tr><td>${esc(e.label)}</td><td>${dash(e.version)}</td>
+             <td class="${esc(e.status)}">${esc(e.status)}</td><td>${dash(e.problem)}</td></tr>`
+        )
+        .join('')}</tbody></table>`;
+  }
+
+  function summaryHtml(s) {
+    const counts = `<table><thead><tr><th>Passed</th><th>Failed</th><th>Flaky</th><th>Skipped</th><th>Duration</th></tr></thead>
+      <tbody><tr><td class="passed">${s.passed}</td><td class="${s.failed ? 'failed' : ''}">${s.failed}</td>
+      <td class="${s.flaky ? 'flaky' : ''}">${s.flaky}</td><td>${s.skipped}</td><td>${mins(s.durationMs)}</td></tr></tbody></table>`;
+
+    const meta = `<p class="meta">${esc(s.environment)} · ${esc(s.baseUrl)} · ${esc(s.browser)} · ${esc(s.trigger)}
+      ${s.runUrl ? ` · <a href="${esc(s.runUrl)}">GitHub Actions run</a>` : ''}</p>`;
+
+    const credits =
+      s.credits?.assigned === undefined
+        ? ''
+        : `<h2>Credits</h2><table><thead><tr><th>Assigned</th><th>Spent</th><th>Left</th></tr></thead>
+         <tbody><tr><td>${s.credits.assigned}</td><td>${dash(s.credits.spent)}</td><td>${dash(s.credits.remaining)}</td></tr></tbody></table>`;
+
+    const features = !s.features?.length
+      ? ''
+      : `<h2>Features</h2><table><thead><tr><th>Section</th><th>Feature</th><th>Passed</th><th>Failed</th><th>Flaky</th><th>Skipped</th><th>Duration</th></tr></thead><tbody>
+         ${s.features
+           .map(
+             (f) =>
+               `<tr><td>${esc(f.section)}</td><td>${esc(f.name)}</td><td>${f.passed}</td>
+                <td class="${f.failed ? 'failed' : ''}">${f.failed}</td><td class="${f.flaky ? 'flaky' : ''}">${f.flaky}</td>
+                <td>${f.skipped}</td><td>${mins(f.durationMs)}</td></tr>`
+           )
+           .join('')}</tbody></table>`;
+
+    const failures = !s.totalFailures
+      ? ''
+      : `<h2>Failing tests (${s.totalFailures})</h2>
+         ${s.failures
+           .map(
+             (f) =>
+               `<p><b>${esc(f.title)}</b> <span class="meta">${esc(f.file)}:${f.line}</span></p><pre>${esc(f.error)}</pre>`
+           )
+           .join('')}
+         ${s.totalFailures > s.failures.length ? `<p class="meta">…and ${s.totalFailures - s.failures.length} more. See the Playwright results.</p>` : ''}`;
+
+    return counts + meta + credits + features + failures;
+  }
+
+  async function render() {
+    if (!day) {
+      view.textContent = 'No runs published yet.';
+      return;
+    }
+    buttons(
+      document.getElementById('days'),
+      days.map((d) => [d, d]),
+      day,
+      (d) => ((day = d), render())
+    );
+    buttons(document.getElementById('tabs'), TABS, tab, (t) => ((tab = t), render()));
+
+    if (tab === 'report') {
+      const href = `runs/${day}/report/index.html`;
+      view.innerHTML = `<p><a href="${href}" target="_blank" rel="noreferrer">Open the full report in a new tab ↗</a></p>
+        <iframe src="${href}" title="Playwright report"></iframe>`;
+      return;
+    }
+
+    const s = await summaryFor(day);
+    if (!s) {
+      view.textContent = 'This day has no summary.';
+      return;
+    }
+    view.innerHTML = tab === 'endpoints' ? endpointsHtml(s) : summaryHtml(s);
+  }
+
+  days = await fetch('runs.json')
+    .then((r) => (r.ok ? r.json() : []))
+    .catch(() => []);
+  day = days[0] ?? null;
+  await render();
+</script>
