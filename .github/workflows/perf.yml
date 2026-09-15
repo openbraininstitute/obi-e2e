@@ -51,7 +51,7 @@ jobs:
           path: |
             perf/report/
             .lighthouseci/assertion-results.json
-          retention-days: 14
+          retention-days: 5
 
       - name: Post Teams card
         if: always()

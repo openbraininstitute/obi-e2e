@@ -151,7 +151,7 @@ jobs:
             playwright-report/
             test-results/summary.md
             test-results/summary.json
-          retention-days: 14
+          retention-days: 5
 
       - name: Rebuild the summary with the report link
         if: always()
@@ -191,3 +191,55 @@ jobs:
             printf '\n[Full report and traces](%s)\n' "$RUN_URL"
           } > comment.md
           gh pr comment "$PR" --repo "$REPO" --body-file comment.md
+
+  publish:
+    needs: run
+    # Only the runs people track. A PR run or a preview run would overwrite the
+    # day's nightly with a partial picture.
+    if: always() && (github.event_name == 'schedule' || github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: gh-pages
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: playwright-report-*
+          merge-multiple: true
+          path: artifact
+
+      - name: Fold this run into the last five days
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          day=$(date -u +%F)
+          remote="https://x-access-token:$GH_TOKEN@github.com/${{ github.repository }}"
+
+          # The published branch carries no history: it is force-pushed as a single
+          # commit every night, so five days of reports never grow the repository.
+          git clone --depth 1 --branch gh-pages "$remote" _site || mkdir -p _site
+
+          mkdir -p "_site/runs/$day"
+          rm -rf "_site/runs/$day/report"
+          cp -r artifact/playwright-report "_site/runs/$day/report"
+          cp artifact/test-results/summary.json "_site/runs/$day/summary.json"
+          cp site/index.html _site/index.html
+          touch _site/.nojekyll
+
+          # Five newest days stay; the rest go.
+          ls -1 _site/runs | sort -r | tail -n +6 | while read -r old; do rm -rf "_site/runs/$old"; done
+          ls -1 _site/runs | sort -r | jq -Rn '[inputs]' > _site/runs.json
+
+          cd _site
+          rm -rf .git
+          git init -q -b gh-pages
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add -A
+          git commit -qm "E2E results — $day"
+          git push -qf "$remote" gh-pages

@@ -40,6 +40,24 @@ deployment chosen for a manual run. It uploads the reports as an artifact and
 posts its own Teams card through the same webhook. See
 [perf/README.md](../../perf/README.md).
 
+## `gh-pages`
+
+Every scheduled, manual and `main` run folds its results into the `gh-pages`
+branch: `runs/<date>/summary.json` and that day's full Playwright report. The
+five newest days stay and the rest are deleted, and the branch is force-pushed
+as a single commit, so five days of reports never grow the repository.
+
+The page at the Pages URL lists those five days across the top; each one shows
+the endpoint status, the summary, and the Playwright report. It is built from
+[`site/index.html`](../../site/index.html) and reads `summary.json`, which
+already carries the service health the run recorded.
+
+Artifacts are kept for five days too, so the two agree.
+
+Pages must be set to deploy from the `gh-pages` branch, root folder. The site is
+public — the repository has to be public for Pages on this plan, and Pages
+access control is Enterprise Cloud only.
+
 ## Configuration
 
 Repository **variables**: `E2E_BASE_URL_STAGING`, `E2E_BASE_URL_PRODUCTION`,
