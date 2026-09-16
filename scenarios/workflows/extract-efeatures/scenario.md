@@ -20,6 +20,12 @@ run stops with "either targets or autotargets should be set". Until a recording
 with amplitudes exists, or the form stops accepting a protocol without them, the
 campaign can only be asked to start.
 
+The scenario is skipped for now, and the spec says so at the top. obi-one answers
+the declared-task endpoints without a CORS header for the origin the suite runs
+against, so the browser drops the estimate and the launch before either leaves.
+The steps below are still current: the skip comes off when the backend allows the
+origin, and nothing here needs rewriting.
+
 The seed also says which deployments the workflow runs on, so no line here does.
 
 Launching prices the extraction first: the estimate is shown and has to be
