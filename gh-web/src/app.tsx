@@ -1,13 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-import {
-  ChartCard,
-  DurationChart,
-  FeatureChart,
-  Legend,
-  OutcomeChart,
-  PassRateChart,
-} from '@/charts';
+import { ChartCard, CreditsBar, Legend, OutcomeDonut } from '@/charts';
 import { AnimatedBadge, type AnimatedBadgeStatus } from '@/components/motion/animated-badge';
 import { AnimatedNumber } from '@/components/motion/animated-number';
 import {
@@ -20,10 +13,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/motion/tabs';
 import {
   duration,
-  type HistoryEntry,
-  isReal,
   loadDays,
-  loadHistory,
+  loadScenarioIndex,
   loadSummary,
   passRate,
   percent,
@@ -31,6 +22,7 @@ import {
   shortDate,
   type Summary,
 } from '@/data';
+import { ScenarioDrawer } from '@/scenario-drawer';
 
 const SERVICE_STATUS: Record<ServiceStatus, AnimatedBadgeStatus> = {
   healthy: 'success',
@@ -80,12 +72,11 @@ function Td({ children, className }: { children: React.ReactNode; className?: st
   return <td className={`px-3 py-2 ${className ?? ''}`}>{children}</td>;
 }
 
-function Overview({ summary, history }: { summary: Summary; history: HistoryEntry[] }) {
-  const rate = passRate(summary);
+function Overview({ summary }: { summary: Summary }) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        <Tile label="Pass rate" value={rate} format={(n) => percent.format(n)} />
+        <Tile label="Pass rate" value={passRate(summary)} format={(n) => percent.format(n)} />
         <Tile label="Passed" value={summary.passed} tone="var(--pass)" />
         <Tile label="Failed" value={summary.failed} tone={summary.failed ? 'var(--fail)' : ''} />
         <Tile label="Flaky" value={summary.flaky} tone={summary.flaky ? 'var(--flake)' : ''} />
@@ -93,20 +84,29 @@ function Overview({ summary, history }: { summary: Summary; history: HistoryEntr
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <ChartCard title="Pass rate" hint="Every run the branch still remembers.">
-          <PassRateChart history={history} />
+        <ChartCard title="Outcomes" hint="Every test this run reported.">
+          <OutcomeDonut summary={summary} />
+          <Legend
+            items={[
+              { key: 'passed', label: 'passed' },
+              { key: 'failed', label: 'failed' },
+              { key: 'flaky', label: 'flaky' },
+              { key: 'skipped', label: 'skipped' },
+            ]}
+          />
         </ChartCard>
-        <ChartCard title="Duration" hint="Wall clock for the whole suite.">
-          <DurationChart history={history} />
-        </ChartCard>
-        <ChartCard title="Failures and flakes" hint="Per run. Passes are the tile above.">
-          <OutcomeChart history={history} />
-          <Legend items={['flaky', 'failed']} />
-        </ChartCard>
-        <ChartCard title="This run by feature" hint="The twelve busiest features.">
-          <FeatureChart features={summary.features} />
-          <Legend items={['passed', 'skipped', 'flaky', 'failed']} />
-        </ChartCard>
+
+        {summary.credits?.assigned === undefined ? null : (
+          <ChartCard title="Credits" hint="What the project was given, and where it went.">
+            <CreditsBar credits={summary.credits} />
+            <Legend
+              items={[
+                { key: 'spent', label: 'spent' },
+                { key: 'left', label: 'left' },
+              ]}
+            />
+          </ChartCard>
+        )}
       </div>
 
       {summary.credits?.assigned === undefined ? null : (
@@ -207,26 +207,48 @@ function Features({ summary }: { summary: Summary }) {
   );
 }
 
-function Failures({ summary }: { summary: Summary }) {
+function Failures({
+  summary,
+  scenarios,
+  onOpenScenario,
+}: {
+  summary: Summary;
+  scenarios: Record<string, string>;
+  onOpenScenario: (scenarioPath: string) => void;
+}) {
   if (summary.totalFailures === 0) {
     return <p className="text-sm text-muted-foreground">Nothing failed in this run.</p>;
   }
   const hidden = summary.totalFailures - summary.failures.length;
   return (
     <div className="space-y-3">
-      {summary.failures.map((failure) => (
-        <Panel key={`${failure.file}:${failure.line}:${failure.title}`}>
-          <div className="border-b border-border px-4 py-2">
-            <p className="font-medium">{failure.title}</p>
-            <p className="text-xs text-muted-foreground">
-              {failure.file}:{failure.line} · {failure.project}
-            </p>
-          </div>
-          <pre className="overflow-x-auto px-4 py-3 text-xs whitespace-pre-wrap text-muted-foreground">
-            {failure.error}
-          </pre>
-        </Panel>
-      ))}
+      {summary.failures.map((failure) => {
+        const scenario = scenarios[failure.file];
+        return (
+          <Panel key={`${failure.file}:${failure.line}:${failure.title}`}>
+            <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-2">
+              <div className="min-w-0">
+                <p className="font-medium">{failure.title}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {failure.file}:{failure.line} · {failure.project}
+                </p>
+              </div>
+              {scenario ? (
+                <button
+                  type="button"
+                  onClick={() => onOpenScenario(scenario)}
+                  className="shrink-0 rounded-md px-2 py-1 text-xs text-primary underline underline-offset-4 hover:bg-muted"
+                >
+                  Scenario
+                </button>
+              ) : null}
+            </div>
+            <pre className="overflow-x-auto px-4 py-3 text-xs whitespace-pre-wrap text-muted-foreground">
+              {failure.error}
+            </pre>
+          </Panel>
+        );
+      })}
       {hidden > 0 ? (
         <p className="text-sm text-muted-foreground">
           …and {hidden} more. The Playwright report has all of them.
@@ -262,16 +284,16 @@ function Report({ day }: { day: string }) {
 
 export function App() {
   const [days, setDays] = useState<string[]>([]);
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [day, setDay] = useState<string>('');
   const [summary, setSummary] = useState<Summary | null>(null);
+  const [scenarios, setScenarios] = useState<Record<string, string>>({});
+  const [openScenario, setOpenScenario] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     void (async () => {
-      const [loadedDays, loadedHistory] = await Promise.all([loadDays(), loadHistory()]);
+      const loadedDays = await loadDays();
       setDays(loadedDays);
-      setHistory(loadedHistory.filter(isReal));
       setDay(loadedDays[0] ?? '');
       setLoading(false);
     })();
@@ -281,15 +303,25 @@ export function App() {
     if (!day) return;
     let current = true;
     void (async () => {
-      const loaded = await loadSummary(day);
-      if (current) setSummary(loaded);
+      const [loadedSummary, loadedScenarios] = await Promise.all([
+        loadSummary(day),
+        loadScenarioIndex(day),
+      ]);
+      if (!current) return;
+      setSummary(loadedSummary);
+      setScenarios(loadedScenarios);
     })();
     return () => {
       current = false;
     };
   }, [day]);
 
-  const trend = useMemo(() => history.toSorted((a, b) => a.date.localeCompare(b.date)), [history]);
+  // A drawer left open across a day change would show the wrong run's scenario.
+  // Closing it belongs to the event that changed the day, not to an effect.
+  const pickDay = useCallback((next: string) => {
+    setOpenScenario(null);
+    setDay(next);
+  }, []);
 
   if (loading) {
     return <p className="p-8 text-sm text-muted-foreground">Loading…</p>;
@@ -326,7 +358,7 @@ export function App() {
               {summary.failed > 0 ? `${summary.failed} failing` : 'All green'}
             </AnimatedBadge>
           ) : null}
-          <Select value={day} onValueChange={setDay}>
+          <Select value={day} onValueChange={pickDay}>
             <SelectTrigger className="min-w-44">
               <SelectValue placeholder="Pick a day" />
             </SelectTrigger>
@@ -360,7 +392,7 @@ export function App() {
 
           <div className="mt-4">
             <TabsContent value="overview">
-              <Overview summary={summary} history={trend} />
+              <Overview summary={summary} />
             </TabsContent>
             <TabsContent value="endpoints">
               <Endpoints summary={summary} />
@@ -369,7 +401,7 @@ export function App() {
               <Features summary={summary} />
             </TabsContent>
             <TabsContent value="failures">
-              <Failures summary={summary} />
+              <Failures summary={summary} scenarios={scenarios} onOpenScenario={setOpenScenario} />
             </TabsContent>
             <TabsContent value="report">
               <Report day={day} />
@@ -377,6 +409,12 @@ export function App() {
           </div>
         </Tabs>
       )}
+
+      <ScenarioDrawer
+        date={day}
+        scenarioPath={openScenario}
+        onClose={() => setOpenScenario(null)}
+      />
     </div>
   );
 }
