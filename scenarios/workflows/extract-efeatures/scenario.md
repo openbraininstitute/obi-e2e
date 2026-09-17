@@ -1,35 +1,17 @@
 # Intracellular e-feature extraction
 
-The Intracellular EFeatures workflow, under Extract on the Workflows page.
-obi-one describes the form, and the seed fills it in: one intracellular
-recording, and one protocol whose features are taken from it.
+The "Intracellular EFeatures" workflow, under Extract on the Workflows page.
+obi-one describes the form and the seed fills it in. Nothing is browsed for
+first: the recording is chosen inside the form.
 
-This workflow browses for nothing first. The card opens the form straight away,
-and the recording is chosen inside the Inputs block rather than on a browse page.
-
-Which protocols the form offers is read from the chosen recording. A recording
-that stops holding "GenericStep" fails here instead of extracting nothing.
+The seed names that recording by id, because two public recordings share the
+name "C190101A1-MT-C1" and hold different protocols. Which protocols the form
+offers, and the amplitudes each was measured at, are read from the recording it
+names. The features come with the protocol; the seed only says how many.
 
 The workflow sits behind a feature flag, which the seed names. The flag is set
-before the page loads, because the hub renders the card disabled otherwise.
-
-The run itself is not followed. obi-one refuses every extraction this
-deployment can configure: no electrical cell recording it holds reports any step
-amplitudes, so the protocol card is ticked with an empty amplitude list and the
-run stops with "either targets or autotargets should be set". Until a recording
-with amplitudes exists, or the form stops accepting a protocol without them, the
-campaign can only be asked to start.
-
-The scenario is skipped for now, and the spec says so at the top. obi-one answers
-the declared-task endpoints without a CORS header for the origin the suite runs
-against, so the browser drops the estimate and the launch before either leaves.
-The steps below are still current: the skip comes off when the backend allows the
-origin, and nothing here needs rewriting.
-
-The seed also says which deployments the workflow runs on, so no line here does.
-
-Launching prices the extraction first: the estimate is shown and has to be
-confirmed before anything starts.
+before the page loads, because the hub renders the card disabled otherwise. The
+seed also says which deployments the workflow runs on, so no line here does.
 
 User: credits
 Seed: seed.json
@@ -43,7 +25,8 @@ Precondition:
 
 Steps:
 
-1. Start the "Extract" workflow for "Intracellular EFeatures"
+1. Open "Extract"
+2. Start "Intracellular EFeatures"
 
 Expected:
 
@@ -57,17 +40,19 @@ For each: configuration in the seed
 Precondition:
 
 1. The feature the seed names is turned on
-2. The Intracellular EFeatures form is open
+2. The "Intracellular EFeatures" form is open
 
 Steps:
 
-1. Fill the form from the configuration in the seed, the recording and the
-   protocol included
+1. Fill in the campaign name and description from the seed
+2. Choose the recording the seed names
+3. Tick each protocol the seed names, at the amplitudes it names
+4. Fill in the settings from the seed
 
 Expected:
 
-- The button reads "Generate extraction(s)"
-- The button is enabled
+- Each protocol carries as many features as the seed says
+- "Generate extraction(s)" is enabled
 
 Steps:
 
@@ -80,7 +65,6 @@ Expected:
 - The first coordinate reads "created"
 - Its inputs are exactly: "obi_one_coordinate.json"
 - It has produced no outputs yet
-- The launch button reads "Launch extractions"
 
 Steps:
 
@@ -93,11 +77,18 @@ Expected:
 Steps:
 
 1. Open the extractions tab again
-2. Press "Launch extractions"
 
 Expected:
 
-- An estimated cost breakdown is shown, with a "Confirm" to press
+- The launch button reads "Launch extractions"
+
+Steps:
+
+1. Press "Launch extractions"
+
+Expected:
+
+- An estimated cost is shown, with a "Confirm" to press
 
 Steps:
 
@@ -106,3 +97,7 @@ Steps:
 Expected:
 
 - The coordinate leaves "created"
+- It reaches "done"
+- Its inputs are exactly: "Task configuration", "obi_one_coordinate.json"
+- Its outputs are exactly: "Task logs", "extracted_features.json", "figures"
+- The task log reads "Task execution completed."
