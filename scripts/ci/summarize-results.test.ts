@@ -101,7 +101,24 @@ describe('feature helpers', () => {
     expect(detectTrigger('schedule')).toBe('Scheduled');
     expect(detectTrigger('workflow_dispatch')).toBe('Manual');
     expect(detectTrigger('push')).toBe('On deploy');
-    expect(detectTrigger(undefined)).toBe('Local');
+  });
+
+  /*
+   * `detectTrigger` defaults its argument to GITHUB_EVENT_NAME, so passing
+   * `undefined` reads the environment rather than standing in for "no event".
+   * On a developer's machine that is unset and the assertion passed by accident;
+   * on a pull request CI sets it and the same call answers 'Pull request'. The
+   * variable has to actually be gone for this to mean anything.
+   */
+  test('detectTrigger falls back to Local when no event name is set', () => {
+    const before = process.env.GITHUB_EVENT_NAME;
+    delete process.env.GITHUB_EVENT_NAME;
+    try {
+      expect(detectTrigger()).toBe('Local');
+    } finally {
+      if (before === undefined) delete process.env.GITHUB_EVENT_NAME;
+      else process.env.GITHUB_EVENT_NAME = before;
+    }
   });
 });
 

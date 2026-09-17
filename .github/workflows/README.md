@@ -51,10 +51,19 @@ branch: `runs/<date>/summary.json` and that day's full Playwright report. The
 five newest days stay and the rest are deleted, and the branch is force-pushed
 as a single commit, so five days of reports never grow the repository.
 
-The page at the Pages URL lists those five days across the top; each one shows
-the endpoint status, the summary, and the Playwright report. It is built from
-[`site/index.html`](../../site/index.html) and reads `summary.json`, which
-already carries the service health the run recorded.
+`history.json` is the exception the sweep leaves alone — a few hundred bytes per
+run, 400 runs deep, so the dashboard's trend charts can look back further than
+the reports do.
+
+The page itself is [`gh-web/`](../../gh-web/README.md): a Vite and React bundle
+with TanStack Charts, built by the `site` job and copied onto the branch by
+`publish`. It has a day picker, an overview with four charts, and tabs for
+endpoint status, features, failures and the embedded Playwright report.
+
+`site` is a separate job on purpose. `publish` runs `if: always()`, so it is what
+still reports a night the suite failed, which is the night people open the page.
+A bundler error costs the new dashboard and nothing else: `publish` keeps serving
+the bundle already on the branch and says so in a warning annotation.
 
 Artifacts are kept for five days too, so the two agree.
 

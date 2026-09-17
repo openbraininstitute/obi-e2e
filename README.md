@@ -221,12 +221,6 @@ The Teams card: [docs/teams-reporting.md](docs/teams-reporting.md).
 | `PLAYWRIGHT_BROWSER`                                  | `chromium` (default), `firefox` or `webkit`         |
 | `E2E_LOG_FORMAT` / `E2E_LOG_LEVEL`                    | `text` or `json`. `info` by default                 |
 
-
-
-
-
-
-
-
 ---
+
 Copyright (c) 2026 Open Brain Institute.

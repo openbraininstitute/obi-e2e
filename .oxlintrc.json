@@ -1,20 +1,26 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "unicorn", "oxc", "promise"],
+  "plugins": ["typescript", "unicorn", "oxc", "promise", "react", "jsx-a11y"],
   "categories": {
     "correctness": "error",
     "suspicious": "error",
     "perf": "warn",
     "pedantic": "off"
   },
-  "env": { "builtin": true, "node": true, "es2024": true },
+  "env": {
+    "builtin": true,
+    "node": true,
+    "es2024": true,
+    "browser": true
+  },
   "rules": {
     "no-console": "off",
     "typescript/consistent-type-imports": "error",
     "typescript/no-explicit-any": "warn",
     "unicorn/prefer-node-protocol": "error",
     "promise/no-return-wrap": "error",
-    "eslint/no-await-in-loop": "off"
+    "eslint/no-await-in-loop": "off",
+    "react/react-in-jsx-scope": "off"
   },
   "ignorePatterns": [
     "node_modules",
@@ -23,6 +29,8 @@
     "blob-report",
     ".e2e-runs",
     "perf/report",
-    ".lighthouseci"
+    ".lighthouseci",
+    "gh-web/src/components",
+    "gh-web/src/lib"
   ]
 }

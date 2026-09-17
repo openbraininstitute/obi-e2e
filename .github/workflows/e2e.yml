@@ -2,7 +2,7 @@ name: E2E
 
 on:
   schedule:
-    - cron: "0 7 * * *"
+    - cron: '0 7 * * *'
   push:
     branches: [main]
   workflow_dispatch:
@@ -15,7 +15,7 @@ on:
       grep:
         description: Only run tests matching this tag or title (e.g. @credits)
         type: string
-        default: ""
+        default: ''
 
 # Pull requests are not tested here for the time being: the suite runs against
 # staging and production only. Putting per-PR runs back means restoring the
@@ -71,7 +71,7 @@ jobs:
         run: ${{ fromJSON(needs.matrix.outputs.runs) }}
     name: ${{ matrix.run.name }}
     env:
-      CI: "true"
+      CI: 'true'
       E2E_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
       E2E_ENVIRONMENT: ${{ matrix.run.environment }}
       E2E_ENV: ${{ matrix.run.environment }}
@@ -169,8 +169,33 @@ jobs:
           E2E_REPORT_URL: ${{ steps.report.outputs.artifact-url }}
         run: bun scripts/ci/teams-card.ts test-results/summary.json
 
+  # The dashboard is built here rather than in `publish`, and on purpose. `publish`
+  # runs `if: always()`, so it is the job that still reports a night the suite
+  # failed — which is the night people open the page. A bundler error in this job
+  # costs the new dashboard and nothing else: `publish` keeps serving the one
+  # already on the branch.
+  site:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+
+      - run: bun install --frozen-lockfile
+
+      - run: bun run site:build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: site
+          path: gh-web/dist/
+          retention-days: 5
+
   publish:
-    needs: run
+    needs: [run, site]
     if: always()
     runs-on: ubuntu-latest
     permissions:
@@ -181,11 +206,23 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+
       - uses: actions/download-artifact@v5
         with:
           pattern: playwright-report-*
           merge-multiple: true
           path: artifact
+
+      - uses: actions/download-artifact@v5
+        # Absent when the site job failed. The step below keeps whatever the
+        # branch already serves rather than publishing an empty page.
+        continue-on-error: true
+        with:
+          name: site
+          path: site-dist
 
       - name: Fold this run into the last five days
         env:
@@ -203,8 +240,24 @@ jobs:
           rm -rf "_site/runs/$day/report"
           cp -r artifact/playwright-report "_site/runs/$day/report"
           cp artifact/test-results/summary.json "_site/runs/$day/summary.json"
-          cp site/index.html _site/index.html
           touch _site/.nojekyll
+
+          # The day sweep below takes the reports with it, so the numbers the trend
+          # charts read are kept separately. This is the only file on the branch
+          # that outlives five days.
+          bun scripts/ci/history.ts \
+            artifact/test-results/summary.json _site/history.json "$day"
+
+          if [ -d site-dist ]; then
+            # Clear the paths the bundle owns before copying, or last week's hashed
+            # assets stay on the branch forever. Only those: `runs/`, `runs.json`
+            # and `history.json` sit beside the bundle and are not its to delete.
+            find site-dist -mindepth 1 -maxdepth 1 -printf '%P\n' |
+              while read -r owned; do rm -rf "_site/$owned"; done
+            cp -r site-dist/. _site/
+          else
+            echo "::warning::The site job produced no bundle; keeping the published one."
+          fi
 
           # Five newest days stay; the rest go.
           ls -1 _site/runs | sort -r | tail -n +6 | while read -r old; do rm -rf "_site/runs/$old"; done

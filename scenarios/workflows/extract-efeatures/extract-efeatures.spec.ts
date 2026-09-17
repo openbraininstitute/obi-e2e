@@ -1,20 +1,12 @@
-import {
-  loadSeed,
-  notDeployedHere,
-  runsOnThisDeployment,
-} from "@fixtures/scan-config";
-import { scanConfigWords } from "@fixtures/scan-config/activities";
-import {
-  campaignTags,
-  campaignTimeout,
-  runCampaign,
-} from "@fixtures/steps/campaign";
-import { enableFeature } from "@fixtures/steps/feature-flags";
-import { openWorkflowsHub, startWorkflow } from "@fixtures/steps/workflows";
-import { CREDITS } from "@fixtures/tags";
-import { expect, test } from "@fixtures/test";
-import { scanConfigEditor } from "@locators/scan-config";
-import type { Page } from "@playwright/test";
+import { loadSeed, notDeployedHere, runsOnThisDeployment } from '@fixtures/scan-config';
+import { scanConfigWords } from '@fixtures/scan-config/activities';
+import { campaignTags, campaignTimeout, runCampaign } from '@fixtures/steps/campaign';
+import { enableFeature } from '@fixtures/steps/feature-flags';
+import { openWorkflowsHub, startWorkflow } from '@fixtures/steps/workflows';
+import { CREDITS } from '@fixtures/tags';
+import { expect, test } from '@fixtures/test';
+import { scanConfigEditor } from '@locators/scan-config';
+import type { Page } from '@playwright/test';
 
 const fixture = loadSeed(import.meta.dir);
 const words = scanConfigWords[fixture.activity];
@@ -33,7 +25,7 @@ async function openEditor(page: Page): Promise<void> {
   await expect(page).toHaveURL(FORM_URL);
 }
 
-test.describe("Intracellular e-feature extraction", () => {
+test.describe('Intracellular e-feature extraction', () => {
   test.beforeEach(async ({ page, context, workspace, baseURL }) => {
     // Before the hub loads: it renders the card disabled without the flag.
     const flag = fixture.requires?.featureFlag;
@@ -42,16 +34,12 @@ test.describe("Intracellular e-feature extraction", () => {
     await openWorkflowsHub(page, workspace);
   });
 
-  test(
-    "The form will not launch until it is complete",
-    { tag: CREDITS },
-    async ({ page }) => {
-      await openEditor(page);
+  test('The form will not launch until it is complete', { tag: CREDITS }, async ({ page }) => {
+    await openEditor(page);
 
-      await expect(scanConfigEditor(page).submit).toHaveText(words.generate);
-      await expect(scanConfigEditor(page).submit).toBeDisabled();
-    },
-  );
+    await expect(scanConfigEditor(page).submit).toHaveText(words.generate);
+    await expect(scanConfigEditor(page).submit).toBeDisabled();
+  });
 
   for (const configuration of fixture.cases) {
     test(
@@ -60,7 +48,7 @@ test.describe("Intracellular e-feature extraction", () => {
       async ({ page }) => {
         await openEditor(page);
         await runCampaign(page, fixture, configuration);
-      },
+      }
     );
   }
 });

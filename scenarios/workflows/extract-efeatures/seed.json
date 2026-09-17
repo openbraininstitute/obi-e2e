@@ -1,9 +1,7 @@
 {
   "name": "Intracellular e-feature extraction",
   "activity": "extract",
-  "env": [
-    "staging"
-  ],
+  "env": ["staging"],
   "workflow": {
     "label": "Intracellular EFeatures",
     "type": "efeature-extraction-campaign"
@@ -40,114 +38,33 @@
             "protocols": [
               {
                 "extraction_amplitudes": [
-                  [
-                    -0.006,
-                    false
-                  ],
-                  [
-                    -0.003,
-                    false
-                  ],
-                  [
-                    0.056,
-                    false
-                  ],
-                  [
-                    0.066,
-                    false
-                  ],
-                  [
-                    0.084,
-                    false
-                  ],
-                  [
-                    0.097,
-                    false
-                  ],
-                  [
-                    0.103,
-                    false
-                  ],
-                  [
-                    0.112,
-                    false
-                  ],
-                  [
-                    0.119,
-                    false
-                  ],
-                  [
-                    0.131,
-                    false
-                  ],
-                  [
-                    0.141,
-                    false
-                  ],
-                  [
-                    0.153,
-                    false
-                  ],
-                  [
-                    0.162,
-                    false
-                  ],
-                  [
-                    0.166,
-                    false
-                  ],
-                  [
-                    0.175,
-                    false
-                  ],
-                  [
-                    0.184,
-                    false
-                  ],
-                  [
-                    0.191,
-                    false
-                  ],
-                  [
-                    0.197,
-                    false
-                  ],
-                  [
-                    0.203,
-                    false
-                  ],
-                  [
-                    0.231,
-                    false
-                  ],
-                  [
-                    0.233,
-                    false
-                  ],
-                  [
-                    0.234,
-                    false
-                  ],
-                  [
-                    0.253,
-                    false
-                  ],
-                  [
-                    0.281,
-                    false
-                  ],
-                  [
-                    0.287,
-                    false
-                  ],
-                  [
-                    0.303,
-                    false
-                  ],
-                  [
-                    0.347,
-                    false
-                  ]
+                  [-0.006, false],
+                  [-0.003, false],
+                  [0.056, false],
+                  [0.066, false],
+                  [0.084, false],
+                  [0.097, false],
+                  [0.103, false],
+                  [0.112, false],
+                  [0.119, false],
+                  [0.131, false],
+                  [0.141, false],
+                  [0.153, false],
+                  [0.162, false],
+                  [0.166, false],
+                  [0.175, false],
+                  [0.184, false],
+                  [0.191, false],
+                  [0.197, false],
+                  [0.203, false],
+                  [0.231, false],
+                  [0.233, false],
+                  [0.234, false],
+                  [0.253, false],
+                  [0.281, false],
+                  [0.287, false],
+                  [0.303, false],
+                  [0.347, false]
                 ],
                 "features": [
                   {
@@ -277,18 +194,9 @@
               },
               {
                 "extraction_amplitudes": [
-                  [
-                    -0.003,
-                    false
-                  ],
-                  [
-                    0.0,
-                    false
-                  ],
-                  [
-                    0.003,
-                    false
-                  ]
+                  [-0.003, false],
+                  [0.0, false],
+                  [0.003, false]
                 ],
                 "features": [
                   {
@@ -347,21 +255,12 @@
       "expect": {
         "coordinateCount": 1,
         "generated": {
-          "inputs": [
-            "obi_one_coordinate.json"
-          ],
+          "inputs": ["obi_one_coordinate.json"],
           "outputs": []
         },
         "completed": {
-          "inputs": [
-            "Task configuration",
-            "obi_one_coordinate.json"
-          ],
-          "outputs": [
-            "Task logs",
-            "extracted_features.json",
-            "figures"
-          ]
+          "inputs": ["Task configuration", "obi_one_coordinate.json"],
+          "outputs": ["Task logs", "extracted_features.json", "figures"]
         }
       }
     }
