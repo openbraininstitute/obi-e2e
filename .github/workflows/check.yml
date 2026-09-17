@@ -27,10 +27,6 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
-      # `test:unit` is not all pure: locators/scan-config.test.ts and
-      # fixtures/scan-config/driver.test.ts launch Chromium against markup taken
-      # from a trace, which is the point of them — a locator that a page-wide
-      # lookup gets wrong fails silently, minutes into a campaign.
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         with:
