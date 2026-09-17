@@ -1,18 +1,43 @@
+# Format, lint, types and the unit tests, on every pull request. The suite itself
+# runs against staging on a schedule, not here — see e2e.yml.
 name: Check
+
 on:
   pull_request:
   push:
     branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
+
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.0
+
       - run: bun install --frozen-lockfile
+
+      # `test:unit` is not all pure: locators/scan-config.test.ts and
+      # fixtures/scan-config/driver.test.ts launch Chromium against markup taken
+      # from a trace, which is the point of them — a locator that a page-wide
+      # lookup gets wrong fails silently, minutes into a campaign.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+
+      - name: Install browsers
+        run: bun run browsers
+
       - run: bun run check
