@@ -6,6 +6,14 @@
  *   runs/<date>/summary.json    that day's full summary
  *   history.json                one small row per run, kept far longer
  *
+ * Nothing here reads `history.json`. The page shows one run at a time, and the
+ * trend charts that used it are gone. The publish job still writes it, because
+ * a history is the one thing that cannot be rebuilt later — see gh-web/README.md.
+ *
+ * The report directory also carries the scenario of every failed test, and
+ * `scenarios.json` beside it says which spec each one belongs to. See
+ * scripts/ci/collect-scenarios.ts.
+ *
  * `runs.json` is pruned to five days because each day carries a whole Playwright
  * report. `history.json` is a few hundred bytes a run, so the trend charts can
  * look back months without the branch growing.
@@ -74,21 +82,6 @@ export type Summary = {
   noResults?: boolean;
 };
 
-/** One row per run. Written by scripts/ci/history.ts, never pruned by the day sweep. */
-export type HistoryEntry = {
-  date: string;
-  finishedAt: string;
-  environment: string;
-  passed: number;
-  failed: number;
-  flaky: number;
-  skipped: number;
-  durationMs: number;
-  commit: string;
-  runUrl: string;
-  noResults?: boolean;
-};
-
 async function json<T>(path: string): Promise<T | null> {
   try {
     const response = await fetch(path);
@@ -99,11 +92,21 @@ async function json<T>(path: string): Promise<T | null> {
 }
 
 export const loadDays = () => json<string[]>('runs.json').then((d) => d ?? []);
-export const loadHistory = () => json<HistoryEntry[]>('history.json').then((h) => h ?? []);
 export const loadSummary = (date: string) => json<Summary>(`runs/${date}/summary.json`);
 
-/** Ran and finished, whatever the verdict. A run with no report at all is not a data point. */
-export const isReal = (entry: HistoryEntry) => !entry.noResults;
+/** Spec file to the scenario copied for it, for the day given. */
+export const loadScenarioIndex = (date: string) =>
+  json<Record<string, string>>(`runs/${date}/report/scenarios.json`).then((index) => index ?? {});
+
+/** The scenario's markdown, as published next to that day's report. */
+export async function loadScenario(date: string, scenarioPath: string): Promise<string | null> {
+  try {
+    const response = await fetch(`runs/${date}/report/${scenarioPath}`);
+    return response.ok ? await response.text() : null;
+  } catch {
+    return null;
+  }
+}
 
 export function passRate(counts: { passed: number; failed: number; flaky: number }): number {
   const ran = counts.passed + counts.failed + counts.flaky;

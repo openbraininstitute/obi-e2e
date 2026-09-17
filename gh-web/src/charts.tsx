@@ -1,7 +1,12 @@
-import { areaY } from '@tanstack/charts/area';
-import { barX, barY } from '@tanstack/charts/bar';
-import { dot } from '@tanstack/charts/dot';
-import { lineY } from '@tanstack/charts/line';
+/**
+ * Two charts, both about the run being looked at.
+ *
+ * Colours are the CSS variables the rest of the page uses, passed straight
+ * through to SVG `fill`, so a theme change reaches the charts without a rebuild.
+ */
+
+import { barX } from '@tanstack/charts/bar';
+import { pie, polar, radialArc } from '@tanstack/charts/polar';
 import { Chart } from '@tanstack/charts/react';
 import { scaleBand } from '@tanstack/charts/scales/band';
 import { scaleLinear } from '@tanstack/charts/scales/linear';
@@ -10,18 +15,18 @@ import { stack } from '@tanstack/charts/stack';
 import { tooltip } from '@tanstack/charts/tooltip';
 import { useMemo } from 'react';
 
-import { duration, type Feature, type HistoryEntry, passRate, percent, shortDate } from '@/data';
-
-const PASS = 'var(--pass)';
-const FAIL = 'var(--fail)';
-const FLAKE = 'var(--flake)';
-const SKIP = 'var(--skip)';
+import type { CreditReport, Summary } from '@/data';
 
 const OUTCOME_FILL: Record<string, string> = {
-  passed: PASS,
-  failed: FAIL,
-  flaky: FLAKE,
-  skipped: SKIP,
+  passed: 'var(--pass)',
+  failed: 'var(--fail)',
+  flaky: 'var(--flake)',
+  skipped: 'var(--skip)',
+};
+
+const CREDIT_FILL: Record<string, string> = {
+  spent: 'var(--primary)',
+  left: 'var(--skip)',
 };
 
 /** Every chart sits in the same framed box, so a row of them lines up. */
@@ -45,228 +50,122 @@ export function ChartCard({
   );
 }
 
-function Empty({ children }: { children: React.ReactNode }) {
+function Empty({ children, height }: { children: React.ReactNode; height: number }) {
   return (
-    <p className="flex h-[220px] items-center justify-center text-sm text-muted-foreground">
+    <p
+      className="flex items-center justify-center text-sm text-muted-foreground"
+      style={{ height }}
+    >
       {children}
     </p>
   );
 }
 
-/** Pass rate across every run the history holds. */
-export function PassRateChart({ history }: { history: HistoryEntry[] }) {
-  const data = useMemo(
+/** The run's four verdicts, as one rounded donut. */
+export function OutcomeDonut({ summary }: { summary: Summary }) {
+  const slices = useMemo(
     () =>
-      history.map((run) => ({
-        ...run,
-        rate: passRate(run),
-        label: shortDate(run.date),
-      })),
-    [history]
-  );
-
-  const floor = useMemo(() => {
-    const worst = Math.min(...data.map((run) => run.rate), 1);
-    return Math.min(0.9, Math.max(0, Math.floor(worst * 20 - 1) / 20));
-  }, [data]);
-
-  const definition = useMemo(
-    () =>
-      defineChart({
-        marks: [
-          // Without an explicit baseline the area anchors at zero and drags the
-          // whole domain back down to it, undoing the floor below.
-          areaY(data, {
-            x: 'label',
-            y: 'rate',
-            y1: floor,
-            fill: PASS,
-            fillOpacity: 0.14,
-          }),
-          lineY(data, { x: 'label', y: 'rate', stroke: PASS, strokeWidth: 2 }),
-          dot(data, { x: 'label', y: 'rate', fill: PASS, r: 3 }),
-        ],
-        scales: {
-          x: { scale: () => scaleBand().padding(0.1) },
-          y: {
-            scale: scaleLinear,
-            domain: [floor, 1],
-            includeZero: false,
-            grid: true,
-            axis: {
-              ticks: { format: (value: number) => percent.format(value) },
-            },
-          },
-        },
-        tooltip,
-      }),
-    [data, floor]
-  );
-
-  if (data.length < 2) return <Empty>Two runs are needed before a trend means anything.</Empty>;
-  return <Chart definition={definition} height={220} ariaLabel="Pass rate over time" />;
-}
-
-export function DurationChart({ history }: { history: HistoryEntry[] }) {
-  const data = useMemo(
-    () =>
-      history.map((run) => ({
-        ...run,
-        minutes: run.durationMs / 60_000,
-        label: shortDate(run.date),
-      })),
-    [history]
+      (['passed', 'failed', 'flaky', 'skipped'] as const)
+        .map((outcome) => ({ outcome, count: summary[outcome] }))
+        .filter((slice) => slice.count > 0),
+    [summary]
   );
 
   const definition = useMemo(
     () =>
-      defineChart({
-        marks: [
-          lineY(data, {
-            x: 'label',
-            y: 'minutes',
-            stroke: 'var(--primary)',
-            strokeWidth: 2,
-          }),
-          dot(data, { x: 'label', y: 'minutes', fill: 'var(--primary)', r: 3 }),
-        ],
-        scales: {
-          x: { scale: () => scaleBand().padding(0.1) },
-          y: {
-            scale: scaleLinear,
-            nice: true,
-            grid: true,
-            axis: { label: 'Minutes' },
-          },
+      defineChart(
+        {
+          marks: [
+            polar({
+              radiusRatio: 0.8,
+              marks: [
+                // `pie` materialises the gap into each slice's own interval, so
+                // the arc must not pad again on top of it.
+                radialArc(pie(slices, { value: 'count', gapAngle: (Math.PI / 180) * 3 }), {
+                  key: 'outcome',
+                  innerRadius: ({ radius }) => radius * 0.58,
+                  cornerRadius: 8,
+                  fill: (slice) => OUTCOME_FILL[slice.outcome] ?? OUTCOME_FILL.skipped!,
+                }),
+              ],
+              scales: { angle: null, radius: null },
+            }),
+          ],
+          // A donut has no cartesian axes, and it should reach the card's edges.
+          scales: { x: null, y: null },
+          margin: 0,
         },
-        tooltip,
-      }),
-    [data]
-  );
-
-  if (data.length < 2) return <Empty>Two runs are needed before a trend means anything.</Empty>;
-  return <Chart definition={definition} height={220} ariaLabel="Suite duration over time" />;
-}
-
-export function OutcomeChart({ history }: { history: HistoryEntry[] }) {
-  const data = useMemo(
-    () =>
-      history.flatMap((run) =>
-        (['failed', 'flaky'] as const)
-          .map((outcome) => ({
-            label: shortDate(run.date),
-            outcome,
-            count: run[outcome],
-          }))
-          .filter((row) => row.count > 0)
+        { tooltip: { use: tooltip } }
       ),
-    [history]
+    [slices]
   );
+
+  if (slices.length === 0) return <Empty height={260}>This run recorded no tests.</Empty>;
+  return <Chart definition={definition} height={260} ariaLabel="Outcomes for this run" />;
+}
+
+/**
+ * The project's credits as one line cut into segments.
+ *
+ * Assigned is the whole line, split where the run stopped spending. Two numbers
+ * on one axis is the thing a tile cannot show and a second tile makes you
+ * subtract for.
+ */
+export function CreditsBar({ credits }: { credits: CreditReport }) {
+  const segments = useMemo(() => {
+    const assigned = credits.assigned ?? credits.required;
+    const spent = Math.max(0, credits.spent ?? 0);
+    // Prefer what the service reported over the subtraction, and never let the
+    // two disagreeing push a segment below zero.
+    const left = Math.max(0, credits.remaining ?? assigned - spent);
+    return [
+      { label: 'Credits', segment: 'spent', value: spent },
+      { label: 'Credits', segment: 'left', value: left },
+    ].filter((row) => row.value > 0);
+  }, [credits]);
 
   const definition = useMemo(
     () =>
       defineChart({
         marks: [
-          barY(data, {
-            x: 'label',
-            y: 'count',
-            z: 'outcome',
-            layout: stack({ order: ['flaky', 'failed'] }),
-            fill: (row: (typeof data)[number]) => OUTCOME_FILL[row.outcome] ?? SKIP,
-            radius: { end: 3 },
+          barX(segments, {
+            x: 'value',
+            y: 'label',
+            z: 'segment',
+            layout: stack({ order: ['spent', 'left'] }),
+            fill: (row: (typeof segments)[number]) => CREDIT_FILL[row.segment] ?? 'var(--skip)',
+            radius: { end: 4 },
+            maxThickness: 28,
           }),
         ],
         scales: {
-          x: { scale: () => scaleBand().padding(0.22) },
-          y: {
-            scale: scaleLinear,
-            nice: true,
-            grid: true,
-            axis: { label: 'Tests' },
-          },
+          x: { scale: scaleLinear, nice: true, grid: true },
+          // The single row needs no label: the card title already says Credits.
+          y: { scale: () => scaleBand().padding(0.6), axis: false },
         },
         tooltip,
       }),
-    [data]
+    [segments]
   );
 
-  if (data.length === 0) {
-    return <Empty>Nothing has failed or flaked in the runs on record.</Empty>;
-  }
-  return <Chart definition={definition} height={220} ariaLabel="Failures and flakes per run" />;
+  if (segments.length === 0) return <Empty height={120}>This run was given no credits.</Empty>;
+  return <Chart definition={definition} height={120} ariaLabel="Credits spent and left" />;
 }
 
-export function FeatureChart({ features }: { features: Feature[] }) {
-  const data = useMemo(
-    () =>
-      features
-        // A feature that only failed matters more than one that only skipped.
-        .toSorted((a, b) => b.failed + b.flaky - (a.failed + a.flaky) || b.passed - a.passed)
-        .slice(0, 12)
-        .flatMap((feature) =>
-          (['passed', 'flaky', 'failed', 'skipped'] as const)
-            .map((outcome) => ({
-              name: feature.name,
-              outcome,
-              count: feature[outcome],
-            }))
-            .filter((row) => row.count > 0)
-        ),
-    [features]
-  );
-
-  const definition = useMemo(
-    () =>
-      defineChart({
-        marks: [
-          barX(data, {
-            x: 'count',
-            y: 'name',
-            z: 'outcome',
-            layout: stack({ order: ['passed', 'skipped', 'flaky', 'failed'] }),
-            fill: (row: (typeof data)[number]) => OUTCOME_FILL[row.outcome] ?? SKIP,
-            radius: { end: 3 },
-          }),
-        ],
-        scales: {
-          x: {
-            scale: scaleLinear,
-            nice: true,
-            grid: true,
-            axis: { label: 'Tests' },
-          },
-          y: { scale: () => scaleBand().padding(0.25) },
-        },
-        tooltip,
-      }),
-    [data]
-  );
-
-  if (data.length === 0) return <Empty>This run recorded no features.</Empty>;
-  return (
-    <Chart
-      definition={definition}
-      height={Math.max(220, features.length * 28)}
-      ariaLabel="Outcomes by feature"
-    />
-  );
-}
-
-export function Legend({ items }: { items: readonly string[] }) {
+/** The colours, spelled out under the chart that uses them. */
+export function Legend({ items }: { items: readonly { key: string; label: string }[] }) {
   return (
     <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
       {items.map((item) => (
-        <li key={item} className="flex items-center gap-1.5">
+        <li key={item.key} className="flex items-center gap-1.5">
           <span
             aria-hidden
             className="size-2.5 rounded-[3px]"
-            style={{ background: OUTCOME_FILL[item] ?? SKIP }}
+            style={{ background: OUTCOME_FILL[item.key] ?? CREDIT_FILL[item.key] ?? 'var(--skip)' }}
           />
-          {item}
+          {item.label}
         </li>
       ))}
     </ul>
   );
 }
-
-export { duration };
