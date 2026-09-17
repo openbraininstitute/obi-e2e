@@ -24,33 +24,52 @@ Three files sit next to the bundle on the `gh-pages` branch, all written by the
 | `runs/<date>/summary.json` | `summarize-results.ts`      | five days, with its report |
 | `history.json`             | `history.ts`                | 400 runs                   |
 
-The split is the whole point. Each day carries a full Playwright report, so five
-days is all the branch can hold without growing. A trend chart wants far more
-than five points, so the handful of numbers it needs are copied into
-`history.json` instead, at a few hundred bytes a run. That file is the only thing
-on the branch the day sweep does not touch.
+Nothing on the page reads `history.json` any more; the trend charts that used it
+are gone. The publish job still writes it, because it is the only file here that
+cannot be rebuilt later. Deleting the writer would forfeit the record for good,
+and it costs a few hundred bytes a run.
 
-A day that ran twice, a push after the nightly, keeps only the later row.
+Each day carries a full Playwright report, so five days is all the branch can
+hold without growing. `history.json` is the one file the day sweep does not
+touch. A day that ran twice, a push after the nightly, keeps only the later row.
+
+The report directory also carries the scenario of every failing test and a
+`scenarios.json` index beside it.
 
 ## Charts
 
-Four, and each earns its place by answering something the tables cannot.
+Two, both about the run being looked at. Everything else the page shows is a
+tile or a table.
 
-**Pass rate** scales its floor to the worst run on record rather than starting at
-zero. A suite that sits at 97% is a flat line against a full axis, with every dip
-flattened out of sight. The floor never climbs above 90%, so a genuinely bad
-night still reads as a fall and not as a rescaled normal.
+**Outcomes** is a rounded donut of passed, failed, flaky and skipped, following
+the catalog's [rounded donut][donut]. A donut needs `scales: { x: null, y: null }`
+at the top level of `defineChart` and its tooltip in the second argument, not
+inside the spec; the cartesian form of both is a type error.
 
-**Failures and flakes** plots only those two. Stacking them on top of the passes
-was the first shape tried and it does not work: two hundred green against five
-red is a solid green bar on every run, bad nights included.
+**Credits** is one line cut into segments: what the run spent, and what was left
+of what it was given. Two numbers on one axis is the thing a tile cannot show
+and a second tile makes you subtract for.
 
-**Duration** is wall clock for the whole suite. A climb here is usually the
-application, not the tests.
+There were four charts before, all trends across runs. They are gone. What
+replaced them answers the question people actually open the page with, which is
+what happened last night rather than what has happened over a month.
 
-**This run by feature** lies sideways. Feature names are long, and a vertical
-band axis silently drops the labels it cannot fit — three of seven survived the
-first attempt.
+## The scenario drawer
+
+Every failing test whose spec has a `scenario.md` gets a link in its card, and
+the scenario opens in a drawer over the right half of the page, rendered with
+[`@tanstack/markdown`][markdown].
+
+The drawer is deliberately not modal: no backdrop and no scroll lock, so the
+failures stay readable, scrollable and clickable beside it. That needed a `modal`
+prop added to the vendored beUI drawer, which is the one local change to any
+vendored file. It cannot be done from the outside, because the presence gate
+sets `pointer-events: auto` as an inline style and no class can beat it.
+
+`collect-scenarios.ts` already copied each failing test's scenario into the
+report. It now also writes `scenarios.json` beside it, mapping spec to scenario,
+because resolving "the nearest `scenario.md` at or above this spec" needs the
+file system and the page only has HTTP.
 
 ## The vendored components
 
@@ -63,6 +82,10 @@ curl -s https://beui.dev/r/<slug>.json | jq -r '.files[] | .path'
 They are excluded from oxlint in `.oxlintrc.json`. They are third-party source,
 and editing them to satisfy our rules would make the next registry update a merge
 rather than a copy. Everything under `src/` that we wrote is linted normally.
+
+One exception: `drawer.tsx` carries a `modal` prop we added, marked in the file
+as a local addition. Re-pulling that component from the registry drops it and
+the scenario drawer becomes modal again.
 
 `react/react-in-jsx-scope` is off repo-wide, which is simply correct for the
 automatic JSX runtime this project uses.
@@ -82,3 +105,5 @@ serves at the same paths the published branch uses. The production build is
 configured with no public directory at all. Served from `public/`, these would
 land in `dist/`, and a fake `runs.json` on the published site would shadow the
 real one.
+[markdown]: https://tanstack.com/markdown
+[donut]: https://tanstack.com/charts/catalog/charts/95-rounded-donut

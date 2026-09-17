@@ -105,3 +105,61 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/*
+ * The scenario drawer's markdown. @tanstack/markdown emits plain tags, and
+ * Tailwind's preflight strips their default styling, so headings and lists need
+ * it back. Only the elements a scenario.md actually uses.
+ */
+.scenario {
+  @apply text-sm leading-relaxed;
+}
+.scenario > * + * {
+  @apply mt-3;
+}
+.scenario h1 {
+  @apply mt-0 text-base font-semibold;
+}
+.scenario h2 {
+  @apply mt-5 text-sm font-semibold;
+}
+.scenario h3 {
+  @apply mt-4 text-sm font-medium;
+}
+.scenario p {
+  @apply text-muted-foreground;
+}
+.scenario ul {
+  @apply list-disc space-y-1 pl-5 text-muted-foreground;
+}
+.scenario ol {
+  @apply list-decimal space-y-1 pl-5 text-muted-foreground;
+}
+.scenario a {
+  @apply text-primary underline underline-offset-4;
+}
+.scenario strong {
+  @apply font-semibold text-foreground;
+}
+.scenario code {
+  @apply rounded bg-muted px-1 py-0.5 font-mono text-[0.85em];
+}
+.scenario pre {
+  @apply overflow-x-auto rounded-lg border border-border bg-muted p-3;
+}
+.scenario pre code {
+  @apply bg-transparent p-0;
+}
+.scenario blockquote {
+  @apply border-l-2 border-border pl-3 text-muted-foreground italic;
+}
+.scenario table {
+  @apply w-full border-collapse text-left;
+}
+.scenario th,
+.scenario td {
+  @apply border-b border-border px-2 py-1;
+}
+.scenario hr {
+  @apply border-border;
+}
