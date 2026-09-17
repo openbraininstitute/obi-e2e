@@ -7,12 +7,16 @@
 # job only has to outlast the slowest of them.
 #
 # It starts with the nightly suite, at 07:00 UTC, and runs beside it rather than
-# after: the two use different projects, so neither waits on the other.
+# after: the two use different projects, so neither waits on the other. A push to
+# main runs it too, so a change to a followed campaign is seen the day it lands
+# instead of the morning after.
 name: E2E (slow)
 
 on:
   schedule:
     - cron: "0 7 * * *"
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       environment:
@@ -22,8 +26,12 @@ on:
         default: staging
 
 concurrency:
+  # The newest request wins: a push supersedes whatever is still running, rather
+  # than queueing six hours behind it. The cost is that the run being replaced has
+  # already spent the project's credits on its launches and reports nothing — and
+  # the 07:00 cron shares this group, so it will evict a push run in flight.
   group: ${{ github.workflow }}-${{ inputs.environment || 'staging' }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: read

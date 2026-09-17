@@ -24,7 +24,12 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.action }}
-  cancel-in-progress: true
+  # A push and the nightly cron share this group on main: `github.event.action` is
+  # empty for both. Cancelling in progress let the cron evict a run that was
+  # eighteen minutes into the suite, and Playwright writes results.json only at the
+  # end — so the Teams card posted an empty run. Runs on main queue instead; only a
+  # manual re-dispatch supersedes the one before it.
+  cancel-in-progress: ${{ github.event_name == 'workflow_dispatch' }}
 
 permissions:
   contents: read
