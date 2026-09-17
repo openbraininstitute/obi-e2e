@@ -4,6 +4,11 @@ The Microcircuit simulation workflow, under Simulate on the Workflows page.
 obi-one describes the form, and the seed fills it in, following obi-one's own
 circuit simulation example: a neuron set, a clamp on it, and a recording of it.
 
+The scenario is on hold, and the spec says so at the top. Its case is marked
+`slow` in the seed, so it belongs to the slow job rather than the nightly suite;
+the skip comes off when someone asks for the workflow back. The steps below are
+still current and nothing here needs rewriting.
+
 A microcircuit is priced at roughly 2,300 credits a run, more than a nightly
 suite should spend on one workflow. So this scenario covers the form and the
 generated campaign and stops with the launch button offered but unpressed.

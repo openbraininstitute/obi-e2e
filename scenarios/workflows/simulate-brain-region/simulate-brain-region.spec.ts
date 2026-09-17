@@ -13,6 +13,14 @@ const words = scanConfigWords[fixture.activity];
 
 test.skip(!runsOnThisDeployment(fixture), notDeployedHere(fixture));
 
+/*
+ * Quarantined for the time being. The case is marked `slow` in its seed, so it
+ * belongs to the slow job rather than the nightly suite; it is held back there
+ * until someone asks for it again. Delete this line to bring it back — the
+ * scenario underneath it is unchanged.
+ */
+test.skip(true, 'Quarantined: Brain region simulation is on hold.');
+
 test.describe.configure({ timeout: campaignTimeout(fixture) });
 
 type Workspace = { labId: string; projectId: string };

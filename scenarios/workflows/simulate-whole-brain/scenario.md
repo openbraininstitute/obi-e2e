@@ -21,6 +21,11 @@ obi-one generation path for this circuit is still under improvement, so this
 scenario covers the configured form only and does not submit generation. Nothing
 here says what a run produces, because none is generated or started.
 
+The scenario is on hold, and the spec says so at the top. Its case is marked
+`slow` in the seed, so it belongs to the slow job rather than the nightly suite;
+the skip comes off when someone asks for the workflow back. The steps below are
+still current and nothing here needs rewriting.
+
 The seed also says which deployments the workflow runs on, so no line here does.
 
 User: credits

@@ -6,11 +6,13 @@
 # Each test's own budget comes from its seed's `expect.completed.within`; this
 # job only has to outlast the slowest of them.
 #
-# No schedule yet: nothing carries `@slow`, so a nightly run would report an
-# empty suite. Add `schedule: - cron: '0 2 * * *'` as soon as a case does.
+# It starts with the nightly suite, at 07:00 UTC, and runs beside it rather than
+# after: the two use different projects, so neither waits on the other.
 name: E2E (slow)
 
 on:
+  schedule:
+    - cron: "0 7 * * *"
   workflow_dispatch:
     inputs:
       environment:
