@@ -61,8 +61,16 @@ function Empty({ children, height }: { children: React.ReactNode; height: number
   );
 }
 
+const percent = new Intl.NumberFormat(undefined, {
+  style: 'percent',
+  maximumFractionDigits: 1,
+});
+
+/** What `pie` adds to each slice. The polar wrapper erases the datum type. */
+type Slice = { outcome: string; count: number; fraction: number };
+
 /** The run's four verdicts, as one rounded donut. */
-export function OutcomeDonut({ summary }: { summary: Summary }) {
+export function ResultsDonut({ summary }: { summary: Summary }) {
   const slices = useMemo(
     () =>
       (['passed', 'failed', 'flaky', 'skipped'] as const)
@@ -91,17 +99,32 @@ export function OutcomeDonut({ summary }: { summary: Summary }) {
               scales: { angle: null, radius: null },
             }),
           ],
-          // A donut has no cartesian axes, and it should reach the card's edges.
+          /*
+           * Not optional, however much a donut has no use for them: the types
+           * accept `scales: {}` and the runtime then throws "Chart scales must
+           * define reserved `x` and `y` entries". `null` is how the library is
+           * told this chart has no cartesian scale, and nothing is drawn for it.
+           */
           scales: { x: null, y: null },
           margin: 0,
         },
-        { tooltip: { use: tooltip } }
+        {
+          tooltip: {
+            use: tooltip,
+            // `polar` erases the datum type on the way out, so the shape `pie`
+            // put in has to be named again here.
+            format: (point) => {
+              const slice = point.datum as Slice;
+              return `${slice.outcome}: ${slice.count} (${percent.format(slice.fraction)})`;
+            },
+          },
+        }
       ),
     [slices]
   );
 
   if (slices.length === 0) return <Empty height={260}>This run recorded no tests.</Empty>;
-  return <Chart definition={definition} height={260} ariaLabel="Outcomes for this run" />;
+  return <Chart definition={definition} height={260} ariaLabel="Results for this run" />;
 }
 
 /**

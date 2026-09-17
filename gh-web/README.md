@@ -41,10 +41,15 @@ The report directory also carries the scenario of every failing test and a
 Two, both about the run being looked at. Everything else the page shows is a
 tile or a table.
 
-**Outcomes** is a rounded donut of passed, failed, flaky and skipped, following
-the catalog's [rounded donut][donut]. A donut needs `scales: { x: null, y: null }`
-at the top level of `defineChart` and its tooltip in the second argument, not
-inside the spec; the cartesian form of both is a type error.
+**Results** is a rounded donut of passed, failed, flaky and skipped, following
+the catalog's [rounded donut][donut]. Its tooltip gives the count and the share
+of the run. Two things about it are not guessable: the tooltip goes in
+`defineChart`'s second argument rather than inside the spec, and the top-level
+`scales: { x: null, y: null }` are mandatory even though a donut has no
+cartesian axes — the types accept `scales: {}` and the runtime then throws
+"Chart scales must define reserved `x` and `y` entries". `polar` also erases the
+datum type on the way out, so the tooltip's formatter has to name the shape
+`pie` produced.
 
 **Credits** is one line cut into segments: what the run spent, and what was left
 of what it was given. Two numbers on one axis is the thing a tile cannot show

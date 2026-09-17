@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { ChartCard, CreditsBar, Legend, OutcomeDonut } from '@/charts';
+import { ChartCard, CreditsBar, Legend, ResultsDonut } from '@/charts';
 import { AnimatedBadge, type AnimatedBadgeStatus } from '@/components/motion/animated-badge';
 import { AnimatedNumber } from '@/components/motion/animated-number';
 import {
@@ -84,8 +84,8 @@ function Overview({ summary }: { summary: Summary }) {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <ChartCard title="Outcomes" hint="Every test this run reported.">
-          <OutcomeDonut summary={summary} />
+        <ChartCard title="Results" hint="Every test this run reported.">
+          <ResultsDonut summary={summary} />
           <Legend
             items={[
               { key: 'passed', label: 'passed' },
@@ -167,6 +167,28 @@ function Endpoints({ summary }: { summary: Summary }) {
   );
 }
 
+/** The section a feature belongs to, as a quiet uppercase chip. */
+function SectionBadge({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center rounded-md border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
+      {children}
+    </span>
+  );
+}
+
+/**
+ * A failure count. Zero stays a plain number: a table of red pills reading zero
+ * would make an all-green run look alarming.
+ */
+function FailedCount({ value }: { value: number }) {
+  if (value === 0) return <span className="tabular-nums text-muted-foreground">0</span>;
+  return (
+    <span className="inline-flex size-6 items-center justify-center rounded-full bg-fail text-xs font-semibold tabular-nums text-white">
+      {value}
+    </span>
+  );
+}
+
 function Features({ summary }: { summary: Summary }) {
   return (
     <Panel>
@@ -188,11 +210,13 @@ function Features({ summary }: { summary: Summary }) {
               key={`${feature.section}/${feature.name}`}
               className="border-b border-border last:border-0"
             >
-              <Td className="text-muted-foreground">{feature.section}</Td>
+              <Td>
+                <SectionBadge>{feature.section}</SectionBadge>
+              </Td>
               <Td className="font-medium">{feature.name}</Td>
               <Td className="tabular-nums">{feature.passed}</Td>
-              <Td className={`tabular-nums ${feature.failed ? 'text-fail font-semibold' : ''}`}>
-                {feature.failed}
+              <Td>
+                <FailedCount value={feature.failed} />
               </Td>
               <Td className={`tabular-nums ${feature.flaky ? 'text-flake' : ''}`}>
                 {feature.flaky}
@@ -384,7 +408,7 @@ export function App() {
           {/* Five tabs do not fit a phone; let the strip scroll rather than clip. */}
           <TabsList className="max-w-full overflow-x-auto">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="endpoints">Endpoints</TabsTrigger>
+            <TabsTrigger value="endpoints">Services health</TabsTrigger>
             <TabsTrigger value="features">Features</TabsTrigger>
             <TabsTrigger value="failures">Failures</TabsTrigger>
             <TabsTrigger value="report">Report</TabsTrigger>
