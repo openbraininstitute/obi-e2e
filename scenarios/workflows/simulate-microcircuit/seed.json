@@ -1,10 +1,7 @@
 {
   "name": "Microcircuit simulation",
   "activity": "simulate",
-  "env": [
-    "staging",
-    "production"
-  ],
+  "env": ["staging", "production"],
   "workflow": {
     "label": "Microcircuit",
     "type": "microcircuit-simulation"
@@ -12,9 +9,7 @@
   "schemaName": "CircuitSimulationScanConfig",
   "selection": {
     "mode": "single",
-    "entities": [
-      "nbS1-HEX2-L5"
-    ]
+    "entities": ["nbS1-HEX2-L5"]
   },
   "cases": [
     {
@@ -82,10 +77,7 @@
             "obi_one_coordinate.json",
             "simulation_config.json"
           ],
-          "outputs": [
-            "Task logs",
-            "spikes.h5"
-          ]
+          "outputs": ["Task logs", "spikes.h5"]
         }
       }
     }
