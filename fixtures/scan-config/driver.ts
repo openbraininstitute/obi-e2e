@@ -4,6 +4,7 @@ import {
   scanConfigControl,
   scanConfigEditor,
   scanConfigField,
+  scanConfigHeld,
   scanConfigModelPicker,
   scanConfigOptions,
   scanConfigSweep,
@@ -385,17 +386,6 @@ export class ScanConfigDriver {
     const control = scanConfigControl(field);
 
     /*
-     * A field that already holds what the fixture asks for is left alone. A
-     * reference with one thing to reference arrives filled in, and opening a
-     * list to pick what is already picked only risks toggling it shut: the
-     * option is not in the page to be clicked, so every attempt looks for
-     * something that was never going to be there. Exact text, so "Neuron set 1"
-     * is never read as a match for "Neuron set 10"; anything less certain falls
-     * through and is chosen the long way.
-     */
-    if ((await control.innerText().catch(() => '')).trim() === option) return;
-
-    /*
      * Opening a control is swallowed the same way opening a root element is:
      * every field is wrapped in a tooltip trigger, and a tooltip drawn under the
      * pointer takes the click. Clicking once and then waiting spends the whole
@@ -403,29 +393,37 @@ export class ScanConfigDriver {
      * "Calculation Method" sat at "Select option" for thirty seconds that way.
      * Escape dismisses whatever is showing; the retry is what gets there.
      *
+     * The option is clicked inside the retry, because a list that is closing
+     * stays visible for the length of its animation. Asserting visibility here
+     * and clicking after the loop reads that frame as "open" and then spends the
+     * whole click timeout on an option already on its way out: hidden, for the
+     * microcircuit's "Timestamps 0", and gone along with its owner id for the
+     * recording array's "LineSource". What the retry waits for is the mark the
+     * control puts on the value, which only a click that landed can produce.
+     *
      * The ownership marker is resolved inside the retry because opening can
      * remount a schema-driven field, which mints a new one.
      */
     let options = await scanConfigOptions(control);
     let wanted = options.option(option);
 
+    const held = scanConfigHeld(control, option);
+
     await expect(async () => {
+      // A field arrives filled in when it has one thing to reference, and a list
+      // that adds rather than replaces would drop the value on a second click.
+      if ((await held.count()) > 0) return;
+
       await this.page.keyboard.press('Escape');
       await control.click(NO_NAVIGATION);
 
       options = await scanConfigOptions(control);
       wanted = options.option(option);
       await expect(wanted).toBeVisible({ timeout: OPENS_WITHIN });
-    }, `${at}: "${option}" was not offered by the opened control.`).toPass();
+      await wanted.click({ ...NO_NAVIGATION, timeout: OPENS_WITHIN });
 
-    await wanted.click(NO_NAVIGATION);
-
-    const exposesSelectedValue = (await control.getAttribute('data-scan-config-value')) !== null;
-    if (exposesSelectedValue) {
-      await expect(control).toHaveAttribute('data-scan-config-value', option);
-    } else {
-      await expect(control).toContainText(option);
-    }
+      await expect(held).toHaveCount(1, { timeout: OPENS_WITHIN });
+    }, `${at}: "${option}" could not be picked from the control.`).toPass();
 
     await this.keepOnly(field, options.chosenBesides(option, wanted));
 

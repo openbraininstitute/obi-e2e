@@ -6,6 +6,7 @@
  */
 
 import type { Locator, Page } from '@playwright/test';
+import { kebabCase } from 'es-toolkit';
 
 /** Both attribute names: older deployments use the second, newer ones the first. */
 export const UI_ELEMENT_ATTRIBUTES = [
@@ -132,6 +133,22 @@ export function scanConfigModelPicker(page: Page) {
 /** A field inside a block, found by its property key. */
 export function scanConfigField(block: Locator, key: string): Locator {
   return block.getByTestId(`scan-config-field-${key}`);
+}
+
+/**
+ * One value a selection control holds, if it holds that one.
+ *
+ * core-web-app marks each value it holds with an id of its own, which is the only
+ * exact answer to "does this field already hold what the fixture asked for":
+ * antd draws each value of a multi-value control as its own tag, so the rendered
+ * text reads back as one run of words — "AllTimestamps 0" — and a control showing
+ * "Neuron set 10" cannot be told apart from one holding "Neuron set 1".
+ *
+ * Both sides build the id with the same `kebabCase`, so a value named in a
+ * fixture reaches the element holding it.
+ */
+export function scanConfigHeld(control: Locator, value: string): Locator {
+  return control.getByTestId(`scan-config-held_${kebabCase(value)}`);
 }
 
 export function scanConfigControl(field: Locator): Locator {
