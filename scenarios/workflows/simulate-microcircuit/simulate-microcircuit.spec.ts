@@ -12,14 +12,6 @@ const words = scanConfigWords[fixture.activity];
 
 test.skip(!runsOnThisDeployment(fixture), notDeployedHere(fixture));
 
-/*
- * Quarantined for the time being. The case is marked `slow` in its seed, so it
- * belongs to the slow job rather than the nightly suite; it is held back there
- * until someone asks for it again. Delete this line to bring it back — the
- * scenario underneath it is unchanged.
- */
-test.skip(true, 'Quarantined: Microcircuit simulation is on hold.');
-
 test.describe.configure({ timeout: campaignTimeout(fixture) });
 
 /** Starts the workflow and picks the circuit, leaving the form open. */
@@ -46,7 +38,7 @@ test.describe('Microcircuit simulation', () => {
 
   for (const configuration of fixture.cases) {
     test(
-      `Generate a simulation campaign without launching it: ${configuration.name}`,
+      `Generate a simulation campaign and launch it: ${configuration.name}`,
       { tag: campaignTags(configuration) },
       async ({ page }) => {
         await openEditor(page);

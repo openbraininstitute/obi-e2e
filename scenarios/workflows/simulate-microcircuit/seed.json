@@ -1,7 +1,10 @@
 {
   "name": "Microcircuit simulation",
   "activity": "simulate",
-  "env": ["staging", "production"],
+  "env": [
+    "staging",
+    "production"
+  ],
   "workflow": {
     "label": "Microcircuit",
     "type": "microcircuit-simulation"
@@ -9,65 +12,56 @@
   "schemaName": "CircuitSimulationScanConfig",
   "selection": {
     "mode": "single",
-    "entities": ["nbS1-Cylinder-Hex0-0.045"]
+    "entities": [
+      "nbS1-HEX2-L5"
+    ]
   },
   "cases": [
     {
-      "name": "a constant current clamp on every biophysical neuron",
+      "name": "two somatic current clamps, on the circuit's own defaults",
       "slow": true,
-      "launch": false,
       "config": {
         "info": {
           "type": "Info",
           "campaign_name": "E2E microcircuit simulation",
-          "campaign_description": "One clamp on every biophysical neuron, recorded at the soma."
-        },
-        "timestamps": {
-          "regular": {
-            "type": "RegularTimestamps",
-            "start_time": 0,
-            "interval": 1000,
-            "number_of_repetitions": 1
-          }
-        },
-        "neuron_sets": {
-          "all_neurons": {
-            "type": "AllBiophysicalNeurons"
-          }
-        },
-        "stimuli": {
-          "current_clamp": {
-            "type": "ConstantCurrentClampSomaticStimulus",
-            "timestamps": {
-              "block_dict_name": "timestamps",
-              "block_name": "regular"
-            },
-            "neuron_set": {
-              "block_dict_name": "neuron_sets",
-              "block_name": "all_neurons"
-            },
-            "duration": 800,
-            "amplitude": 0.5
-          }
-        },
-        "recordings": {
-          "soma_voltage": {
-            "type": "SomaVoltageRecording",
-            "neuron_set": {
-              "block_dict_name": "neuron_sets",
-              "block_name": "all_neurons"
-            },
-            "dt": 0.1
-          }
+          "campaign_description": "dm_microcircuit_20260914_1325"
         },
         "initialize": {
           "type": "CircuitSimulationScanConfig.Initialize",
-          "node_set": {
-            "block_dict_name": "neuron_sets",
-            "block_name": "all_neurons"
+          "simulation_length": 1000.0,
+          "v_init": -80.0,
+          "random_seed": 1,
+          "extracellular_calcium_concentration": 1.1,
+          "circuit": {
+            "id_str": "e02dced6-4adc-4689-bff8-f1f1a5398579",
+            "type": "CircuitFromID"
           },
-          "simulation_length": 1000
-        }
+          "node_set": null
+        },
+        "recordings": {},
+        "morphology_locations": {},
+        "timestamps": {},
+        "synaptic_manipulations": {},
+        "neuronal_manipulations": {},
+        "stimuli": {
+          "Stimulus 0": {
+            "type": "RelativeConstantCurrentClampSomaticStimulus",
+            "duration": 600.0,
+            "timestamps": null,
+            "timestamp_offset": 200.0,
+            "neuron_set": null,
+            "percentage_of_threshold_current": 150.0
+          },
+          "Stimulus 1": {
+            "type": "HyperpolarizingCurrentClampSomaticStimulus",
+            "duration": 1000.0,
+            "timestamps": null,
+            "timestamp_offset": 0.0,
+            "neuron_set": null
+          }
+        },
+        "distributions": {},
+        "neuron_sets": {}
       },
       "expect": {
         "coordinateCount": 1,
@@ -79,6 +73,19 @@
             "simulation_config.json"
           ],
           "outputs": []
+        },
+        "completed": {
+          "inputs": [
+            "Task configuration",
+            "Circuit directory",
+            "node_sets.json",
+            "obi_one_coordinate.json",
+            "simulation_config.json"
+          ],
+          "outputs": [
+            "Task logs",
+            "spikes.h5"
+          ]
         }
       }
     }

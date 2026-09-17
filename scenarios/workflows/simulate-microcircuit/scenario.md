@@ -1,21 +1,18 @@
 # Microcircuit simulation
 
-The Microcircuit simulation workflow, under Simulate on the Workflows page.
-obi-one describes the form, and the seed fills it in, following obi-one's own
-circuit simulation example: a neuron set, a clamp on it, and a recording of it.
+The "Microcircuit" workflow, under Simulate on the Workflows page. obi-one
+describes the form and the seed fills it in. The circuit is browsed for first;
+everything else is chosen inside the form.
 
-The scenario is on hold, and the spec says so at the top. Its case is marked
-`slow` in the seed, so it belongs to the slow job rather than the nightly suite;
-the skip comes off when someone asks for the workflow back. The steps below are
-still current and nothing here needs rewriting.
+The seed drives 5,963 neurons with two somatic current clamps and records
+nothing, so the only thing the run reports is spikes. Neuron sets, timestamps
+and recordings are all left empty: the circuit's own defaults are what is under
+test here.
 
-A microcircuit is priced at roughly 2,300 credits a run, more than a nightly
-suite should spend on one workflow. So this scenario covers the form and the
-generated campaign and stops with the launch button offered but unpressed.
-Nothing here says what a run produces, because none is started.
-
-The seed says so too, with `launch: false` on the configuration. It also says
-which deployments the workflow runs on, so no line here does.
+A run takes about eleven minutes and costs around 300 credits, so the case is
+marked `slow` in the seed and belongs to the slow job rather than the nightly
+suite. The seed also says which deployments the workflow runs on, so no line
+here does.
 
 User: credits
 Seed: seed.json
@@ -28,29 +25,31 @@ Precondition:
 
 Steps:
 
-1. Start the "Simulate" workflow for "Microcircuit"
-2. Choose the circuit the seed names
+1. Open "Simulate"
+2. Start "Microcircuit"
+3. Choose the circuit the seed names
 
 Expected:
 
 - "Generate simulation(s)" is disabled
 
-## Generate a simulation campaign without launching it
+## Generate a simulation campaign and launch it
 
 For each: configuration in the seed
 
 Precondition:
 
-1. The Microcircuit simulation form is open, with the circuit the seed names chosen
+1. The "Microcircuit" form is open, with the circuit the seed names chosen
 
 Steps:
 
-1. Fill the form from the configuration in the seed
+1. Fill in the campaign name and description from the seed
+2. Fill in the run's length, initial voltage, seed and calcium from the seed
+3. Add each stimulus the seed names, with its own settings
 
 Expected:
 
-- The button reads "Generate simulation(s)"
-- The button is enabled
+- "Generate simulation(s)" is enabled
 
 Steps:
 
@@ -61,10 +60,9 @@ Expected:
 - The simulations tab opens by itself
 - There are as many coordinates as the seed says
 - The first coordinate reads "created"
-- Its inputs are exactly: "circuit_config.json", "node_sets.json",
+- Its inputs are exactly: "Circuit directory", "node_sets.json",
   "obi_one_coordinate.json" and "simulation_config.json"
 - It has produced no outputs yet
-- The launch button reads "Launch simulations"
 
 Steps:
 
@@ -80,4 +78,24 @@ Steps:
 
 Expected:
 
-- The launch button still reads "Launch simulations", and is left unpressed
+- The launch button reads "Launch simulations"
+
+Steps:
+
+1. Press "Launch simulations"
+
+Expected:
+
+- An estimated cost is shown, with a "Confirm" to press
+
+Steps:
+
+1. Press "Confirm"
+
+Expected:
+
+- The coordinate leaves "created"
+- It reaches "done"
+- Its inputs have gained "Task configuration"
+- Its outputs are exactly: "Task logs" and "spikes.h5"
+- The task log reads "Task execution completed."
