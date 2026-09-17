@@ -2,12 +2,16 @@
 
 `e2e.yml` runs the tests. It decides what to run from the trigger:
 
-| Trigger                               | Target             | What runs   | Result                                |
-| ------------------------------------- | ------------------ | ----------- | ------------------------------------- |
-| Schedule, 07:00 UTC                   | staging            | full suite  | Teams card                            |
-| Push / PR in this repo                | staging            | full suite  | PR check                              |
-| `repository_dispatch` (`e2e-preview`) | the PR preview URL | full suite  | comment on the source PR + Teams card |
-| Manual run                            | your choice        | your choice | Teams card                            |
+| Trigger             | Target      | What runs   | Result     |
+| ------------------- | ----------- | ----------- | ---------- |
+| Schedule, 07:00 UTC | staging     | full suite  | Teams card |
+| Push to `main`      | staging     | full suite  | Teams card |
+| Manual run          | your choice | your choice | Teams card |
+
+Pull requests are not tested for the time being: the suite runs against staging
+and production only. The `pull_request` trigger and the `repository_dispatch`
+(`e2e-preview`) arm the label bridge fires are both gone from `e2e.yml`; git
+history has them when per-PR runs come back.
 
 The scheduled run runs everything. A test only stays out of it by carrying
 `@staging` or `@production`, and a workflow only by leaving that deployment out
@@ -26,8 +30,8 @@ lab, move credits into it, and delete it at the end, the same as staging.
 The campaigns that are followed to the end but take longer than the nightly
 suite can hold — a microcircuit simulation, a mesh skeletonisation. They carry
 `@slow`, `e2e.yml` leaves them out, and this job gives them six hours on the
-clock instead of forty-five minutes. It is manual for now, because no case has
-needed the tag yet; give it a schedule when one does.
+clock instead of forty-five minutes. It starts with the nightly suite at 07:00
+UTC and runs beside it, and can be dispatched by hand as well.
 
 A case opts in with one word in its seed — `"slow": true` — and gets four hours
 instead of five minutes. See
@@ -77,7 +81,9 @@ user that tests virtual lab creation. Leave them unset and those tests skip.
 
 ## The `e2e` label bridge
 
-`core-web-app` deploys every PR to a preview URL. Adding the `e2e` label to a PR
-runs a small workflow there that waits for the preview, then dispatches to this
-repo. Copy `pr-label-bridge.example.yml` into `core-web-app` to set it up.
-Remove and re-add the label to run again.
+Not wired up at the moment — `e2e.yml` no longer listens for the dispatch.
+`pr-label-bridge.example.yml` stays as the template: `core-web-app` deploys
+every PR to a preview URL, and a small workflow there can wait for the preview
+and dispatch to this repo when the `e2e` label is added. Restore the
+`repository_dispatch` trigger and the `report-to-pr` job before copying it
+over.

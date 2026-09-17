@@ -5,7 +5,6 @@ on:
     - cron: "0 7 * * *"
   push:
     branches: [main]
-  pull_request:
   workflow_dispatch:
     inputs:
       environment:
@@ -17,8 +16,11 @@ on:
         description: Only run tests matching this tag or title (e.g. @credits)
         type: string
         default: ""
-  repository_dispatch:
-    types: [e2e-preview]
+
+# Pull requests are not tested here for the time being: the suite runs against
+# staging and production only. Putting per-PR runs back means restoring the
+# `pull_request` trigger, or the `repository_dispatch` (`e2e-preview`) arm that
+# `pr-label-bridge.example.yml` fires — see git history for both.
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.action }}
@@ -38,16 +40,12 @@ jobs:
           EVENT: ${{ github.event_name }}
           INPUT_ENV: ${{ inputs.environment }}
           INPUT_GREP: ${{ inputs.grep }}
-          PREVIEW_URL: ${{ github.event.client_payload.preview_url }}
         run: |
           case "$EVENT" in
             schedule)
               # Production is off until its credentials exist. To bring it back, add
               # {name:"production",environment:"production",grep:""} to this list.
               runs=$(jq -cn '[{name:"staging",environment:"staging",grep:""}]') ;;
-            repository_dispatch)
-              runs=$(jq -cn --arg url "$PREVIEW_URL" \
-                '[{name:"pr-preview",environment:"preview",grep:"",base_url:$url}]') ;;
             workflow_dispatch)
               runs=$(jq -cn --arg env "$INPUT_ENV" --arg grep "$INPUT_GREP" \
                 '[{name:$env,environment:$env,grep:$grep}]') ;;
@@ -72,7 +70,6 @@ jobs:
       E2E_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
       E2E_ENVIRONMENT: ${{ matrix.run.environment }}
       E2E_ENV: ${{ matrix.run.environment }}
-      E2E_BASE_URL: ${{ matrix.run.base_url }}
       E2E_TEST_USERNAME: >-
         ${{ matrix.run.environment == 'production' && secrets.OBI_USERNAME_PRODUCTION
             || secrets.OBI_USERNAME_STAGING }}
@@ -143,8 +140,8 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         # The report holds the stack traces and each failure's error-context;
-        # test-results/ holds the videos and traces, and stays behind. Only the
-        # two summaries go with it, because report-to-pr reads them.
+        # test-results/ holds the videos and traces, and stays behind. The two
+        # summaries go with it, because `publish` reads them.
         with:
           name: playwright-report-${{ matrix.run.name }}
           path: |
@@ -160,43 +157,16 @@ jobs:
         run: bun scripts/ci/summarize-results.ts test-results/results.json test-results
 
       - name: Post Teams card
-        if: always() && github.event_name != 'pull_request'
+        if: always()
         env:
           TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
           TEAMS_LAYOUT: thread
           E2E_REPORT_URL: ${{ steps.report.outputs.artifact-url }}
         run: bun scripts/ci/teams-card.ts test-results/summary.json
 
-  report-to-pr:
-    needs: run
-    if: always() && github.event_name == 'repository_dispatch'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/download-artifact@v5
-        with:
-          name: playwright-report-pr-preview
-          path: artifact
-
-      - name: Comment on the source pull request
-        env:
-          GH_TOKEN: ${{ secrets.CORE_WEB_APP_PR_TOKEN }}
-          REPO: ${{ github.event.client_payload.repository }}
-          PR: ${{ github.event.client_payload.pr_number }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          {
-            cat artifact/test-results/summary.md
-            printf '\n[Full report and traces](%s)\n' "$RUN_URL"
-          } > comment.md
-          gh pr comment "$PR" --repo "$REPO" --body-file comment.md
-
   publish:
     needs: run
-    # Only the runs people track. A PR run or a preview run would overwrite the
-    # day's nightly with a partial picture.
-    if: always() && (github.event_name == 'schedule' || github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    if: always()
     runs-on: ubuntu-latest
     permissions:
       contents: write
