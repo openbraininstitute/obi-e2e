@@ -24,19 +24,6 @@ const FORM_URL = new RegExp(`/configure/${fixture.workflow.type}`);
 
 test.skip(!runsOnThisDeployment(fixture), notDeployedHere(fixture));
 
-/*
- * Quarantined until the backend answers this origin. obi-one returns
- * `/declared/task/estimate` and `/declared/task/launch` with no
- * `Access-Control-Allow-Origin` header, so the browser drops both calls before
- * they leave and the launch never reaches the service. Nothing the form does
- * can get past that. Delete this line once obi-one allows the origin; the
- * scenario is unchanged underneath it.
- */
-test.skip(
-  true,
-  "Blocked on obi-one: the declared-task endpoints refuse this origin (CORS).",
-);
-
 test.describe.configure({ timeout: campaignTimeout(fixture) });
 
 /** Starts the workflow, leaving the form open. The recordings are picked inside it. */

@@ -1,12 +1,17 @@
 /** Fills the scan config editor from a fixture. */
 
+import { entityName, type EntityTypeName } from '@api/entities';
+import { EntityTypeDict } from '@fixtures/entity-types';
 import {
+  scanConfigAmplitudes,
   scanConfigControl,
   scanConfigEditor,
   scanConfigField,
   scanConfigHeld,
   scanConfigModelPicker,
+  scanConfigOptionalNumber,
   scanConfigOptions,
+  scanConfigProtocol,
   scanConfigSweep,
   scanConfigSweepValues,
   uiElementOf,
@@ -202,8 +207,11 @@ export class ScanConfigDriver {
 
       case ScanConfigUiElement.FloatParameterSweep:
       case ScanConfigUiElement.IntParameterSweep:
-      case ScanConfigUiElement.FloatOptional:
         await this.setSweep(field, value, at);
+        return;
+
+      case ScanConfigUiElement.FloatOptional:
+        await this.setOptionalNumber(field, value);
         return;
 
       case ScanConfigUiElement.StringSelectionEnhanced:
@@ -246,6 +254,20 @@ export class ScanConfigDriver {
             'does not know how to set. Add a case rather than skipping it.'
         );
     }
+  }
+
+  /** A number that can be left unset: null clears it. Not a sweep — there is nothing to expand. */
+  private async setOptionalNumber(field: Locator, value: unknown): Promise<void> {
+    if (value === undefined) return;
+
+    const number = scanConfigOptionalNumber(field);
+
+    if (value === null) {
+      await number.clear.click(NO_NAVIGATION);
+      return;
+    }
+
+    await number.value.fill(String(value));
   }
 
   private async setSweep(field: Locator, value: unknown, at: string): Promise<void> {
@@ -299,8 +321,12 @@ export class ScanConfigDriver {
    */
   private async pickEntities(field: Locator, value: unknown, at: string): Promise<void> {
     if (!Array.isArray(value)) {
-      throw new Error(`${at}: needs a list of { "name": … }, one per entity to pick`);
+      throw new Error(`${at}: needs a list of entities to pick, one entry each`);
     }
+
+    const wanted = await Promise.all(
+      value.map((entry, index) => entityToPick(entry, `${at}[${index}]`))
+    );
 
     const picker = scanConfigModelPicker(this.page);
     await field.getByTestId('scan-config-select-model').first().click(NO_NAVIGATION);
@@ -308,52 +334,137 @@ export class ScanConfigDriver {
     const catalogue = picker.panel;
     await expect(catalogue).toBeVisible();
 
-    const names = value.map((entry, index) => {
-      if (!isRecord(entry) || typeof entry.name !== 'string') {
-        throw new Error(`${at}[${index}]: needs a { "name": … } naming the entity to pick`);
-      }
-      return entry.name;
-    });
-
-    for (const name of names) {
-      await catalogue.getByTestId('data-grid-search').fill(name);
-      await tickRow(picker, name, at);
+    for (const entity of wanted) {
+      await catalogue.getByTestId('data-grid-search').fill(entity.name);
+      await tickRow(picker, entity, at);
     }
     await expect(picker.confirm).toBeEnabled();
 
     await confirmPicker(picker, at);
 
-    for (const entry of value) {
-      await expect(field).toContainText((entry as { name: string }).name);
+    for (const entity of wanted) {
+      await expect(field).toContainText(entity.name);
     }
   }
 
   /**
    * Ticks the protocols to extract e-features from.
    *
-   * Which protocols are offered comes from the chosen recordings, so a fixture
-   * names the ones its recordings hold and the run fails if they stop holding
-   * them. Ticking one takes that protocol's whole feature set.
+   * Which protocols and amplitudes are offered comes from the chosen recordings.
+   * The amplitudes are set rather than left alone because an extraction launched
+   * with none is accepted and then fails in the service with "either targets or
+   * autotargets should be set".
    */
   private async selectProtocols(field: Locator, value: unknown, at: string): Promise<void> {
-    if (!Array.isArray(value) || value.length === 0) {
-      throw new Error(`${at}: needs a list of the protocol names to extract from`);
+    const protocols = isRecord(value) ? value.protocols : null;
+    if (!Array.isArray(protocols) || protocols.length === 0) {
+      throw new Error(`${at}: needs "protocols", one entry per protocol to extract from`);
     }
 
-    for (const [index, protocol] of value.entries()) {
-      if (typeof protocol !== 'string') {
-        throw new Error(`${at}[${index}]: a protocol is named by the label on its card`);
+    for (const [index, entry] of protocols.entries()) {
+      const where = `${at}.protocols[${index}]`;
+      if (!isRecord(entry) || typeof entry.type !== 'string') {
+        throw new Error(`${where}: needs the protocol's "type", such as "IDRestProtocol"`);
       }
 
-      const box = field.getByRole('checkbox', {
-        name: `Extract features from ${protocol}`,
-      });
+      // A card is labelled without the type's suffix: IDRestProtocol reads "IDRest".
+      const label = entry.type.replace(/Protocol$/, '');
+      const protocol = scanConfigProtocol(field, entry.type);
+
       await expect(
-        box,
-        `The chosen recordings offer no "${protocol}" protocol for ${at}.`
+        protocol.select,
+        `The chosen recordings offer no "${label}" protocol for ${where}.`
       ).toBeVisible();
-      await box.check(NO_NAVIGATION);
+      await protocol.select.check(NO_NAVIGATION);
+
+      await this.checkProtocolFeatures(protocol, label, entry.features, where);
+      await this.setProtocolAmplitudes(protocol, label, entry.extraction_amplitudes, where);
     }
+  }
+
+  /** Counts the features a ticked protocol carries. The editor fills them in, so nothing is set. */
+  private async checkProtocolFeatures(
+    protocol: ReturnType<typeof scanConfigProtocol>,
+    label: string,
+    features: unknown,
+    at: string
+  ): Promise<void> {
+    if (!Array.isArray(features)) return;
+
+    if ((await protocol.expand.getAttribute('aria-expanded')) === 'false') {
+      await protocol.expand.click(NO_NAVIGATION);
+    }
+
+    await expect(
+      protocol.features,
+      `${at}: "${label}" carries a different set of features than the fixture expects.`
+    ).toHaveCount(features.length);
+  }
+
+  /**
+   * Ticks the amplitudes one protocol is extracted at, unticking the rest.
+   *
+   * Each pair is `[amplitude, forValidation]`: the second box marks an amplitude
+   * for validation rather than extraction.
+   */
+  private async setProtocolAmplitudes(
+    protocol: ReturnType<typeof scanConfigProtocol>,
+    label: string,
+    amplitudes: unknown,
+    at: string
+  ): Promise<void> {
+    if (!Array.isArray(amplitudes)) return;
+
+    const wanted = new Map(
+      amplitudes.map((pair, index) => {
+        if (!Array.isArray(pair) || typeof pair[0] !== 'number') {
+          throw new Error(
+            `${at}.extraction_amplitudes[${index}]: needs [amplitude, forValidation]`
+          );
+        }
+        return [String(pair[0]), pair[1] === true];
+      })
+    );
+
+    await protocol.settings.click(NO_NAVIGATION);
+
+    const panel = scanConfigAmplitudes(this.page);
+
+    await expect(
+      panel.rows,
+      `${at}: "${label}" offers no amplitudes, so this extraction has nothing to run on.`
+    ).not.toHaveCount(0);
+
+    const offered = new Set<string>();
+
+    for (const row of await panel.rows.all()) {
+      const amplitude = await panel.amplitudeOf(row);
+      offered.add(amplitude);
+
+      const forValidation = wanted.get(amplitude);
+      const extract = panel.extract(row);
+
+      if (forValidation === undefined) {
+        await extract.uncheck(NO_NAVIGATION);
+        continue;
+      }
+
+      await extract.check(NO_NAVIGATION);
+      const validation = panel.validation(row);
+      if (forValidation) await validation.check(NO_NAVIGATION);
+      else await validation.uncheck(NO_NAVIGATION);
+    }
+
+    const missing = [...wanted.keys()].filter((amplitude) => !offered.has(amplitude));
+    if (missing.length > 0) {
+      throw new Error(
+        `${at}: the chosen recordings no longer hold ${missing.join(', ')} nA for "${label}". ` +
+          `They offer ${[...offered].join(', ') || 'nothing'}.`
+      );
+    }
+
+    // The open panel covers the next protocol's card.
+    await this.page.keyboard.press('Escape');
   }
 
   private async pickModel(field: Locator, value: unknown, at: string): Promise<void> {
@@ -370,7 +481,7 @@ export class ScanConfigDriver {
     const name = value.name;
     await catalogue.getByRole('textbox', { name: 'Search' }).fill(name);
 
-    await tickRow(picker, name, at);
+    await tickRow(picker, { name }, at);
     await expect(
       picker.confirm,
       `${at}: "${name}" was selected but the picker cannot confirm it.`
@@ -493,15 +604,52 @@ async function confirmPicker(
   await expect(picker.overlay, `${at}: the picker never closed.`).toHaveCount(0);
 }
 
+type PickedEntity = { name: string; id?: string };
+
+/**
+ * The entity a fixture entry points at, by name or by id.
+ *
+ * An id is read into a name because the catalogue searches by name, and kept
+ * because two entities can share one.
+ */
+async function entityToPick(entry: unknown, at: string): Promise<PickedEntity> {
+  if (isRecord(entry) && typeof entry.name === 'string') return { name: entry.name };
+
+  if (isRecord(entry) && typeof entry.id_str === 'string') {
+    const type = entityTypeOf(entry.type, at);
+    return { id: entry.id_str, name: await entityName(type, entry.id_str) };
+  }
+
+  throw new Error(
+    `${at}: needs a { "name": … } naming the entity, or a { "id_str": …, "type": … } ` +
+      'such as "ElectricalCellRecordingFromID"'
+  );
+}
+
+/** The entity behind a `…FromID` reference: "ElectricalCellRecordingFromID" is a recording. */
+function entityTypeOf(type: unknown, at: string): EntityTypeName {
+  const named = typeof type === 'string' ? type.replace(/FromID$/, '') : '';
+  if (!(named in EntityTypeDict)) {
+    throw new Error(
+      `${at}: "type" must name an entity, such as "ElectricalCellRecordingFromID", ` +
+        `got ${JSON.stringify(type)}`
+    );
+  }
+  return named as EntityTypeName;
+}
+
 async function tickRow(
   picker: ReturnType<typeof scanConfigModelPicker>,
-  name: string,
+  entity: PickedEntity,
   at: string
 ): Promise<void> {
-  const row = picker.row(name);
+  const { name, id } = entity;
+
+  // The grid pins its selection column into a row of its own, so an id matches both halves.
+  const row = id ? picker.rowWithId(id).first() : picker.row(name);
   await expect(row, `No exact "${name}" row to pick for ${at}.`).toBeVisible();
 
-  const rowId = await row.getAttribute('row-id');
+  const rowId = id ?? (await row.getAttribute('row-id'));
   if (!rowId) {
     throw new Error(`The "${name}" row for ${at} has no stable selection ID.`);
   }

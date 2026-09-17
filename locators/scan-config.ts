@@ -123,6 +123,9 @@ export function scanConfigModelPicker(page: Page) {
     overlay,
     panel: overlay.getByTestId('data-table-container'),
     row: (name: string): Locator => overlay.getByTestId(`data-grid-row-${name}`),
+    /** The row of one entity. Its test id carries only the name, which two entities can share. */
+    rowWithId: (id: string): Locator =>
+      overlay.getByTestId(/^data-grid-row-/).and(overlay.locator(`[row-id="${cssEscape(id)}"]`)),
     selectionControl: (rowId: string): Locator =>
       overlay.getByTestId(`data-grid-selection-${rowId}`),
     confirm: overlay.getByTestId('scan-config-confirm-model'),
@@ -153,6 +156,49 @@ export function scanConfigHeld(control: Locator, value: string): Locator {
 
 export function scanConfigControl(field: Locator): Locator {
   return field.getByTestId('scan-config-control');
+}
+
+/** A number that can be left unset: its value, and the button back to unset. */
+export function scanConfigOptionalNumber(field: Locator) {
+  return {
+    value: field.getByTestId('scan-config-optional-value'),
+    clear: field.getByTestId('scan-config-optional-clear'),
+  };
+}
+
+/** One protocol's card, by the type the fixture names it with. */
+export function scanConfigProtocol(field: Locator, type: string) {
+  const card = field.getByTestId(`scan-config-protocol-${type}`);
+
+  return {
+    card,
+    select: field.getByTestId(`scan-config-protocol-select-${type}`),
+    expand: field.getByTestId(`scan-config-protocol-expand-${type}`),
+    settings: field.getByTestId(`scan-config-protocol-settings-${type}`),
+
+    /** One remove button per feature, so counting these counts the features. */
+    features: card.getByTestId(/^scan-config-feature-remove-/),
+  };
+}
+
+/** The prefix an amplitude row's test id carries, ahead of the amplitude itself. */
+const AMPLITUDE_ROW = 'scan-config-amplitude-row-';
+
+/** The amplitudes in the open protocol settings panel. */
+export function scanConfigAmplitudes(page: Page) {
+  const list = page.getByTestId('scan-config-amplitudes');
+
+  return {
+    rows: list.getByTestId(new RegExp(`^${AMPLITUDE_ROW}`)),
+
+    /** The amplitude a row is for, read off the id the row is found by. */
+    amplitudeOf: async (row: Locator): Promise<string> =>
+      ((await row.getAttribute('data-testid')) ?? '').slice(AMPLITUDE_ROW.length),
+
+    extract: (row: Locator): Locator => row.getByTestId('scan-config-amplitude-extract'),
+
+    validation: (row: Locator): Locator => row.getByTestId('scan-config-amplitude-validation'),
+  };
 }
 
 /** Quotes a value so it can sit inside an attribute selector. */
