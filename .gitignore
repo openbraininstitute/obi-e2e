@@ -9,6 +9,10 @@ playwright/.cache/
 .e2e-runs/
 .auth/
 
+# dashboard: build output, and the fake runs `bun run site:fixtures` writes
+gh-web/dist/
+gh-web/fixtures/
+
 # lighthouse output
 perf/report/
 .lighthouseci/

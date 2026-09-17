@@ -24,10 +24,14 @@
     "typecheck": "tsc --noEmit",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
-    "check": "bun run format:check && bun run lint && bun run typecheck && bun run test:unit",
+    "check": "bun run format:check && bun run lint && bun run typecheck && bun run site:check && bun run test:unit",
     "scenario": "bun scripts/scenario.ts",
     "casebook": "bun tools/casebook/validator/cli.ts",
-    "perf": "bun perf/run.ts"
+    "perf": "bun perf/run.ts",
+    "site": "vite --config gh-web/vite.config.ts",
+    "site:build": "vite build --config gh-web/vite.config.ts",
+    "site:check": "tsc -p gh-web --noEmit",
+    "site:fixtures": "bun gh-web/fixtures.ts"
   },
   "dependencies": {
     "better-result": "^3.0.1",
@@ -37,11 +41,24 @@
   },
   "devDependencies": {
     "@playwright/test": "1.62.1",
+    "@tailwindcss/vite": "^4.3.3",
+    "@tanstack/charts": "^0.18.0",
     "@types/bun": "1.4.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.47.0",
+    "motion": "^13.4.0",
     "oxc-parser": "^0.148.0",
     "oxfmt": "0.66.0",
     "oxlint": "1.81.0",
-    "typescript": "7.0.2"
+    "react": "19",
+    "react-dom": "19",
+    "tailwind-merge": "^3.7.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "7.0.2",
+    "vite": "^8.3.0"
   },
   "engines": {
     "bun": ">=1.4.0"

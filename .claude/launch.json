@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "gh-web",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "site"],
+      "port": 5173
+    }
+  ]
+}
