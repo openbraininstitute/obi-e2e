@@ -59,7 +59,7 @@ test.describe('Synaptome build', () => {
   });
 
   test(
-    'A project with no credits cannot generate a campaign',
+    'A project with no credits can still generate a campaign',
     { tag: CREDITS },
     async ({ page, workspace }) => {
       const editor = scanConfigEditor(page);
@@ -77,9 +77,10 @@ test.describe('Synaptome build', () => {
 
       await editor.submit.click(NO_NAVIGATION);
 
-      await expect(lowCredits(page).notice).toBeVisible();
-      await expect(editor.tab(words.resultsTab)).toBeDisabled();
-      await expect(editor.submit).toHaveText(words.generate);
+      await expect(lowCredits(page).notice).toBeHidden();
+
+      await expect(editor.tab(words.resultsTab)).toBeEnabled();
+      await expect(editor.submit).toHaveText(words.newCampaign);
     }
   );
 

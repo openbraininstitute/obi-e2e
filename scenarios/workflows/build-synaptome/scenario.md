@@ -8,10 +8,6 @@ fills the form through its fields; the other places its synapses by clicking the
 morphology in the 3D viewer. The seed also says which deployments the workflow
 runs on, so no line here does.
 
-A build costs credits, so the project's balance decides whether it can run at
-all. Both outcomes are covered. Launching prices the build first: the estimate
-is shown and has to be confirmed before anything starts.
-
 User: credits
 Seed: seed.json
 
@@ -30,7 +26,7 @@ Expected:
 
 - "Generate build(s)" is disabled
 
-## A project with no credits cannot generate a campaign
+## A project with no credits can still generate a campaign
 
 This one uses the first configuration in the seed only.
 
@@ -58,9 +54,9 @@ Steps:
 
 Expected:
 
-- A notice about credits appears
-- The results tab is disabled
-- The button still reads "Generate build(s)", so no campaign was made
+- No notice about credits appears
+- The results tab is open to be read
+- The button now reads "New build campaign", so the campaign was made
 
 ## Generate a build campaign and launch it
 
