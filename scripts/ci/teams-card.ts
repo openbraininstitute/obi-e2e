@@ -4,7 +4,10 @@
  * Posts the run result to Microsoft Teams as an Adaptive Card.
  * It reads the summary.json that summarize-results.ts writes.
  *
- * Usage: TEAMS_WEBHOOK_URL=... bun scripts/ci/teams-card.ts test-results/summary.json
+ * Usage: MS_TEAMS_WEBHOOK_URI=... bun scripts/ci/teams-card.ts test-results/summary.json
+ *        MS_TEAMS_WEBHOOK_URI=... bun scripts/ci/teams-card.ts --start
+ *
+ * `--start` announces the thread at job start, before any suite has a result.
  */
 
 /** Loads the .env files. The webhook URL lives in the deployment's local one. */
@@ -14,9 +17,11 @@ import type { CreditReport } from '@fixtures/run/credit-report';
 import {
   collectSections,
   creditNotice,
+  detectTrigger,
   featureStatus,
   formatDuration,
   passRate,
+  runUrl as workflowRunUrl,
   type ServiceSummary,
   type Feature,
   type Section,
@@ -357,7 +362,7 @@ function mentionBlock(mentions: Mention[]): { text: string; entities: unknown[] 
   };
 }
 
-function message(body: unknown[], runUrl: string) {
+function message(body: unknown[], runUrl: string, extraActions: unknown[] = []) {
   return {
     type: 'message',
     attachments: [
@@ -369,9 +374,12 @@ function message(body: unknown[], runUrl: string) {
           version: '1.5',
           msteams: { width: 'Full' },
           body,
-          actions: runUrl
-            ? [{ type: 'Action.OpenUrl', title: 'Open run and report', url: runUrl }]
-            : [],
+          actions: [
+            ...(runUrl
+              ? [{ type: 'Action.OpenUrl', title: 'Open run and report', url: runUrl }]
+              : []),
+            ...extraActions,
+          ],
         },
       },
     ],
@@ -453,9 +461,148 @@ export function buildPosts(summary: Summary): Post[] {
   ];
 }
 
-export function buildThreadPayload(summary: Summary): { cards: unknown[] } {
+/**
+ * The flow replaces the eleven characters `,"{{BADGES}}"` — the comma with it —
+ * by the suite badges it has collected so far, so the array stays valid while
+ * empty. That only works on a plainly stringified card: never pretty-print the
+ * parent.
+ *
+ * The flow stores this card the first time it sees a thread and rebuilds that
+ * copy on every later call, so the facts above the badges are whatever the run
+ * that opened the thread knew. Nothing a later suite sends can rewrite them.
+ */
+const BADGE_TOKEN = '{{BADGES}}';
+
+/** The one message both suites report under. Built here, spliced by the flow. */
+export function buildParentCard(env: NodeJS.ProcessEnv = process.env) {
+  const release = env.E2E_RELEASE?.trim();
+  const releaseUrl = env.E2E_RELEASE_URL?.trim();
+  // The commit under test lives in core-web-app, and only a release dispatch
+  // carries it. The sha of this repository is a different thing and is named so.
+  const releaseCommit = env.E2E_RELEASE_COMMIT?.trim();
+  // The result call rebuilds this card to update the parent message, hours after
+  // the announce did. Taking the clock now would move "Started" to whenever the
+  // last suite finished, so the workflows stamp it once beside the thread key.
+  const started =
+    env.E2E_STARTED?.trim() || `${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC`;
+  const trigger = detectTrigger(env.GITHUB_EVENT_NAME, release);
+  const environment = env.E2E_ENVIRONMENT || 'unknown';
+
+  const body = [
+    {
+      type: 'Container',
+      style: 'emphasis',
+      roundedCorners: true,
+      items: [
+        text(TITLE, { size: 'Large', weight: 'Bolder' }),
+        {
+          type: 'Container',
+          spacing: 'Small',
+          layouts: [
+            {
+              type: 'Layout.Flow',
+              horizontalItemsAlignment: 'Left',
+              columnSpacing: 'Small',
+              rowSpacing: 'Small',
+            },
+          ],
+          items: [
+            badge(environment, { style: 'Accent', tooltip: 'Deployment under test' }),
+            badge(trigger, { style: 'Subtle', tooltip: 'What started the run' }),
+          ],
+        },
+      ],
+    },
+    panel(
+      [
+        {
+          type: 'FactSet',
+          facts: [
+            fact('Run', env.TEAMS_THREAD_KEY ?? ''),
+            fact('Trigger', trigger),
+            ...(release ? [fact('Release', release)] : []),
+            fact('Environment', environment),
+            // Seven characters, like the seed half of the thread key.
+            ...(releaseCommit ? [fact('Commit', releaseCommit.slice(0, 7))] : []),
+            fact('e2e-commit', (env.GITHUB_SHA ?? '').slice(0, 7) || 'n/a'),
+            fact('Suites', env.E2E_SUITES || '—'),
+            fact('Started', started),
+          ],
+        },
+      ],
+      { spacing: 'Medium' }
+    ),
+    panel(
+      [
+        {
+          type: 'Container',
+          layouts: [
+            {
+              type: 'Layout.Flow',
+              horizontalItemsAlignment: 'Left',
+              columnSpacing: 'Small',
+              rowSpacing: 'Small',
+            },
+          ],
+          // The label is what keeps the array non-empty before any suite has
+          // reported, so the token can carry its own leading comma.
+          items: [text('Finished', { subtle: true, size: 'Small' }), BADGE_TOKEN],
+        },
+      ],
+      { spacing: 'Medium' }
+    ),
+  ];
+
+  return message(
+    body,
+    workflowRunUrl(env),
+    releaseUrl ? [{ type: 'Action.OpenUrl', title: 'Open the release', url: releaseUrl }] : []
+  ).attachments[0]?.content;
+}
+
+/**
+ * One suite's verdict, as the single badge the flow appends to the parent.
+ *
+ * The badge says which suite and whether it is green; the counts are in its
+ * tooltip and, in full, in the card replying underneath it.
+ */
+export function buildBadge(summary: Summary, suiteName: string): string {
+  // A run that wrote no report has not passed; it has not reported.
+  const verdict = summary.noResults
+    ? 'No results'
+    : [
+        `${summary.passed} passed`,
+        `${summary.failed} failed`,
+        ...(summary.flaky > 0 ? [`${summary.flaky} flaky`] : []),
+      ].join(' · ');
+
+  const style: BadgeStyle = summary.noResults
+    ? 'Warning'
+    : summary.failed > 0
+      ? 'Attention'
+      : summary.flaky > 0
+        ? 'Warning'
+        : 'Good';
+
+  return JSON.stringify(
+    badge(suiteName, {
+      style,
+      appearance: 'Filled',
+      tooltip: `${verdict} · ${formatDuration(summary.durationMs)}`,
+    })
+  );
+}
+
+/**
+ * One shape for both calls. Announcing passes no summary: there is no verdict
+ * yet, and the empty `cards` leaves the flow's loop with nothing to post.
+ */
+export function buildThreadPayload(summary: Summary | null, env: NodeJS.ProcessEnv = process.env) {
   return {
-    cards: buildPosts(summary).map((item) => item.message.attachments[0]?.content),
+    key: env.TEAMS_THREAD_KEY ?? '',
+    parent: JSON.stringify(buildParentCard(env)),
+    badge: summary ? buildBadge(summary, env.E2E_SUITE || 'Results') : '',
+    cards: summary ? buildPosts(summary).map((item) => item.message.attachments[0]?.content) : [],
   };
 }
 
@@ -705,11 +852,22 @@ export async function send(webhook: string, body: unknown): Promise<boolean> {
 }
 
 async function post(): Promise<void> {
-  const webhook = process.env.TEAMS_WEBHOOK_URL;
+  const webhook = process.env.MS_TEAMS_WEBHOOK_URI;
   const [summaryPath = 'test-results/summary.json'] = Bun.argv.slice(2);
 
   if (!webhook) {
-    console.error('TEAMS_WEBHOOK_URL is not set — skipping Teams notification.');
+    console.error('MS_TEAMS_WEBHOOK_URI is not set — skipping Teams notification.');
+    return;
+  }
+
+  // The announce runs in the first minute of the job, so there is no summary yet.
+  if (summaryPath === '--start') {
+    const payload = buildThreadPayload(null);
+    if (!(await send(webhook, payload))) process.exit(1);
+    report(
+      `Announced the thread ${payload.key || '(no key set)'}.`,
+      '{ "key", "parent", "badge": "", "cards": [] }'
+    );
     return;
   }
 
@@ -720,7 +878,7 @@ async function post(): Promise<void> {
     if (!(await send(webhook, payload))) process.exit(1);
     report(
       `Sent ${payload.cards.length} cards in one request for the flow to thread.`,
-      '{ "cards": [ … ] }'
+      '{ "key", "parent", "badge", "cards": [ … ] }'
     );
     return;
   }

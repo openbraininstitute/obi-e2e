@@ -90,7 +90,10 @@ export function formatDuration(ms: number): string {
   return `${minutes}m ${seconds}s`;
 }
 
-export function detectTrigger(eventName = process.env.GITHUB_EVENT_NAME): string {
+export function detectTrigger(
+  eventName = process.env.GITHUB_EVENT_NAME,
+  release = process.env.E2E_RELEASE
+): string {
   switch (eventName) {
     case 'schedule':
       return 'Scheduled';
@@ -99,7 +102,9 @@ export function detectTrigger(eventName = process.env.GITHUB_EVENT_NAME): string
     case 'push':
       return 'On deploy';
     case 'repository_dispatch':
-      return 'PR preview';
+      // Two repositories fire this one event name. A core-web-app release
+      // carries its tag; the preview bridge carries a pull request instead.
+      return release?.trim() ? 'Release' : 'PR preview';
     case 'pull_request':
       return 'Pull request';
     default:

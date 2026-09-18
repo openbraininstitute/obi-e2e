@@ -1,8 +1,18 @@
-import { useCallback, useEffect, useState } from 'react';
+import { FlaskConical, Globe, type LucideIcon, Rocket } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { ChartCard, CreditsBar, Legend, OutcomeDonut } from '@/charts';
 import { AnimatedBadge, type AnimatedBadgeStatus } from '@/components/motion/animated-badge';
 import { AnimatedNumber } from '@/components/motion/animated-number';
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+} from '@/components/motion/combobox';
 import {
   Select,
   SelectContent,
@@ -13,13 +23,18 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/motion/tabs';
 import {
   duration,
-  loadDays,
+  loadRuns,
   loadScenarioIndex,
   loadSummary,
   passRate,
   percent,
+  reportPath,
+  runDay,
+  runEnvironment,
+  runTime,
   type ServiceStatus,
   shortDate,
+  type Suite,
   type Summary,
 } from '@/data';
 import { ScenarioDrawer } from '@/scenario-drawer';
@@ -258,8 +273,8 @@ function Failures({
   );
 }
 
-function Report({ day }: { day: string }) {
-  const href = `runs/${day}/report/index.html`;
+function Report({ run, suite }: { run: string; suite: Suite }) {
+  const href = `${reportPath(run, suite)}/index.html`;
   return (
     <div className="space-y-3">
       <a
@@ -282,113 +297,261 @@ function Report({ day }: { day: string }) {
   );
 }
 
+/** A deployment nobody has taught the page about still gets a sensible glyph. */
+const ENVIRONMENT_ICON: Record<string, LucideIcon> = {
+  staging: FlaskConical,
+  production: Rocket,
+};
+
+const EMPTY_SUMMARIES: Record<Suite, Summary | null> = { regular: null, slow: null };
+const EMPTY_SCENARIOS: Record<Suite, Record<string, string>> = { regular: {}, slow: {} };
+
 export function App() {
-  const [days, setDays] = useState<string[]>([]);
-  const [day, setDay] = useState<string>('');
-  const [summary, setSummary] = useState<Summary | null>(null);
-  const [scenarios, setScenarios] = useState<Record<string, string>>({});
+  const [runs, setRuns] = useState<string[]>([]);
+  const [environment, setEnvironment] = useState<string>('staging');
+  const [run, setRun] = useState<string>('');
+  const [suite, setSuite] = useState<Suite>('regular');
+  const [summaries, setSummaries] = useState<Record<Suite, Summary | null>>(EMPTY_SUMMARIES);
+  const [scenarios, setScenarios] =
+    useState<Record<Suite, Record<string, string>>>(EMPTY_SCENARIOS);
   const [openScenario, setOpenScenario] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     void (async () => {
-      const loadedDays = await loadDays();
-      setDays(loadedDays);
-      setDay(loadedDays[0] ?? '');
+      const loaded = await loadRuns();
+      setRuns(loaded);
+      // Staging by default, as asked. Nothing has published production yet, so
+      // fall back to whatever is there rather than opening on an empty page.
+      const startOn = loaded.find((value) => runEnvironment(value) === 'staging') ?? loaded[0];
+      if (startOn) {
+        setEnvironment(runEnvironment(startOn));
+        setRun(startOn);
+      }
       setLoading(false);
     })();
   }, []);
 
   useEffect(() => {
-    if (!day) return;
+    if (!run) return;
     let current = true;
     void (async () => {
-      const [loadedSummary, loadedScenarios] = await Promise.all([
-        loadSummary(day),
-        loadScenarioIndex(day),
+      // Both suites at once. The slow half is missing for most runs, and its
+      // absence is exactly what decides whether the suite switch is offered —
+      // so it is read here rather than probed when the switch is clicked.
+      const [regular, slow, regularScenarios, slowScenarios] = await Promise.all([
+        loadSummary(run, 'regular'),
+        loadSummary(run, 'slow'),
+        loadScenarioIndex(run, 'regular'),
+        loadScenarioIndex(run, 'slow'),
       ]);
       if (!current) return;
-      setSummary(loadedSummary);
-      setScenarios(loadedScenarios);
+      setSummaries({ regular, slow });
+      setScenarios({ regular: regularScenarios, slow: slowScenarios });
+      // Dispatched on its own, the slow suite publishes a folder with no regular
+      // half in it. Opening on Regular there shows "no summary" with the answer
+      // sitting unclicked in the switch beside it.
+      if (!regular && slow) setSuite('slow');
     })();
     return () => {
       current = false;
     };
-  }, [day]);
+  }, [run]);
 
-  // A drawer left open across a day change would show the wrong run's scenario.
-  // Closing it belongs to the event that changed the day, not to an effect.
-  const pickDay = useCallback((next: string) => {
+  // Derived, not stored: an environment with nothing published must not show the
+  // previous one's numbers while its own fetch never happens.
+  const summary = run ? summaries[suite] : null;
+
+  // runs.json is newest first, so all of these come out newest first too.
+  // Both deployments are always offered, even before one has published
+  // anything — production has not, and a picker with a single option in it is
+  // not a picker. Anything else that turns up in a folder name joins them.
+  const environments = useMemo(
+    () => [...new Set(['production', 'staging', ...runs.map(runEnvironment)])].toSorted(),
+    [runs]
+  );
+  const ofEnvironment = useMemo(
+    () => runs.filter((value) => runEnvironment(value) === environment),
+    [runs, environment]
+  );
+  const days = useMemo(() => [...new Set(ofEnvironment.map(runDay))], [ofEnvironment]);
+  const versions = useMemo(
+    () => ofEnvironment.filter((value) => runDay(value) === runDay(run)),
+    [ofEnvironment, run]
+  );
+
+  // A drawer left open across a run change would show the wrong run's scenario.
+  // Closing it belongs to the event that picked the run, not to an effect — so
+  // both dropdowns go through here rather than one of them setting state raw.
+  const pickRun = useCallback((next: string) => {
     setOpenScenario(null);
-    setDay(next);
+    // The next run may have no slow half, and a switch stuck on a suite that is
+    // not there would show an empty page.
+    setSuite('regular');
+    setRun(next);
   }, []);
+
+  // Same reasoning as pickRun: the open scenario belongs to the suite that was
+  // showing when it was opened.
+  const pickSuite = useCallback((next: string) => {
+    setOpenScenario(null);
+    setSuite(next === 'slow' ? 'slow' : 'regular');
+  }, []);
+
+  // A day is a prefix, not a run; land on its newest.
+  const pickDay = useCallback(
+    (next: string) => {
+      const newest = ofEnvironment.find((value) => runDay(value) === next);
+      if (newest) pickRun(newest);
+    },
+    [ofEnvironment, pickRun]
+  );
+
+  // Neither is an environment a run. Production may have nothing published at
+  // all, and the empty state below says so rather than leaving the last
+  // staging run on screen under a production label.
+  const pickEnvironment = useCallback(
+    (next: string) => {
+      setEnvironment(next);
+      const newest = runs.find((value) => runEnvironment(value) === next);
+      pickRun(newest ?? '');
+    },
+    [runs, pickRun]
+  );
 
   if (loading) {
     return <p className="p-8 text-sm text-muted-foreground">Loading…</p>;
   }
 
-  if (days.length === 0) {
+  if (runs.length === 0) {
     return <p className="p-8 text-sm text-muted-foreground">No runs published yet.</p>;
   }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-      <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-semibold">OBI end-to-end</h1>
+      <header className="mb-5 flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-lg font-semibold">Open Brain Institute e2e test summary</h1>
           {summary ? (
-            <p className="text-xs text-muted-foreground">
-              {summary.environment} · {summary.browser} · {summary.trigger} ·{' '}
-              {duration(summary.durationMs)}
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              {summary.noResults ? (
+                <AnimatedBadge status="warning" size="sm">
+                  No results
+                </AnimatedBadge>
+              ) : (
+                <AnimatedBadge status={summary.failed > 0 ? 'danger' : 'success'} size="sm">
+                  {summary.failed > 0 ? `${summary.failed} failing` : 'All green'}
+                </AnimatedBadge>
+              )}
+              <AnimatedBadge status="info" size="sm">
+                {summary.trigger}
+              </AnimatedBadge>
+              <AnimatedBadge status="neutral" size="sm">
+                {summary.browser}
+              </AnimatedBadge>
+              <AnimatedBadge status="neutral" size="sm">
+                {duration(summary.durationMs)}
+              </AnimatedBadge>
               {summary.runUrl ? (
-                <>
-                  {' · '}
-                  <a className="underline underline-offset-4" href={summary.runUrl}>
-                    Actions run
-                  </a>
-                </>
+                <a
+                  className="ml-1 text-xs text-muted-foreground underline underline-offset-4"
+                  href={summary.runUrl}
+                >
+                  Actions run
+                </a>
               ) : null}
-            </p>
+            </div>
           ) : null}
         </div>
 
-        <div className="flex items-center gap-2">
-          {summary && !summary.noResults ? (
-            <AnimatedBadge status={summary.failed > 0 ? 'danger' : 'success'} size="sm">
-              {summary.failed > 0 ? `${summary.failed} failing` : 'All green'}
-            </AnimatedBadge>
-          ) : null}
-          <Select value={day} onValueChange={pickDay}>
-            <SelectTrigger className="min-w-44">
-              <SelectValue placeholder="Pick a day" />
-            </SelectTrigger>
-            <SelectContent>
-              {days.map((value) => (
-                <SelectItem key={value} value={value}>
-                  {shortDate(value)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {/* The deployment under test picks the runs; everything else below picks
+            among them. It defaults to staging, which is the only one the nightly
+            publishes today. */}
+        <Combobox value={environment} onValueChange={pickEnvironment} className="w-52 shrink-0">
+          <ComboboxTrigger>
+            <ComboboxInput aria-label="Search deployments" placeholder="Deployment…" />
+          </ComboboxTrigger>
+          <ComboboxContent>
+            <ComboboxList ariaLabel="Deployments">
+              <ComboboxEmpty>No deployment by that name.</ComboboxEmpty>
+              {environments.map((value) => {
+                const Icon = ENVIRONMENT_ICON[value] ?? Globe;
+                return (
+                  <ComboboxItem key={value} value={value} textValue={value}>
+                    <Icon aria-hidden className="size-4 shrink-0" />
+                    <span className="truncate capitalize">{value}</span>
+                  </ComboboxItem>
+                );
+              })}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
       </header>
 
-      {summary === null ? (
-        <p className="text-sm text-muted-foreground">This day has no summary.</p>
+      {!run ? (
+        <p className="text-sm text-muted-foreground">
+          Nothing has been published for {environment} yet.
+        </p>
+      ) : summary === null ? (
+        <p className="text-sm text-muted-foreground">This run has no summary.</p>
       ) : summary.noResults ? (
         <p className="text-sm text-muted-foreground">
           This run wrote no report at all, so its counts are unknown rather than zero.
         </p>
       ) : (
         <Tabs defaultValue="overview" variant="segment">
-          {/* Five tabs do not fit a phone; let the strip scroll rather than clip. */}
-          <TabsList className="max-w-full overflow-x-auto">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="endpoints">Endpoints</TabsTrigger>
-            <TabsTrigger value="features">Features</TabsTrigger>
-            <TabsTrigger value="failures">Failures</TabsTrigger>
-            <TabsTrigger value="report">Report</TabsTrigger>
-          </TabsList>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            {/* Five tabs do not fit a phone; let the strip scroll rather than clip. */}
+            <TabsList className="max-w-full overflow-x-auto">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="endpoints">Endpoints</TabsTrigger>
+              <TabsTrigger value="features">Features</TabsTrigger>
+              <TabsTrigger value="failures">Failures</TabsTrigger>
+              <TabsTrigger value="report">Report</TabsTrigger>
+            </TabsList>
+
+            <div className="flex items-center gap-2">
+              <Select value={runDay(run)} onValueChange={pickDay}>
+                <SelectTrigger className="min-w-32">
+                  <SelectValue placeholder="Pick a day" />
+                </SelectTrigger>
+                <SelectContent>
+                  {days.map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {shortDate(value)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {/* One run is the usual case; a dropdown of one option is just noise. */}
+              {versions.length > 1 ? (
+                <Select value={run} onValueChange={pickRun}>
+                  <SelectTrigger className="min-w-24">
+                    <SelectValue placeholder="Pick a run" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {versions.map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {runTime(value)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : null}
+              {/* Only runs whose slow suite has published get the switch. */}
+              {summaries.slow ? (
+                <Select value={suite} onValueChange={pickSuite}>
+                  <SelectTrigger className="min-w-24">
+                    <SelectValue placeholder="Suite" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="regular">Regular</SelectItem>
+                    <SelectItem value="slow">Slow</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : null}
+            </div>
+          </div>
 
           <div className="mt-4">
             <TabsContent value="overview">
@@ -401,17 +564,22 @@ export function App() {
               <Features summary={summary} />
             </TabsContent>
             <TabsContent value="failures">
-              <Failures summary={summary} scenarios={scenarios} onOpenScenario={setOpenScenario} />
+              <Failures
+                summary={summary}
+                scenarios={run ? scenarios[suite] : {}}
+                onOpenScenario={setOpenScenario}
+              />
             </TabsContent>
             <TabsContent value="report">
-              <Report day={day} />
+              <Report run={run} suite={suite} />
             </TabsContent>
           </div>
         </Tabs>
       )}
 
       <ScenarioDrawer
-        date={day}
+        run={run}
+        suite={suite}
         scenarioPath={openScenario}
         onClose={() => setOpenScenario(null)}
       />
