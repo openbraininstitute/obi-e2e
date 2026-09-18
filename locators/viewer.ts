@@ -2,6 +2,18 @@
 
 import type { Locator, Page } from '@playwright/test';
 
+/** The phases the veil names itself after, whichever one it is in. */
+const SCENE_IS_BUSY = /Loading visualization|Downloading nodes|Drawing morphologies/;
+
+/**
+ * The veil over a scene that is not ready yet.
+ */
+export function sceneLoading(page: Page): Locator {
+  return page
+    .getByTestId('visualization-loading')
+    .or(page.getByRole('status', { name: SCENE_IS_BUSY }));
+}
+
 export function morphologyViewer(page: Page) {
   return {
     scene: page.getByTestId('viewer-scene'),

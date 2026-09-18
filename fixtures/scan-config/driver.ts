@@ -16,7 +16,7 @@ import {
   scanConfigSweepValues,
   uiElementOf,
 } from '@locators/scan-config';
-import { morphologyLocations, morphologyViewer } from '@locators/viewer';
+import { morphologyLocations, morphologyViewer, sceneLoading } from '@locators/viewer';
 import { expect, type Locator, type Page } from '@playwright/test';
 
 import { NO_NAVIGATION } from '../interactions';
@@ -37,6 +37,14 @@ const MULTIPLE_VALUE_CONTROL = '[data-scan-config-block-element$="__multiple"]';
  * timeout staring at a list the click never opened.
  */
 const OPENS_WITHIN = 5_000;
+
+/**
+ * How long the scene beside the form is given to finish drawing.
+ *
+ * Editing a block redraws the scene, so the wait belongs before each add
+ * rather than once before the form is touched at all.
+ */
+const SCENE_DRAWS_WITHIN = 180_000;
 
 export class ScanConfigDriver {
   private readonly editor: ReturnType<typeof scanConfigEditor>;
@@ -91,11 +99,20 @@ export class ScanConfigDriver {
   private async addAnEntry(rootElement: string): Promise<void> {
     const add = this.editor.addEntry(rootElement);
 
+    await expect(
+      sceneLoading(this.page),
+      'The scene never finished drawing, so the page never answered again.'
+    ).toBeHidden({ timeout: SCENE_DRAWS_WITHIN });
+
     await expect(async () => {
       await add.scrollIntoViewIfNeeded({ timeout: 5_000 });
       await add.click({ ...NO_NAVIGATION, timeout: 5_000 });
-      await expect(this.editor.variants.first()).toBeVisible({ timeout: 5_000 });
-    }, `The editor never offered anything to add to "${rootElement}".`).toPass({ timeout: 60_000 });
+      await expect(this.editor.variants.first()).toBeVisible({
+        timeout: 5_000,
+      });
+    }, `The editor never offered anything to add to "${rootElement}".`).toPass({
+      timeout: 60_000,
+    });
   }
 
   private async fillDictionary(
