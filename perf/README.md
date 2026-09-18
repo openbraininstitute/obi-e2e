@@ -15,7 +15,7 @@ what users experience: that is field data, and it belongs in the app itself.
 bun run perf                                  # staging, every page, three runs each
 E2E_ENV=production bun run perf               # production
 bun run perf --collect.numberOfRuns=1         # a quick look, one run per page
-bun run notify --perf                         # post the card; prints it when TEAMS_WEBHOOK_URL is unset
+bun run notify --perf                         # post the card; prints it when MS_TEAMS_WEBHOOK_URI is unset
 ```
 
 Run from the repository root. Lighthouse runs through `npx` on Node, not Bun,

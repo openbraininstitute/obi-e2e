@@ -3,10 +3,10 @@ import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { Drawer } from '@/components/motion/drawer';
-import { loadScenario } from '@/data';
+import { loadScenario, type Suite } from '@/data';
 
-/** What came back, and for which path, so "still loading" is derived not stored. */
-type Loaded = { date: string; path: string; markdown: string | null };
+/** What came back, and for which run and path, so "still loading" is derived. */
+type Loaded = { run: string; suite: Suite; path: string; markdown: string | null };
 
 /**
  * The scenario behind a failing test, in a drawer beside it.
@@ -16,11 +16,13 @@ type Loaded = { date: string; path: string; markdown: string | null };
  * closes it, as does the button.
  */
 export function ScenarioDrawer({
-  date,
+  run,
+  suite,
   scenarioPath,
   onClose,
 }: {
-  date: string;
+  run: string;
+  suite: Suite;
   scenarioPath: string | null;
   onClose: () => void;
 }) {
@@ -30,15 +32,16 @@ export function ScenarioDrawer({
     if (!scenarioPath) return;
     let current = true;
     void (async () => {
-      const markdown = await loadScenario(date, scenarioPath);
-      if (current) setLoaded({ date, path: scenarioPath, markdown });
+      const markdown = await loadScenario(run, scenarioPath, suite);
+      if (current) setLoaded({ run, suite, path: scenarioPath, markdown });
     })();
     return () => {
       current = false;
     };
-  }, [date, scenarioPath]);
+  }, [run, suite, scenarioPath]);
 
-  const ready = loaded?.path === scenarioPath && loaded.date === date ? loaded : null;
+  const ready =
+    loaded?.path === scenarioPath && loaded.run === run && loaded.suite === suite ? loaded : null;
 
   return (
     <Drawer

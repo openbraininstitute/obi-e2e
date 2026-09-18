@@ -16,11 +16,17 @@ on:
         description: Only run tests matching this tag or title (e.g. @credits)
         type: string
         default: ''
+  repository_dispatch:
+    # `core-web-app` fires this when it releases, with the tag in
+    # `client_payload.release`. It is the only cross-repo trigger: the release
+    # goes to staging, like every other unattended run.
+    types: [core-web-app-release]
 
 # Pull requests are not tested here for the time being: the suite runs against
 # staging and production only. Putting per-PR runs back means restoring the
-# `pull_request` trigger, or the `repository_dispatch` (`e2e-preview`) arm that
-# `pr-label-bridge.example.yml` fires — see git history for both.
+# `pull_request` trigger, or adding the `e2e-preview` type that
+# `pr-label-bridge.example.yml` fires to the dispatch above — see git history
+# for both.
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.action }}
@@ -55,6 +61,9 @@ jobs:
               runs=$(jq -cn --arg env "$INPUT_ENV" --arg grep "$INPUT_GREP" \
                 '[{name:$env,environment:$env,grep:$grep}]') ;;
             *)
+              # A push or a release dispatch. Only the arm above reads an input,
+              # and only a manual dispatch can set one, so production stays
+              # unreachable from anything automatic.
               runs=$(jq -cn '[{name:"staging",environment:"staging",grep:""}]') ;;
           esac
           echo "runs=$runs" >> "$GITHUB_OUTPUT"
@@ -70,6 +79,10 @@ jobs:
       matrix:
         run: ${{ fromJSON(needs.matrix.outputs.runs) }}
     name: ${{ matrix.run.name }}
+    outputs:
+      # `publish` needs both of these, and job env does not cross jobs.
+      thread_key: ${{ steps.thread.outputs.key }}
+      environment: ${{ matrix.run.environment }}
     env:
       CI: 'true'
       E2E_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
@@ -93,6 +106,40 @@ jobs:
       E2E_PROJECT_CREDITS: ${{ vars.E2E_PROJECT_CREDITS }}
       PLAYWRIGHT_BROWSER: chromium
     steps:
+      # The name of the Teams thread this run posts into. Both workflows compute
+      # it the same way and never compare notes: same day, same event, same seed
+      # is what puts the regular suite's card and the slow suite's card under one
+      # parent message. A release dispatch seeds it with the tag, everything else
+      # with the sha, so a second run the same day opens its own thread. Keep
+      # this step identical in both workflows — the two agreeing is the mechanism.
+      - name: Thread key
+        id: thread
+        env:
+          EVENT: ${{ github.event_name }}
+          RELEASE: ${{ github.event.client_payload.release }}
+          RELEASE_URL: ${{ github.event.client_payload.release_url }}
+          RELEASE_COMMIT: ${{ github.event.client_payload.commit }}
+          SHA: ${{ github.sha }}
+        run: |
+          # One `date` call, not two: the key's day and the stamp below must not
+          # straddle midnight. The stamp is frozen here because the parent card is
+          # rebuilt at the end of every suite, and reading the clock there would
+          # move "Started" to whichever suite finished last.
+          now="$(date -u +'%F %H:%M')"
+          # The environment is part of the identity. Dispatch the regular suite at
+          # production and the slow one at staging and everything else about them
+          # matches, so without this they would share a Teams thread and a report
+          # folder while testing two different deployments.
+          key="${now%% *}-$EVENT-${RELEASE:-${SHA:0:7}}-$E2E_ENVIRONMENT"
+          echo "key=$key" >> "$GITHUB_OUTPUT"
+          {
+            echo "TEAMS_THREAD_KEY=$key"
+            echo "E2E_RELEASE=$RELEASE"
+            echo "E2E_RELEASE_URL=$RELEASE_URL"
+            echo "E2E_RELEASE_COMMIT=$RELEASE_COMMIT"
+            echo "E2E_STARTED=$now UTC"
+          } >> "$GITHUB_ENV"
+
       - uses: actions/checkout@v5
 
       - uses: oven-sh/setup-bun@v2
@@ -100,6 +147,18 @@ jobs:
           bun-version: 1.4.0
 
       - run: bun install --frozen-lockfile
+
+      # Only this workflow announces. It opens the thread in the first minute of
+      # the job, hours before any result, so the flow always has a parent message
+      # to reply to — including for the slow suite, which never announces. A
+      # webhook that is down must not cost us the suite.
+      - name: Announce the run in Teams
+        continue-on-error: true
+        env:
+          MS_TEAMS_WEBHOOK_URI: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+          TEAMS_LAYOUT: thread
+          E2E_SUITES: ${{ github.event_name == 'workflow_dispatch' && 'regular' || 'regular, slow' }}
+        run: bun scripts/ci/teams-card.ts --start
 
       - name: Cache Playwright browsers
         id: browser-cache
@@ -164,9 +223,18 @@ jobs:
       - name: Post Teams card
         if: always()
         env:
-          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          MS_TEAMS_WEBHOOK_URI: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
           TEAMS_LAYOUT: thread
           E2E_REPORT_URL: ${{ steps.report.outputs.artifact-url }}
+          # TEAMS_THREAD_KEY, E2E_RELEASE and E2E_STARTED are already in the job's
+          # environment, written by the first step. E2E_SUITE names the badge this
+          # call adds to the parent; the rest of that card was stored when the
+          # announce opened the thread and is not rebuilt from here.
+          E2E_SUITE: Regular
+          # Names to tag when the lab itself cannot pay for the run. A repository
+          # variable, not a secret: it is work addresses, and being able to read
+          # it back is the point.
+          TEAMS_ALERT_MENTIONS: ${{ vars.TEAMS_ALERT_MENTIONS }}
         run: bun scripts/ci/teams-card.ts test-results/summary.json
 
   # The dashboard is built here rather than in `publish`, and on purpose. `publish`
@@ -201,6 +269,10 @@ jobs:
     permissions:
       contents: write
     concurrency:
+      # Concurrency group names are repository-wide, so this is the same lock the
+      # slow suite's publish job takes. Both end in a force-push of the whole
+      # branch: without the lock the two clones overlap and whichever pushes
+      # second erases the other run's report.
       group: gh-pages
       cancel-in-progress: false
     steps:
@@ -227,6 +299,8 @@ jobs:
       - name: Fold this run into the last five days
         env:
           GH_TOKEN: ${{ github.token }}
+          THREAD_KEY: ${{ needs.run.outputs.thread_key }}
+          ENVIRONMENT: ${{ needs.run.outputs.environment }}
         run: |
           set -euo pipefail
           day=$(date -u +%F)
@@ -236,10 +310,23 @@ jobs:
           # commit every night, so five days of reports never grow the repository.
           git clone --depth 1 --branch gh-pages "$remote" _site || mkdir -p _site
 
-          mkdir -p "_site/runs/$day"
-          rm -rf "_site/runs/$day/report"
-          cp -r artifact/playwright-report "_site/runs/$day/report"
-          cp artifact/test-results/summary.json "_site/runs/$day/summary.json"
+          # A folder per run, not per day: a push at 10:00 used to overwrite the
+          # night's report. The name reads `<date>-<HHhMM>-<environment>`, so the
+          # page can offer one deployment at a time without opening every summary
+          # to find out which is which. The counter is only for a second run
+          # inside the same minute, and every form still sorts into time order.
+          stamp="$(date -u +%F-%Hh%M)-$ENVIRONMENT"
+          folder=$stamp
+          n=0
+          while [ -d "_site/runs/$folder" ]; do n=$((n + 1)); folder=$stamp-$n; done
+
+          mkdir -p "_site/runs/$folder"
+          cp -r artifact/playwright-report "_site/runs/$folder/report"
+          cp artifact/test-results/summary.json "_site/runs/$folder/summary.json"
+          # The slow suite publishes hours later, from a workflow that cannot be
+          # handed this name. It finds the folder again by the thread key both
+          # runs computed from the same event.
+          echo "$THREAD_KEY" > "_site/runs/$folder/thread-key"
           touch _site/.nojekyll
 
           # The day sweep below takes the reports with it, so the numbers the trend
@@ -259,8 +346,10 @@ jobs:
             echo "::warning::The site job produced no bundle; keeping the published one."
           fi
 
-          # Five newest days stay; the rest go.
-          ls -1 _site/runs | sort -r | tail -n +6 | while read -r old; do rm -rf "_site/runs/$old"; done
+          # Every run of the five newest days stays; older days go, runs and all.
+          # A folder's day is its first ten characters.
+          ls -1 _site/runs | cut -c1-10 | sort -ru | tail -n +6 |
+            while read -r old; do rm -rf "_site/runs/$old"*; done
           ls -1 _site/runs | sort -r | jq -Rn '[inputs]' > _site/runs.json
 
           cd _site
@@ -269,5 +358,5 @@ jobs:
           git config user.name github-actions
           git config user.email github-actions@github.com
           git add -A
-          git commit -qm "E2E results — $day"
+          git commit -qm "E2E results — $folder"
           git push -qf "$remote" gh-pages

@@ -112,15 +112,43 @@ function summary(failed: number): Summary {
   };
 }
 
-const days = [
-  ['2026-09-17', 5],
-  ['2026-09-16', 0],
+/**
+ * One day with two runs, so the version dropdown has something to show, and one
+ * with a single run, so its dropdown is hidden. Newest first, as published.
+ *
+ * The third field is whether the slow suite published for that run. Only the
+ * nightly gets one here, so the suite switch appears on one run and not the
+ * others — which is how the published branch actually looks.
+ *
+ * Every run here is staging, because that is all anything publishes today. The
+ * deployment picker still offers production, and landing on it shows the empty
+ * state — which is the thing worth seeing in the dev server.
+ */
+const folders = [
+  ['2026-09-17-13h02-staging', 5, false],
+  ['2026-09-17-07h04-staging', 0, true],
+  ['2026-09-16-07h03-staging', 0, false],
 ] as const;
 
-for (const [date, failed] of days) {
-  const run = `${OUT}/runs/${date}`;
+/** The slow suite follows a couple of campaigns for hours. Few tests, long run. */
+const slowSummary = (): Summary => ({
+  ...summary(0),
+  passed: 2,
+  failed: 0,
+  flaky: 0,
+  skipped: 0,
+  durationMs: 4_920_000,
+  features: [
+    feat('Workflows', 'Simulate microcircuit', 1),
+    feat('Workflows', 'Skeletonise a mesh', 1),
+  ],
+});
+
+for (const [folder, failed, slow] of folders) {
+  const run = `${OUT}/runs/${folder}`;
+  const environment = folder.split('-')[4] ?? 'staging';
   fs.mkdirSync(`${run}/report`, { recursive: true });
-  fs.writeFileSync(`${run}/summary.json`, JSON.stringify(summary(failed)));
+  fs.writeFileSync(`${run}/summary.json`, JSON.stringify({ ...summary(failed), environment }));
 
   // A stand-in unless a real Playwright report has already been copied in.
   if (!fs.existsSync(`${run}/report/index.html`)) {
@@ -141,9 +169,21 @@ for (const [date, failed] of days) {
       JSON.stringify({ [WITH_SCENARIO]: `${dir}/scenario.md` })
     );
   }
+
+  // The slow suite publishes the same two files one level down, hours later.
+  if (slow) {
+    fs.mkdirSync(`${run}/slow/report`, { recursive: true });
+    fs.writeFileSync(`${run}/slow/summary.json`, JSON.stringify({ ...slowSummary(), environment }));
+    if (!fs.existsSync(`${run}/slow/report/index.html`)) {
+      fs.writeFileSync(
+        `${run}/slow/report/index.html`,
+        '<p style="font:14px system-ui;padding:2rem">The slow suite\'s report stands here.</p>'
+      );
+    }
+  }
 }
 
-fs.writeFileSync(`${OUT}/runs.json`, JSON.stringify(days.map(([date]) => date)));
+fs.writeFileSync(`${OUT}/runs.json`, JSON.stringify(folders.map(([folder]) => folder)));
 
 // Nothing on the page reads this any more, but the publish job still writes it.
 const history = Array.from({ length: 30 }, (_, index) => {

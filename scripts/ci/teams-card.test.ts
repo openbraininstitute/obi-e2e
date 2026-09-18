@@ -4,6 +4,8 @@ import { type Summary, buildSummary } from './summarize-results';
 import {
   buildCard,
   buildCardWithinLimit,
+  buildBadge,
+  buildParentCard,
   buildPosts,
   buildThreadPayload,
   parseMentions,
@@ -278,6 +280,158 @@ describe('buildPosts', () => {
   });
 });
 
+const threadEnv = {
+  TEAMS_THREAD_KEY: '2026-09-18-schedule-1fe9550',
+  E2E_ENVIRONMENT: 'staging',
+  E2E_SUITE: 'Regular',
+  E2E_SUITES: 'regular, slow',
+  GITHUB_SHA: '1fe9550cafebabe',
+  GITHUB_EVENT_NAME: 'schedule',
+  GITHUB_SERVER_URL: 'https://github.com',
+  GITHUB_REPOSITORY: 'openbraininstitute/obi-e2e',
+  GITHUB_RUN_ID: '42',
+};
+
+function factsOf(card: unknown): unknown[] {
+  return (collect(card, (node) => node.type === 'FactSet')[0]?.facts ?? []) as unknown[];
+}
+
+describe('buildParentCard', () => {
+  test('ends the facts with the token the flow replaces, comma included', () => {
+    expect(JSON.stringify(buildParentCard(threadEnv))).toContain(',"{{BADGES}}"');
+  });
+
+  test('carries the data the whole thread is about', () => {
+    const facts = factsOf(buildParentCard(threadEnv));
+
+    expect(facts.slice(0, 5)).toEqual([
+      { title: 'Run', value: '2026-09-18-schedule-1fe9550' },
+      { title: 'Trigger', value: 'Scheduled' },
+      { title: 'Environment', value: 'staging' },
+      // No release, so the only sha here is this repository's own.
+      { title: 'e2e-commit', value: '1fe9550' },
+      { title: 'Suites', value: 'regular, slow' },
+    ]);
+    expect(facts[5]).toMatchObject({ title: 'Started' });
+    expect((facts[5] as { value: string }).value).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC$/);
+    // The token lives in the badge row below, not among the facts.
+    expect(facts).not.toContain('{{BADGES}}');
+  });
+
+  test('ends the badge row with the token, after its label', () => {
+    const row = collect(
+      buildParentCard(threadEnv),
+      (node) => Array.isArray(node.items) && node.items.includes('{{BADGES}}')
+    )[0] as { items: unknown[] };
+
+    expect(row.items).toHaveLength(2);
+    expect(row.items[0]).toMatchObject({ type: 'TextBlock', text: 'Finished' });
+    expect(row.items.at(-1)).toBe('{{BADGES}}');
+  });
+
+  test("keeps the release commit apart from this repository's", () => {
+    const facts = factsOf(
+      buildParentCard({
+        ...threadEnv,
+        E2E_RELEASE: '2026.09.18.1',
+        E2E_RELEASE_COMMIT: 'deadbee1234567',
+      })
+    );
+
+    expect(facts).toContainEqual({ title: 'Commit', value: 'deadbee' });
+    expect(facts).toContainEqual({ title: 'e2e-commit', value: '1fe9550' });
+  });
+
+  test('links the release when the dispatch carried its page', () => {
+    const card = buildParentCard({
+      ...threadEnv,
+      E2E_RELEASE: '2026.09.18.1',
+      E2E_RELEASE_URL:
+        'https://github.com/openbraininstitute/core-web-app/releases/tag/2026.09.18.1',
+    }) as { actions: { title: string; url: string }[] };
+
+    expect(card.actions.map((action) => action.title)).toEqual([
+      'Open run and report',
+      'Open the release',
+    ]);
+    expect(card.actions[1]?.url).toContain('/releases/tag/2026.09.18.1');
+  });
+
+  test('has no release button when the run is not a release', () => {
+    const card = buildParentCard(threadEnv) as { actions: unknown[] };
+    expect(card.actions).toHaveLength(1);
+  });
+
+  test('names the release only when the run carried a tag', () => {
+    expect(factsOf(buildParentCard({ ...threadEnv, E2E_RELEASE: 'v1.2.3' }))).toContainEqual({
+      title: 'Release',
+      value: 'v1.2.3',
+    });
+    expect(factsOf(buildParentCard(threadEnv))).not.toContainEqual(
+      expect.objectContaining({ title: 'Release' })
+    );
+  });
+
+  test('says where and what started it, and links the run', () => {
+    const card = buildParentCard(threadEnv) as {
+      actions: { type: string; url: string }[];
+    };
+
+    expect(collect(card, (node) => node.type === 'Badge').map((item) => item.text)).toEqual([
+      'staging',
+      'Scheduled',
+    ]);
+    expect(card.actions).toHaveLength(1);
+    expect(card.actions[0]).toMatchObject({
+      type: 'Action.OpenUrl',
+      url: 'https://github.com/openbraininstitute/obi-e2e/actions/runs/42',
+    });
+  });
+
+  test('drops the action when nothing tells it where the run lives', () => {
+    const card = buildParentCard({ TEAMS_THREAD_KEY: 'key' }) as { actions: unknown[] };
+    expect(card.actions).toEqual([]);
+  });
+});
+
+describe('buildBadge', () => {
+  const clean: Summary = { ...buildSummary({ suites: [], stats: {} }), passed: 248 };
+
+  test('names the suite and puts the counts in the tooltip', () => {
+    const chip = JSON.parse(buildBadge({ ...clean, durationMs: 41 * 60_000 }, 'Regular'));
+    expect(chip).toMatchObject({
+      type: 'Badge',
+      text: 'Regular',
+      style: 'Good',
+      tooltip: '248 passed · 0 failed · 41m 0s',
+    });
+  });
+
+  test('mentions flakes only when there were some', () => {
+    expect(JSON.parse(buildBadge(clean, 'Regular')).tooltip).not.toContain('flaky');
+    expect(JSON.parse(buildBadge({ ...clean, flaky: 2 }, 'Regular')).tooltip).toContain('2 flaky');
+  });
+
+  test('colours by outcome', () => {
+    expect(JSON.parse(buildBadge(clean, 'Regular')).style).toBe('Good');
+    expect(JSON.parse(buildBadge({ ...clean, flaky: 2 }, 'Regular')).style).toBe('Warning');
+    expect(JSON.parse(buildBadge({ ...clean, failed: 5 }, 'Slow')).style).toBe('Attention');
+  });
+
+  test('counts the failures of a failing run', () => {
+    expect(JSON.parse(buildBadge({ ...clean, passed: 3, failed: 5 }, 'Slow')).tooltip).toContain(
+      '5 failed'
+    );
+  });
+
+  test('does not call a missing report a pass', () => {
+    const chip = JSON.parse(buildBadge({ ...clean, passed: 0, noResults: true }, 'Slow'));
+    expect(chip.style).toBe('Warning');
+    expect(chip.tooltip).toContain('No results');
+    expect(chip.tooltip).not.toContain('passed');
+  });
+});
+
 describe('buildThreadPayload', () => {
   test('sends bare adaptive cards, first one being the summary', () => {
     const { cards } = buildThreadPayload(summaryWith(2, 2));
@@ -290,6 +444,24 @@ describe('buildThreadPayload', () => {
     const first: string[] = [];
     walk(cards[0], first);
     expect(first).toContain('Services');
+  });
+
+  test('a result carries the key, the parent and this suite alone', () => {
+    const payload = buildThreadPayload(summaryWith(2, 2), threadEnv);
+
+    expect(payload.key).toBe('2026-09-18-schedule-1fe9550');
+    expect(payload.parent).toContain(',"{{BADGES}}"');
+    expect(JSON.parse(payload.badge)).toMatchObject({ type: 'Badge', text: 'Regular' });
+    expect(payload.cards).toHaveLength(3);
+  });
+
+  test('an announce has the same shape with nothing to report yet', () => {
+    const payload = buildThreadPayload(null, threadEnv);
+
+    expect(payload.key).toBe('2026-09-18-schedule-1fe9550');
+    expect(payload.parent).toContain('"2026-09-18-schedule-1fe9550"');
+    expect(payload.badge).toBe('');
+    expect(payload.cards).toEqual([]);
   });
 });
 

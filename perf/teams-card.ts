@@ -4,7 +4,7 @@
  * Posts the Lighthouse result to Microsoft Teams as an Adaptive Card.
  * It reads what `bun run perf` leaves in perf/report and .lighthouseci.
  *
- * Usage: TEAMS_WEBHOOK_URL=... bun perf/teams-card.ts
+ * Usage: MS_TEAMS_WEBHOOK_URI=... bun perf/teams-card.ts
  * Without a webhook it prints the card instead, so you can see what would go out.
  */
 
@@ -326,10 +326,10 @@ export function payload(card: ReturnType<typeof buildPerfCard>, layout = process
 async function post(): Promise<void> {
   const summary = readSummary();
   const body = payload(buildPerfCard(summary));
-  const webhook = process.env.TEAMS_WEBHOOK_URL;
+  const webhook = process.env.MS_TEAMS_WEBHOOK_URI;
 
   if (!webhook) {
-    console.error('TEAMS_WEBHOOK_URL is not set — printing the card instead of posting it.');
+    console.error('MS_TEAMS_WEBHOOK_URI is not set — printing the card instead of posting it.');
     console.log(JSON.stringify(body, null, 2));
     return;
   }

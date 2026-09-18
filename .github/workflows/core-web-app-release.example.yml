@@ -1,0 +1,54 @@
+name: Request E2E run on release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  dispatch:
+    if: '!github.event.release.prerelease && !github.event.release.draft'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch to obi-e2e
+        env:
+          # A fine-grained PAT scoped to openbraininstitute/obi-e2e alone, with
+          # Repository permissions → Contents: Read and write. That is what the
+          # dispatches endpoint asks for; nothing else on that repo is needed, and
+          # no permission on core-web-app is.
+          GH_TOKEN: ${{ secrets.OBI_E2E_DISPATCH_TOKEN }}
+        run: |
+          gh api repos/openbraininstitute/obi-e2e/dispatches \
+            --field event_type=core-web-app-release \
+            --field 'client_payload[release]=${{ github.event.release.tag_name }}' \
+            --field 'client_payload[release_url]=${{ github.event.release.html_url }}' \
+            --field 'client_payload[commit]=${{ github.sha }}' \
+            --field 'client_payload[repository]=${{ github.repository }}'
+
+# The release tag is what obi-e2e seeds its Teams thread key with, so every
+# release gets its own thread instead of joining the day's nightly one. The tag,
+# the release page and `commit` all reach the Teams card; `commit` is this
+# repository's sha, which on a `release` event is the last commit in the tagged
+# release, and the card names it `Commit` to keep it apart from obi-e2e's own
+# `e2e-commit`. `repository` is carried for the run log and is not displayed.
+#
+# One-time setup, by a human:
+#
+#   1. On github.com → Settings → Developer settings → Personal access tokens →
+#      Fine-grained tokens → Generate new token. Resource owner
+#      `openbraininstitute`, and under Repository access pick "Only select
+#      repositories" → `obi-e2e`. Under Repository permissions set
+#      Contents: Read and write. Leave every other permission at No access.
+#      Give it an expiry you will renew: the dispatch stops silently when it
+#      lapses, and this workflow is the only thing that notices.
+#   2. If the organisation requires approval for fine-grained tokens, an owner
+#      has to approve it before it works. The token reads as active either way.
+#   3. In `core-web-app` → Settings → Secrets and variables → Actions → New
+#      repository secret, named exactly `OBI_E2E_DISPATCH_TOKEN`.
+#   4. Confirm a release never reaches production: in obi-e2e, `e2e.yml`'s
+#      `matrix` job sends `schedule`, `push` and anything else — this dispatch
+#      included — to staging, and only a manual `workflow_dispatch` can choose
+#      `production`. If that job ever grows a `repository_dispatch` branch,
+#      check it still says staging before trusting this file.
+#   5. Publish a release (or re-publish a test one) and check the run appears in
+#      obi-e2e → Actions. A 404 from the `gh api` step means the token cannot see
+#      obi-e2e — that endpoint answers 404, not 403, for a missing permission.

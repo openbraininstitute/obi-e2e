@@ -15,26 +15,48 @@ request alongside the tests.
 
 ## What it reads
 
-Three files sit next to the bundle on the `gh-pages` branch, all written by the
-`publish` job in `e2e.yml`:
+These sit next to the bundle on the `gh-pages` branch, written by the `publish`
+job in `e2e.yml` and, for the slow report, the one in `e2e-slow.yml`:
 
-| File                       | Written by                  | Lifetime                   |
-| -------------------------- | --------------------------- | -------------------------- |
-| `runs.json`                | the publish job's day sweep | the five newest days       |
-| `runs/<date>/summary.json` | `summarize-results.ts`      | five days, with its report |
-| `history.json`             | `history.ts`                | 400 runs                   |
+| File                         | Written by                  | Lifetime                   |
+| ---------------------------- | --------------------------- | -------------------------- |
+| `runs.json`                  | the publish job's day sweep | every run of five days     |
+| `runs/<folder>/summary.json` | `summarize-results.ts`      | five days, with its report |
+| `runs/<folder>/report/`      | the publish job             | five days                  |
+| `runs/<folder>/slow/`        | the slow suite's publish    | five days                  |
+| `history.json`               | `history.ts`                | 400 runs                   |
+
+A folder is `<date>-<HHhMM>-<environment>` in UTC —
+`runs/2026-09-18-07h04-staging/` — so the same day holds one folder per run and
+a lexical sort still puts the newest first. The environment is in the name so
+the deployment picker can filter runs without opening every summary to find out
+which deployment each one tested. The sweep keeps every run belonging to the
+five newest days, a day being a folder's first ten characters.
+
+`runs/<folder>/slow/` holds the same `summary.json` and `report/` one level
+down, and arrives hours after the rest of the folder. Both halves of a run are
+read together, and the header offers a Regular/Slow switch only for the runs
+whose slow half has landed — most runs have none, and a switch with nothing
+behind it is worse than no switch.
 
 Nothing on the page reads `history.json` any more; the trend charts that used it
 are gone. The publish job still writes it, because it is the only file here that
 cannot be rebuilt later. Deleting the writer would forfeit the record for good,
 and it costs a few hundred bytes a run.
 
-Each day carries a full Playwright report, so five days is all the branch can
+Each run carries a full Playwright report, so five days is all the branch can
 hold without growing. `history.json` is the one file the day sweep does not
-touch. A day that ran twice, a push after the nightly, keeps only the later row.
+touch.
 
 The report directory also carries the scenario of every failing test and a
 `scenarios.json` index beside it.
+
+## Picking a run
+
+Two dropdowns. The day one lists the distinct dates in `runs.json`, and picking
+one lands on that day's newest run. The version one lists the runs within that
+day by time, and is hidden on a day that ran once — a dropdown with a single
+option only asks a question it has already answered.
 
 ## Charts
 

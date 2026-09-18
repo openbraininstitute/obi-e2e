@@ -217,7 +217,7 @@ The Teams card: [docs/teams-reporting.md](docs/teams-reporting.md).
 | `E2E_BASE_URL`                                        | the app under test. Default: staging                |
 | `E2E_ENV`                                             | `staging` or `production`                           |
 | `E2E_PROJECT_CREDITS`                                 | credits moved into the run's project. Default: 2000 |
-| `TEAMS_WEBHOOK_URL`                                   | where the result card goes                          |
+| `MS_TEAMS_WEBHOOK_URI`                                | where the result card goes                          |
 | `PLAYWRIGHT_BROWSER`                                  | `chromium` (default), `firefox` or `webkit`         |
 | `E2E_LOG_FORMAT` / `E2E_LOG_LEVEL`                    | `text` or `json`. `info` by default                 |
 
