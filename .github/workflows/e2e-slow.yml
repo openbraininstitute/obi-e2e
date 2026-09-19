@@ -164,11 +164,13 @@ jobs:
 
   publish:
     needs: run
-    # Not `always()`. This workflow sets `cancel-in-progress: true`, so the 07:00
-    # cron evicts a push run in flight — and a cancelled run uploads no artifact,
-    # which would fail the download step and turn the job red for a cancellation
-    # nobody made by mistake. A run that finished, pass or fail, has a report.
-    if: needs.run.result == 'success' || needs.run.result == 'failure'
+    # `always()` has to be in here. An `if:` with no status function is silently
+    # ANDed with `success()`, so this job skipped itself on the first failing run
+    # it saw — exactly the run whose report people wanted. The rest filters out a
+    # cancellation: this workflow sets `cancel-in-progress: true`, the 07:00 cron
+    # evicts a push run in flight, and a cancelled run uploads no artifact for the
+    # download step to find. A run that finished, pass or fail, has one.
+    if: always() && (needs.run.result == 'success' || needs.run.result == 'failure')
     runs-on: ubuntu-latest
     permissions:
       contents: write

@@ -161,8 +161,12 @@ export function duration(ms: number): string {
  */
 export const runDay = (run: string) => run.slice(0, 10);
 
-/** `2026-09-18-07h04-staging` reads as `07:04`. */
-export const runTime = (run: string) => (run.split('-')[3] ?? '').replace('h', ':');
+/**
+ * `2026-09-18-07h04-staging` reads as `07:04`. Folders published before the name
+ * carried a time are a whole day on their own; they age out of the sweep within
+ * five days, and until then an em dash beats a blank row in the picker.
+ */
+export const runTime = (run: string) => (run.split('-')[3] ?? '').replace('h', ':') || '—';
 
 /** Old folders carry no environment; they were all staging. */
 export const runEnvironment = (run: string) => run.split('-')[4] ?? 'staging';
