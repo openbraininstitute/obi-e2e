@@ -464,28 +464,76 @@ export function App() {
           ) : null}
         </div>
 
-        {/* The deployment under test picks the runs; everything else below picks
-            among them. It defaults to staging, which is the only one the nightly
-            publishes today. */}
-        <Combobox value={environment} onValueChange={pickEnvironment} className="w-52 shrink-0">
-          <ComboboxTrigger>
-            <ComboboxInput aria-label="Search deployments" placeholder="Deployment…" />
-          </ComboboxTrigger>
-          <ComboboxContent>
-            <ComboboxList ariaLabel="Deployments">
-              <ComboboxEmpty>No deployment by that name.</ComboboxEmpty>
-              {environments.map((value) => {
-                const Icon = ENVIRONMENT_ICON[value] ?? Globe;
-                return (
-                  <ComboboxItem key={value} value={value} textValue={value}>
-                    <Icon aria-hidden className="size-4 shrink-0" />
-                    <span className="truncate capitalize">{value}</span>
-                  </ComboboxItem>
-                );
-              })}
-            </ComboboxList>
-          </ComboboxContent>
-        </Combobox>
+        {/* One row, narrowing left to right: the deployment picks the runs, the
+            day picks among those, the time picks among that day's, and the suite
+            picks which half of the run. The last two hide when there is nothing
+            to choose. */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Combobox value={environment} onValueChange={pickEnvironment} className="w-52 shrink-0">
+            <ComboboxTrigger>
+              <ComboboxInput aria-label="Search deployments" placeholder="Deployment…" />
+            </ComboboxTrigger>
+            <ComboboxContent>
+              <ComboboxList ariaLabel="Deployments">
+                <ComboboxEmpty>No deployment by that name.</ComboboxEmpty>
+                {environments.map((value) => {
+                  const Icon = ENVIRONMENT_ICON[value] ?? Globe;
+                  return (
+                    <ComboboxItem key={value} value={value} textValue={value}>
+                      <Icon aria-hidden className="size-4 shrink-0" />
+                      <span className="truncate capitalize">{value}</span>
+                    </ComboboxItem>
+                  );
+                })}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
+
+          {/* A deployment with nothing published has no days to offer. */}
+          {days.length > 0 ? (
+            <Select value={runDay(run)} onValueChange={pickDay}>
+              <SelectTrigger className="min-w-32">
+                <SelectValue placeholder="Pick a day" />
+              </SelectTrigger>
+              <SelectContent>
+                {days.map((value) => (
+                  <SelectItem key={value} value={value}>
+                    {shortDate(value)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : null}
+          {/* One run is the usual case; a dropdown of one option is just noise. */}
+          {run && versions.length > 1 ? (
+            <Select value={run} onValueChange={pickRun}>
+              <SelectTrigger className="min-w-24">
+                <SelectValue placeholder="Pick a run" />
+              </SelectTrigger>
+              <SelectContent>
+                {versions.map((value) => (
+                  <SelectItem key={value} value={value}>
+                    {runTime(value)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : null}
+          {/* Only runs whose slow suite has published get the switch. `run` is in
+              here because the summaries are the last run's until the next one
+              loads, and a deployment with none never loads one. */}
+          {run && summaries.slow ? (
+            <Select value={suite} onValueChange={pickSuite}>
+              <SelectTrigger className="min-w-24">
+                <SelectValue placeholder="Suite" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="regular">Regular</SelectItem>
+                <SelectItem value="slow">Slow</SelectItem>
+              </SelectContent>
+            </Select>
+          ) : null}
+        </div>
       </header>
 
       {!run ? (
@@ -500,58 +548,14 @@ export function App() {
         </p>
       ) : (
         <Tabs defaultValue="overview" variant="segment">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            {/* Five tabs do not fit a phone; let the strip scroll rather than clip. */}
-            <TabsList className="max-w-full overflow-x-auto">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="endpoints">Endpoints</TabsTrigger>
-              <TabsTrigger value="features">Features</TabsTrigger>
-              <TabsTrigger value="failures">Failures</TabsTrigger>
-              <TabsTrigger value="report">Report</TabsTrigger>
-            </TabsList>
-
-            <div className="flex items-center gap-2">
-              <Select value={runDay(run)} onValueChange={pickDay}>
-                <SelectTrigger className="min-w-32">
-                  <SelectValue placeholder="Pick a day" />
-                </SelectTrigger>
-                <SelectContent>
-                  {days.map((value) => (
-                    <SelectItem key={value} value={value}>
-                      {shortDate(value)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {/* One run is the usual case; a dropdown of one option is just noise. */}
-              {versions.length > 1 ? (
-                <Select value={run} onValueChange={pickRun}>
-                  <SelectTrigger className="min-w-24">
-                    <SelectValue placeholder="Pick a run" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {versions.map((value) => (
-                      <SelectItem key={value} value={value}>
-                        {runTime(value)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : null}
-              {/* Only runs whose slow suite has published get the switch. */}
-              {summaries.slow ? (
-                <Select value={suite} onValueChange={pickSuite}>
-                  <SelectTrigger className="min-w-24">
-                    <SelectValue placeholder="Suite" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="regular">Regular</SelectItem>
-                    <SelectItem value="slow">Slow</SelectItem>
-                  </SelectContent>
-                </Select>
-              ) : null}
-            </div>
-          </div>
+          {/* Five tabs do not fit a phone; let the strip scroll rather than clip. */}
+          <TabsList className="max-w-full overflow-x-auto">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="endpoints">Endpoints</TabsTrigger>
+            <TabsTrigger value="features">Features</TabsTrigger>
+            <TabsTrigger value="failures">Failures</TabsTrigger>
+            <TabsTrigger value="report">Report</TabsTrigger>
+          </TabsList>
 
           <div className="mt-4">
             <TabsContent value="overview">
