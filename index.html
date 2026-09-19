@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en" data-theme="blue">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>OBI E2E</title>
+    <script>
+      // Inline and before the stylesheet on purpose: set from the bundle instead
+      // and the page paints light for a frame before flipping.
+      (() => {
+        const dark = window.matchMedia('(prefers-color-scheme: dark)');
+        const apply = () => document.documentElement.classList.toggle('dark', dark.matches);
+        apply();
+        dark.addEventListener('change', apply);
+      })();
+    </script>
+    <script type="module" crossorigin src="./assets/index-Ioj7wM00.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-D70oorqp.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
