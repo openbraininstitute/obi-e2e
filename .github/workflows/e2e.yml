@@ -310,22 +310,33 @@ jobs:
           # commit every night, so five days of reports never grow the repository.
           git clone --depth 1 --branch gh-pages "$remote" _site || mkdir -p _site
 
+          # Whichever suite publishes first opens the folder; the other one folds
+          # into it, found by the thread key both computed from the same event.
+          # The slow suite is usually first — its campaigns can fail in two minutes
+          # while this suite is still half an hour from finishing — and starting a
+          # second folder here split the two halves of one run across two entries,
+          # so the day's newest run showed no Slow switch at all.
+          folder=$(grep -lx "$THREAD_KEY" _site/runs/*/thread-key 2>/dev/null |
+            sort -r | head -1 | cut -d/ -f3 || true)
+
           # A folder per run, not per day: a push at 10:00 used to overwrite the
           # night's report. The name reads `<date>-<HHhMM>-<environment>`, so the
           # page can offer one deployment at a time without opening every summary
           # to find out which is which. The counter is only for a second run
           # inside the same minute, and every form still sorts into time order.
-          stamp="$(date -u +%F-%Hh%M)-$ENVIRONMENT"
-          folder=$stamp
-          n=0
-          while [ -d "_site/runs/$folder" ]; do n=$((n + 1)); folder=$stamp-$n; done
+          if [ -z "$folder" ]; then
+            stamp="$(date -u +%F-%Hh%M)-$ENVIRONMENT"
+            folder=$stamp
+            n=0
+            while [ -d "_site/runs/$folder" ]; do n=$((n + 1)); folder=$stamp-$n; done
+          fi
 
           mkdir -p "_site/runs/$folder"
+          # `cp -r` into an existing directory nests rather than replaces, which a
+          # re-run under the same key would otherwise do.
+          rm -rf "_site/runs/$folder/report"
           cp -r artifact/playwright-report "_site/runs/$folder/report"
           cp artifact/test-results/summary.json "_site/runs/$folder/summary.json"
-          # The slow suite publishes hours later, from a workflow that cannot be
-          # handed this name. It finds the folder again by the thread key both
-          # runs computed from the same event.
           echo "$THREAD_KEY" > "_site/runs/$folder/thread-key"
           touch _site/.nojekyll
 

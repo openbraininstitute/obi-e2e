@@ -34,9 +34,10 @@ which deployment each one tested. The sweep keeps every run belonging to the
 five newest days, a day being a folder's first ten characters.
 
 `runs/<folder>/slow/` holds the same `summary.json` and `report/` one level
-down, and arrives hours after the rest of the folder. Both halves of a run are
-read together, and the header offers a Regular/Slow switch only for the runs
-whose slow half has landed — most runs have none, and a switch with nothing
+down. The two halves are separate workflows and either can land first, so both
+publish jobs find the folder by the `thread-key` in it rather than naming one.
+Both halves of a run are read together, and the header offers a Regular/Slow
+switch only for the runs whose slow half has landed — a switch with nothing
 behind it is worse than no switch.
 
 Nothing on the page reads `history.json` any more; the trend charts that used it

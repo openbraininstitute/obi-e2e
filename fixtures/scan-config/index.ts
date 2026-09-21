@@ -40,8 +40,21 @@ export type ScanConfigCase = {
     coordinateCount: number;
     generated?: ScanConfigFiles;
     /** Left out when the run is too long to sit through: it only has to start. */
-    completed?: ScanConfigFiles;
+    completed?: ScanConfigCompleted;
   };
+};
+
+/** What a finished run holds, and how long it is given to get there. */
+export type ScanConfigCompleted = ScanConfigFiles & {
+  /**
+   * Minutes the run may take, from a run somebody watched.
+   *
+   * Left out, a case falls back to the blanket budget for its kind, and a `slow`
+   * one is given four hours — long enough that a run which stalls holds the job
+   * until it runs out of clock rather than failing while the reason is still
+   * legible. A case that has been timed says so here instead.
+   */
+  within?: number;
 };
 
 export type ScanConfigScope = 'public' | 'project';
@@ -262,7 +275,7 @@ function parseCase(
         : { generated: parseFiles(expected.generated, `${at}.expect.generated`, fail) }),
       ...(expected.completed === undefined
         ? {}
-        : { completed: parseFiles(expected.completed, `${at}.expect.completed`, fail) }),
+        : { completed: parseCompleted(expected.completed, `${at}.expect.completed`, fail) }),
     },
   };
 }
@@ -277,6 +290,23 @@ function parseRequires(
     fail('requires.featureFlag must be a non-empty string');
   }
   return { featureFlag: flag as string };
+}
+
+/** The files a finished run holds, and the minutes it is given to finish. */
+function parseCompleted(
+  value: unknown,
+  at: string,
+  fail: (message: string) => never
+): ScanConfigCompleted {
+  const files = parseFiles(value, at, fail);
+  const within = (value as Record<string, unknown>).within;
+
+  if (within === undefined) return files;
+  if (typeof within !== 'number' || !Number.isFinite(within) || within <= 0) {
+    fail(`${at}.within must be the number of minutes the run may take`);
+  }
+
+  return { ...files, within: within as number };
 }
 
 function parseFiles(value: unknown, at: string, fail: (message: string) => never): ScanConfigFiles {

@@ -77,7 +77,11 @@ For the file format, see [tools/casebook/README.md](../tools/casebook/README.md)
    test cannot deep-link, because the selection lives in `sessionStorage`.
 2. **Check it will not launch half-filled.** The generate button stays disabled.
 3. **Fill it from the seed, and generate.** The results tab opens with one
-   coordinate per grid point, each `created`.
+   coordinate per grid point, each `created`. Generate sends two calls, the
+   grid's size and then the campaign; when the browser drops the first one at
+   the CORS preflight, which it does now and then under load, the test sends
+   that call again from the runner to learn the real status, and presses the
+   button once more only if the service was fine with it.
 4. **Launch it.** Confirm the cost, then follow the coordinate to `done`.
 5. **Read what it produced.** `expect.generated` is what the coordinate holds
    the moment the campaign exists; `expect.completed` is what it holds once the
@@ -119,6 +123,14 @@ of it.
 
 Nothing else. There is no number to guess: an ordinary case gets five minutes,
 a `slow` one gets four hours.
+
+**A case somebody has timed names its own budget.** `expect.completed.within`
+is that number, in minutes, and it replaces the blanket one above. Use it once a
+run has been watched from end to end: four hours is the right ceiling for a
+length nobody knows, but it is the wrong one for a thirteen-minute campaign that
+stalls — the test then holds the job for the rest of the morning and the
+failure, which was legible at minute twelve, is read after lunch. Give the
+measured length room for a queue rather than trimming it to the best run seen.
 
 **A slow case runs in its own job.** It is tagged `@slow`; `e2e.yml` leaves it
 out and [`e2e-slow.yml`](../.github/workflows/e2e-slow.yml) runs
