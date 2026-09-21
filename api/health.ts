@@ -13,12 +13,14 @@ export type ServiceStatus = {
   problem?: string;
 };
 
-type VersionPayload = { version?: string; app_version?: string; app_name?: string };
+type VersionFields = { version?: string; app_version?: string; app_name?: string };
+type VersionPayload = VersionFields & { data?: VersionFields };
 
 async function readVersion(url: string): Promise<string | undefined> {
   const payload = await requestJson<VersionPayload>(url);
   if (Result.isError(payload)) return undefined;
-  return payload.value.version ?? payload.value.app_version;
+  const fields = payload.value.data ?? payload.value;
+  return fields.version ?? fields.app_version;
 }
 
 /** Calls one service's health URL, and its version URL when it has one. */
