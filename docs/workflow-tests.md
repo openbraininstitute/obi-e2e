@@ -120,6 +120,14 @@ of it.
 Nothing else. There is no number to guess: an ordinary case gets five minutes,
 a `slow` one gets four hours.
 
+**A case somebody has timed names its own budget.** `expect.completed.within`
+is that number, in minutes, and it replaces the blanket one above. Use it once a
+run has been watched from end to end: four hours is the right ceiling for a
+length nobody knows, but it is the wrong one for a thirteen-minute campaign that
+stalls — the test then holds the job for the rest of the morning and the
+failure, which was legible at minute twelve, is read after lunch. Give the
+measured length room for a queue rather than trimming it to the best run seen.
+
 **A slow case runs in its own job.** It is tagged `@slow`; `e2e.yml` leaves it
 out and [`e2e-slow.yml`](../.github/workflows/e2e-slow.yml) runs
 `--project=slow` with six hours on the clock instead of forty-five minutes.

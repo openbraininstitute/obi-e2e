@@ -93,9 +93,14 @@ the page reads all three parts out of each name: the environment filters, the
 date picks the day, and the time picks the version within it.
 
 Both publish jobs take the repository-wide `gh-pages` concurrency group, so the
-two workflows queue rather than force-push over each other. The slow job cannot
-be handed the folder name across workflows, so it finds the folder again by the
-thread key, which is written into it as `thread-key`.
+two workflows queue rather than force-push over each other. Neither can be
+handed the folder name across workflows, so **both** look the folder up by the
+thread key, written into it as `thread-key`: whichever publishes first opens the
+folder and the other folds into it. Only one of them did that at first, and
+since the slow suite usually gets there first — a campaign can fail in two
+minutes while the regular suite is still half an hour from finishing — the two
+halves of one run kept landing in two folders, leaving the day's newest run with
+no Slow switch on it.
 
 `history.json` is the exception the sweep leaves alone — a few hundred bytes per
 run, 400 runs deep, so the dashboard's trend charts can look back further than

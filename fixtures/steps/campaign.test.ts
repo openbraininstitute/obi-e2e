@@ -32,3 +32,12 @@ test('a scenario gets the clock its slowest case needs', () => {
   expect(campaignTimeout(quick)).toBe((5 + 3) * 60_000);
   expect(campaignTimeout(slow)).toBe((240 + 3) * 60_000);
 });
+
+test('a case that names its own budget gets that clock instead', () => {
+  const timed = caseWith({ followed: true, slow: true });
+  timed.expect.completed = { inputs: [], outputs: [], within: 30 };
+
+  const fixture = { cases: [timed] } as Parameters<typeof campaignTimeout>[0];
+
+  expect(campaignTimeout(fixture)).toBe((30 + 3) * 60_000);
+});

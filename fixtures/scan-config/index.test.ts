@@ -188,3 +188,18 @@ test('a slow flag that is not a boolean is rejected', () => {
     )
   ).toThrow(/slow must be true or false/);
 });
+
+test('a completed run can name the minutes it is given', () => {
+  const parsed = parseScanConfigFixture(
+    fixtureWithCompleted({ inputs: [], outputs: [], within: 30 }),
+    'ok.json'
+  );
+
+  expect(parsed.cases[0]?.expect.completed?.within).toBe(30);
+});
+
+test('a budget that is not a positive number of minutes is rejected', () => {
+  expect(() =>
+    parseScanConfigFixture(fixtureWithCompleted({ inputs: [], outputs: [], within: 0 }), 'bad.json')
+  ).toThrow(/within must be the number of minutes/);
+});

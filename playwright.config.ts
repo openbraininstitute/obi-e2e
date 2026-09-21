@@ -128,7 +128,8 @@ export default defineConfig({
      * simulation, a mesh skeletonisation. They are followed to the end, so this
      * project needs a job with hours rather than minutes — see
      * `.github/workflows/e2e-slow.yml`. Each test's own timeout comes from its
-     * seed's `expect.completed.within`.
+     * seed: `expect.completed.within` when the case names one, four hours when
+     * it does not.
      */
     {
       name: 'slow',
