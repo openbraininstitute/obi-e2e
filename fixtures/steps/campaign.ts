@@ -16,10 +16,13 @@ import { CREDITS, SLOW } from '../tags';
 const RUN_MINUTES = 5;
 
 /**
- * How long a run marked `slow` may take.
+ * How long a run marked `slow` may take, when its seed names no budget.
  *
  * Generous on purpose: the point of the mark is that nobody wants to guess the
- * number. The job that runs these gets six hours, so this leaves it room.
+ * number. The job that runs these gets six hours, so this leaves it room. A case
+ * somebody has actually timed says `expect.completed.within` instead — four
+ * hours spent on a run that stalled after two minutes is four hours the rest of
+ * the slow suite does not get, and a report nobody reads until the afternoon.
  */
 const SLOW_MINUTES = 240;
 
@@ -60,9 +63,11 @@ function isFollowed(configuration: ScanConfigCase): boolean {
   return configuration.expect.completed !== undefined;
 }
 
-/** How long this case's run may take. */
+/** How long this case's run may take: what its seed measured, or its kind's budget. */
 function runMinutes(configuration: ScanConfigCase): number {
-  return configuration.slow ? SLOW_MINUTES : RUN_MINUTES;
+  return (
+    configuration.expect.completed?.within ?? (configuration.slow ? SLOW_MINUTES : RUN_MINUTES)
+  );
 }
 
 /**
@@ -88,7 +93,7 @@ export function campaignTimeout(fixture: ScanConfigFixture): number {
  * A configuration that says what the finished run holds is followed to "done"
  * and read; one that says nothing only has to start; one marked `launch: false`
  * stops before it starts at all. See `waitForCampaign` for why the wait is a
- * reload rather than a stare.
+ * stare at one page rather than a reload.
  */
 export async function runCampaign(
   page: Page,

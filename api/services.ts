@@ -82,6 +82,7 @@ const DEFINITIONS: Definition[] = [
     label: 'Auth manager',
     envVar: 'AUTH_MANAGER_URL',
     path: '/auth-manager/v1',
+    version: '/version',
     healthBase: (baseUrl) => baseUrl.replace(/\/v\d+$/, ''),
   },
   {
@@ -108,7 +109,7 @@ export function services(): Service[] {
       envVar: definition.envVar,
       baseUrl,
       healthUrl: `${healthBase}${definition.health ?? '/health'}`,
-      versionUrl: definition.version ? `${baseUrl}${definition.version}` : undefined,
+      versionUrl: definition.version ? `${healthBase}${definition.version}` : undefined,
       vpcOnly: definition.vpcOnly ?? false,
     };
   });
