@@ -9,7 +9,18 @@ import type { ScanConfigCase, ScanConfigView } from '../scan-config';
 const LOG_FILE = 'Task logs';
 
 async function checkFiles(panel: Locator, names: string[]): Promise<void> {
-  await expect(panel.locator('[data-file-name]')).toHaveCount(names.length);
+  const files = panel.locator('[data-file-name]');
+
+  // A workflow that gains an output — a run that starts registering its result
+  // as an entity — reports "expected 3, received 4", which names neither the
+  // panel nor what appeared, and reads as a broken test rather than a product
+  // change. Comparing the names prints the difference instead of counting it.
+  await expect(async () => {
+    const shown = await files.evaluateAll((items) =>
+      items.map((item) => item.getAttribute('data-file-name') ?? '')
+    );
+    expect(shown.toSorted()).toEqual(names.toSorted());
+  }).toPass();
 
   for (const name of names) {
     await expect(panel.locator(`[data-file-name="${name}"]`)).toBeVisible();
