@@ -4,7 +4,7 @@
 
 | Trigger                         | Target      | What runs   | Result     |
 | ------------------------------- | ----------- | ----------- | ---------- |
-| Schedule, 07:00 UTC             | staging     | full suite  | Teams card |
+| Schedule, 05:00 UTC             | staging     | full suite  | Teams card |
 | Push to `main`                  | staging     | full suite  | Teams card |
 | `core-web-app-release` dispatch | staging     | full suite  | Teams card |
 | Manual run                      | your choice | your choice | Teams card |
@@ -37,7 +37,7 @@ lab, move credits into it, and delete it at the end, the same as staging.
 The campaigns that are followed to the end but take longer than the nightly
 suite can hold — a microcircuit simulation, a mesh skeletonisation. They carry
 `@slow`, `e2e.yml` leaves them out, and this job gives them six hours on the
-clock instead of forty-five minutes. It starts with the nightly suite at 07:00
+clock instead of forty-five minutes. It starts with the nightly suite at 05:00
 UTC and runs beside it, and can be dispatched by hand as well.
 
 A case opts in with one word in its seed — `"slow": true` — and gets four hours

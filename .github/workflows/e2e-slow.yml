@@ -7,7 +7,7 @@
 # the case names one, four hours where it does not — and this job only has to
 # outlast the slowest of them.
 #
-# It starts with the nightly suite, at 07:00 UTC, and runs beside it rather than
+# It starts with the nightly suite, at 05:00 UTC, and runs beside it rather than
 # after: the two use different projects, so neither waits on the other. A push to
 # main runs it too, so a change to a followed campaign is seen the day it lands
 # instead of the morning after.
@@ -15,7 +15,7 @@ name: E2E (slow)
 
 on:
   schedule:
-    - cron: '0 7 * * *'
+    - cron: '0 5 * * *'
   push:
     branches: [main]
   workflow_dispatch:
@@ -175,7 +175,7 @@ jobs:
     # `always()` has to be in here. An `if:` with no status function is silently
     # ANDed with `success()`, so this job skipped itself on the first failing run
     # it saw — exactly the run whose report people wanted. The rest filters out a
-    # cancellation: this workflow sets `cancel-in-progress: true`, the 07:00 cron
+    # cancellation: this workflow sets `cancel-in-progress: true`, the 05:00 cron
     # evicts a push run in flight, and a cancelled run uploads no artifact for the
     # download step to find. A run that finished, pass or fail, has one.
     if: always() && (needs.run.result == 'success' || needs.run.result == 'failure')
