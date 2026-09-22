@@ -19,6 +19,13 @@ cp .env.local.example .env.staging.local   # fill in the users, LAB_ID, webhook
 bun run test
 ```
 
+`make install` also writes the `playwright-cli` skill (`.claude/skills/` for
+Claude Code, `.agents/skills/` for everything else): the AI opens the app
+with the [Playwright CLI](https://playwright.dev/agent-cli/introduction), not the
+Playwright MCP server. The project's own Playwright provides it, so nothing is
+needed globally — `npm install -g @playwright/cli@latest` only buys you the
+shorter `playwright-cli …` command in your own shell.
+
 Secrets live in `.env.staging.local` and `.env.production.local`, which are
 never committed. URLs live in `.env.staging` and `.env.production`, which are.
 `.env` holds what both share. A value set in your shell wins over every file.
@@ -124,14 +131,18 @@ Green means well formed. Red names the line and the fix.
 
 ## Make the test
 
-In Claude Code:
+In Claude Code, Cursor, or Kiro:
 
 ```text
 /e2e-generate scenarios/data/cell-morphology/browse
 ```
 
-The AI checks the scenario, opens the real app, writes one test per case, runs
-it, and fixes it until it passes. Then:
+The command is one file per agent — `.claude/commands/`, `.cursor/commands/`,
+`.kiro/steering/` — and all three run the same procedure from `prompts/`.
+`AGENTS.md` is `CLAUDE.md`, so the rules are the same wherever you work.
+
+The AI checks the scenario, opens the real app in a headless `playwright-cli`
+browser, writes one test per case, runs it, and fixes it until it passes. Then:
 
 1. Read each test title and its checks. They must match your scenario.
 2. Run `bun run test scenarios/data/cell-morphology/browse`, then `bun run check`.

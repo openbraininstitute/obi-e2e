@@ -41,10 +41,51 @@ bun run test    # or a single spec while iterating
   `@production` only when a test cannot run on the other. A scan-config workflow
   says where it runs in its fixture's `env` list, never with a tag.
 
+## Browsing the app
+
+Use the **Playwright CLI**, never the Playwright MCP server (it is gone from
+this repo): it is headless, the daemon keeps one browser alive across commands,
+and only the snapshot you ask for enters context. The `playwright-cli`
+skill is the reference; `make install` writes it, to `.claude/skills/` and to
+`.agents/skills/` for every other agent. Without
+the global `playwright-cli` command, `bunx --bun playwright cli <command>` does
+the same — never `bunx playwright cli`, that is the Node fallback this repo
+bans.
+
+Browse signed in, in a named session, so no command touches another agent's
+browser:
+
+```bash
+bun run auth                     # writes .e2e-runs/live/auth/{primary,onboarding}.json
+source .env.staging              # or .env.production, for E2E_BASE_URL
+playwright-cli -s=obi open
+playwright-cli -s=obi state-load .e2e-runs/live/auth/primary.json
+playwright-cli -s=obi goto "$E2E_BASE_URL/app/virtual-lab"
+```
+
+An access token lives 60 minutes: a `/app/log-in` redirect means the state is
+stale, so re-run `bun run auth` rather than signing in through the browser.
+Finish with `playwright-cli -s=obi close`.
+
+On the page:
+
+```bash
+playwright-cli -s=obi find "Add to library"       # search the snapshot, don't dump it
+playwright-cli -s=obi --raw eval "JSON.stringify([...document.querySelectorAll('[data-testid]')].map(e=>e.getAttribute('data-testid')))"
+playwright-cli -s=obi --raw eval "el => el.getAttribute('data-testid')" e41
+playwright-cli -s=obi --raw generate-locator e41  # the locator, as a spec would write it
+playwright-cli -s=obi click e41
+playwright-cli -s=obi console                     # errors behind a blank page
+playwright-cli -s=obi requests                    # the 500 behind a stuck tab
+```
+
+Test ids do not show in the snapshot — the `eval` above is how you confirm one
+exists before writing `getByTestId`, and how you find that it does not.
+
 ## Generating and healing tests
 
 Follow `prompts/e2e-generate.md` and `prompts/e2e-heal.md`. Always open the real
-application with the Playwright MCP browser before writing a locator.
+application with the Playwright CLI before writing a locator.
 
 **Never change an expected result to make a run pass.** A wrong result is a
 product bug; report it instead.

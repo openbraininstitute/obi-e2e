@@ -51,7 +51,7 @@ help:
 	@printf "\n$(BOLD)$(CYAN)obi-e2e$(RESET) $(DIM)developer commands$(RESET)\n"
 	@printf "$(DIM)────────────────────────────────────────────────────────────$(RESET)\n\n"
 	@printf "$(BOLD)setup$(RESET)\n"
-	@printf "  $(GREEN)make install$(RESET)                    install dependencies\n"
+	@printf "  $(GREEN)make install$(RESET)                    install dependencies and the agent skill\n"
 	@printf "  $(GREEN)make browsers$(RESET)                   install chromium\n"
 	@printf "\n$(BOLD)scenarios$(RESET)\n"
 	@printf "  $(GREEN)make scenario \"...\"$(RESET)             create a scenario starter\n"
@@ -87,6 +87,7 @@ help:
 
 install:
 	$(call run_step,install dependencies,bun install)
+	$(call run_step,install the playwright-cli agent skill,bunx --bun playwright cli install --skills && bunx --bun playwright cli install --skills=agents)
 
 browsers:
 	$(call run_step,install chromium,bunx playwright install --with-deps chromium)

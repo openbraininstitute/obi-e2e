@@ -20,6 +20,8 @@
     ".e2e-runs",
     "perf/report",
     ".lighthouseci",
-    "tools/casebook/__test__/fixtures"
+    "tools/casebook/__test__/fixtures",
+    ".claude/skills",
+    ".agents"
   ]
 }

@@ -46,8 +46,21 @@ bun run casebook run scenarios/<section>/<name>
 ```
 
 For a failure, read the error and its `Call log`, then the trace (`bun run
-report`, or `playwright show-trace <trace.zip>`). Open the real application
-with the Playwright MCP browser and find what the element is now. Classify:
+report`, or `playwright show-trace <trace.zip>`). On CI there is no trace —
+`error-context.md` is the evidence. Then open the real application with the
+Playwright CLI (`CLAUDE.md` → _Browsing the app_) and find what the element is
+now:
+
+```bash
+bun run auth && source .env.staging
+playwright-cli -s=obi open
+playwright-cli -s=obi state-load .e2e-runs/live/auth/primary.json
+playwright-cli -s=obi goto "$E2E_BASE_URL/<the page the test was on>"
+playwright-cli -s=obi find "<what the locator was looking for>"
+playwright-cli -s=obi console   # and `requests`, before blaming the locator
+```
+
+Classify:
 
 - **Locator drift** — renamed or moved. Update the locator. If it had no test
   id, add one to `core-web-app` rather than chasing a new label.
@@ -61,7 +74,8 @@ with the Playwright MCP browser and find what the element is now. Classify:
 
 ## 4. Finish
 
-Run it three times. It must pass every time. Then `bun run check`.
+Close the browser (`playwright-cli -s=obi close`). Run the test three times:
+it must pass every time. Then `bun run check`.
 
 Report what changed, why, which classification each fix was, and which
 scenario line or test id needs an update.
