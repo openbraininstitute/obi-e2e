@@ -53,15 +53,39 @@ side and the link is gone.
 
 ## 3. Open the real application
 
-Open it with the Playwright MCP browser against `E2E_BASE_URL` and walk every
-step of the case. **Never write a locator from the English alone.** The words
-in quotes are what is on screen; find them there.
+Walk every step of the case in the real app, with the Playwright CLI (`CLAUDE.md`
+→ _Browsing the app_ has the signed-in recipe; the `playwright-cli` skill has the
+commands). **Never write a locator from the English alone.** The words in quotes
+are what is on screen; find them there.
 
-Address elements by test id first. If one is missing, add it to
-`core-web-app` on the branch under test, guard it with a unit test there, and
-say so in the report. Fall back to `getByRole` / `getByLabel` / `getByText`
-only when nothing else identifies the element, and say why in a comment. Never
-CSS classes. `first()` / `nth()` needs a comment.
+```bash
+bun run auth && source .env.staging
+playwright-cli -s=obi open
+playwright-cli -s=obi state-load .e2e-runs/live/auth/primary.json
+playwright-cli -s=obi goto "$E2E_BASE_URL/app/virtual-lab"
+```
+
+Then, per step: `find "<the quoted words>"` for the element, `click`/`fill`/`select`
+on its ref, `find` again for what the `Expect` line names. Search the snapshot with
+`find`; take a full `snapshot` only when you are lost. `console` and `requests` say
+whether a missing element is a locator problem or a backend one — a product bug is
+reported, not worked around.
+
+Address elements by test id first. The snapshot does not show test ids, so read
+them off the page:
+
+```bash
+playwright-cli -s=obi --raw eval "JSON.stringify([...document.querySelectorAll('[data-testid]')].map(e=>e.getAttribute('data-testid')))"
+playwright-cli -s=obi --raw eval "el => el.getAttribute('data-testid')" e41
+```
+
+If one is missing, add it to `core-web-app` on the branch under test, guard it
+with a unit test there, and say so in the report. Fall back to `getByRole` /
+`getByLabel` / `getByText` only when nothing else identifies the element —
+`--raw generate-locator <ref>` writes that fallback for you — and say why in a
+comment. Never CSS classes. `first()` / `nth()` needs a comment.
+
+Close the session when the spec is written: `playwright-cli -s=obi close`.
 
 ## 4. Write the test
 
