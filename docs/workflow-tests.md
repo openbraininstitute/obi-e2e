@@ -77,7 +77,11 @@ For the file format, see [tools/casebook/README.md](../tools/casebook/README.md)
    test cannot deep-link, because the selection lives in `sessionStorage`.
 2. **Check it will not launch half-filled.** The generate button stays disabled.
 3. **Fill it from the seed, and generate.** The results tab opens with one
-   coordinate per grid point, each `created`.
+   coordinate per grid point, each `created`. Generate sends two calls, the
+   grid's size and then the campaign; when the browser drops the first one at
+   the CORS preflight, which it does now and then under load, the test sends
+   that call again from the runner to learn the real status, and presses the
+   button once more only if the service was fine with it.
 4. **Launch it.** Confirm the cost, then follow the coordinate to `done`.
 5. **Read what it produced.** `expect.generated` is what the coordinate holds
    the moment the campaign exists; `expect.completed` is what it holds once the

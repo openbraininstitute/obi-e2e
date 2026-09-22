@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test';
 
 import type { ScanConfigCase } from '../scan-config';
-import { campaignTags, campaignTimeout } from './campaign';
+import { campaignTags, campaignTimeout, replayHeaders } from './campaign';
 
 function caseWith(options: { followed?: boolean; slow?: boolean } = {}): ScanConfigCase {
   return {
@@ -40,4 +40,24 @@ test('a case that names its own budget gets that clock instead', () => {
   const fixture = { cases: [timed] } as Parameters<typeof campaignTimeout>[0];
 
   expect(campaignTimeout(fixture)).toBe((30 + 3) * 60_000);
+});
+
+test('a replay carries what the app set on the call and nothing of the browser', () => {
+  const headers = replayHeaders({
+    authorization: 'Bearer x',
+    'content-type': 'application/json',
+    'virtual-lab-id': 'lab',
+    'project-id': 'project',
+    origin: 'https://main.preview.openbraininstitute.org',
+    referer: 'https://main.preview.openbraininstitute.org/app',
+    'user-agent': 'Mozilla/5.0',
+    'sec-fetch-mode': 'cors',
+  });
+
+  expect(Object.keys(headers).toSorted()).toEqual([
+    'authorization',
+    'content-type',
+    'project-id',
+    'virtual-lab-id',
+  ]);
 });
