@@ -192,7 +192,7 @@ describe('a run that wrote no report', () => {
   });
 });
 
-test('the notice names the variable the suite funded itself from', () => {
+test('the notice names the variable this suite reads', () => {
   const notice = creditNotice(
     { required: 500, assigned: 500, remaining: 0, variable: 'E2E_SLOW_PROJECT_CREDITS' },
     3
