@@ -5,6 +5,8 @@ import * as fs from 'node:fs';
 export type CreditReport = {
   labBalance?: number;
   required: number;
+  /** The environment variable `required` came from; suites read different ones. */
+  variable?: string;
   assigned?: number;
   projectId?: string;
   remaining?: number;

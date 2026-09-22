@@ -186,28 +186,58 @@ export function credentials(role: Role): { username: string; password: string } 
 }
 
 /**
- * Credits the run moves into its project.
+ * What each suite funds its project with when CI names no amount.
  *
  * Only what a campaign actually spends leaves the lab: the teardown deletes the
  * project and the rest goes back, so the number is a ceiling rather than a cost.
  * It has to clear the priciest single launch in the suite, not just the total —
- * the microcircuit simulation is quoted at ~2,300 on its own, and a project
- * holding less than that is refused at launch with an insufficient-funds 403
- * however little the run has spent so far. A whole `@credits` pass spends
- * roughly 3,700 with that one included, so this leaves it half again as much.
+ * a project holding less than one launch's quote is refused with an
+ * insufficient-funds 403 however little the run has spent so far.
  */
-export const PROJECT_CREDITS = readCredits();
+const DEFAULT_CREDITS = { regular: 2_000, slow: 500 } as const;
 
-function readCredits(): number {
-  const raw = process.env.E2E_PROJECT_CREDITS;
-  if (!raw) return 6_000;
+/** The variable each suite reads, so a suite can be refunded without the other. */
+const CREDITS_VARIABLE = {
+  regular: 'E2E_PROJECT_CREDITS',
+  slow: 'E2E_SLOW_PROJECT_CREDITS',
+} as const;
+
+type Suite = keyof typeof DEFAULT_CREDITS;
+
+/**
+ * Which suite is running.
+ *
+ * The slow campaigns have a workflow of their own that selects them by project
+ * — see `.github/workflows/e2e-slow.yml` — and that selection is the only thing
+ * that distinguishes the two runs before any test starts, which is when the
+ * project is funded.
+ */
+export function suiteOf(argv: readonly string[]): Suite {
+  const selected = argv.flatMap((arg, index) =>
+    arg === '--project' ? [argv[index + 1]] : [arg.split('--project=')[1]]
+  );
+
+  return selected.includes('slow') ? 'slow' : 'regular';
+}
+
+/** The credits a suite funds its project with; see {@link DEFAULT_CREDITS}. */
+export function creditsFor(suite: Suite, raw: string | undefined): number {
+  if (!raw) return DEFAULT_CREDITS[suite];
 
   const parsed = Number(raw);
   if (!Number.isFinite(parsed) || parsed <= 0) {
-    throw new Error(`E2E_PROJECT_CREDITS must be a positive number, got "${raw}".`);
+    throw new Error(`${CREDITS_VARIABLE[suite]} must be a positive number, got "${raw}".`);
   }
   return parsed;
 }
+
+const SUITE = suiteOf(process.argv);
+
+/** The variable this run's ceiling came from, for a notice that says where to raise it. */
+export const PROJECT_CREDITS_VARIABLE = CREDITS_VARIABLE[SUITE];
+
+/** Credits this run moves into its project. */
+export const PROJECT_CREDITS = creditsFor(SUITE, process.env[PROJECT_CREDITS_VARIABLE]);
 
 export function workspacePath(): string {
   return path.join(RUN_DIR, 'workspace.json');

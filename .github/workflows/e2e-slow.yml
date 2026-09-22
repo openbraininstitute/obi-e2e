@@ -66,7 +66,7 @@ jobs:
       LAB_ID: >-
         ${{ inputs.environment == 'production' && secrets.LAB_ID_PRODUCTION
             || secrets.LAB_ID_STAGING }}
-      E2E_PROJECT_CREDITS: ${{ vars.E2E_PROJECT_CREDITS }}
+      E2E_SLOW_PROJECT_CREDITS: ${{ vars.E2E_SLOW_PROJECT_CREDITS }}
       PLAYWRIGHT_BROWSER: chromium
     steps:
       # The name of the Teams thread this run posts into. Both workflows compute

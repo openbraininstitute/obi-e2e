@@ -305,7 +305,7 @@ export function creditNotice(credits: CreditReport | undefined, failed: number):
     return (
       `The project ran out of credits: it was given ${credits.assigned ?? credits.required} and ` +
       `finished with ${credits.remaining}. Tests that needed to launch something would have ` +
-      'failed for that reason. Raise E2E_PROJECT_CREDITS.'
+      `failed for that reason. Raise ${credits.variable ?? 'E2E_PROJECT_CREDITS'}.`
     );
   }
 

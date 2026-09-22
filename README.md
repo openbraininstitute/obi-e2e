@@ -181,8 +181,9 @@ bun run check                         # format, lint, types, unit tests
    the run with its name, not with a wall of red tests.
 2. Signs in each user once and saves the session.
 3. Creates a project in the lab, named after the run, and moves credits into it
-   (`E2E_PROJECT_CREDITS`, default 2000). Only tests that spend credits need
-   this. When the lab cannot pay, those do not run and everything else does.
+   (`E2E_PROJECT_CREDITS`, default 2000; `E2E_SLOW_PROJECT_CREDITS`, default
+   500, when the run selects `--project=slow`). Only tests that spend credits
+   need this. When the lab cannot pay, those do not run and everything else does.
 4. Runs the tests.
 5. Returns the credits and deletes the project. This also happens when you stop
    the run with Ctrl+C, when the run is killed, and when CI cancels the job. If
@@ -228,6 +229,7 @@ The Teams card: [docs/teams-reporting.md](docs/teams-reporting.md).
 | `E2E_BASE_URL`                                        | the app under test. Default: staging                |
 | `E2E_ENV`                                             | `staging` or `production`                           |
 | `E2E_PROJECT_CREDITS`                                 | credits moved into the run's project. Default: 2000 |
+| `E2E_SLOW_PROJECT_CREDITS`                            | the same, for `--project=slow`. Default: 500        |
 | `MS_TEAMS_WEBHOOK_URI`                                | where the result card goes                          |
 | `PLAYWRIGHT_BROWSER`                                  | `chromium` (default), `firefox` or `webkit`         |
 | `E2E_LOG_FORMAT` / `E2E_LOG_LEVEL`                    | `text` or `json`. `info` by default                 |
