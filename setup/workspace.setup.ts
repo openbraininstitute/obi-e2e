@@ -6,6 +6,7 @@ import {
   commit,
   hasCredentials,
   PROJECT_CREDITS,
+  PROJECT_CREDITS_VARIABLE,
   requireEnv,
   RUN_ID,
   RUN_STARTED_AT,
@@ -27,7 +28,7 @@ setup('prepare a project for this run', async () => {
   const required = PROJECT_CREDITS;
 
   const labBalance = await api.labBalance(labId);
-  await recordCredits({ labBalance, required });
+  await recordCredits({ labBalance, required, variable: PROJECT_CREDITS_VARIABLE });
 
   const affordable = labBalance >= required;
   if (!affordable) {

@@ -10,7 +10,7 @@ and post them
 │  Open Brain Institute Platform e2e             │
 │  Run       2026-09-18-schedule-1fe9550-staging │
 │  Suites    regular, slow                       │
-│  Started   07:00 UTC                           │
+│  Started   05:00 UTC                           │
 │  Finished  [Regular ✓] [Slow ✗]                │  ← badges grow
 └────────────────────────────────────────────────┘
    └─ reply: the regular suite's summary card
