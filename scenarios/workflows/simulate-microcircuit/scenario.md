@@ -9,10 +9,11 @@ nothing, so the only thing the run reports is spikes. Neuron sets, timestamps
 and recordings are all left empty: the circuit's own defaults are what is under
 test here.
 
-A run takes about eleven minutes and costs around 300 credits, so the case is
+A run takes about thirteen minutes and costs around 300 credits, so the case is
 marked `slow` in the seed and belongs to the slow job rather than the nightly
-suite. The seed also says which deployments the workflow runs on, so no line
-here does.
+suite. The seed gives it forty of those minutes, because one that has stalled
+looks exactly like one that is still going and only the clock tells them apart.
+The seed also says which deployments the workflow runs on, so no line here does.
 
 User: credits
 Seed: seed.json

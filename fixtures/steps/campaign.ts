@@ -1,8 +1,11 @@
 /** Filling a scan config from its seed, generating the campaign, and following it. */
 
+import { describe } from '@api/errors';
+import { request as send } from '@api/http';
 import { scanConfigEditor, scanConfigResults } from '@locators/scan-config';
 import { lowCredits } from '@locators/workflows';
 import { expect, type Locator, type Page, type Request, type Response } from '@playwright/test';
+import { Result } from 'better-result';
 
 import { checkCompletedOutput, checkGeneratedFiles } from '../checks/campaign-output';
 import { NO_NAVIGATION } from '../interactions';
@@ -16,10 +19,13 @@ import { CREDITS, SLOW } from '../tags';
 const RUN_MINUTES = 5;
 
 /**
- * How long a run marked `slow` may take.
+ * How long a run marked `slow` may take, when its seed names no budget.
  *
  * Generous on purpose: the point of the mark is that nobody wants to guess the
- * number. The job that runs these gets six hours, so this leaves it room.
+ * number. The job that runs these gets six hours, so this leaves it room. A case
+ * somebody has actually timed says `expect.completed.within` instead — four
+ * hours spent on a run that stalled after two minutes is four hours the rest of
+ * the slow suite does not get, and a report nobody reads until the afternoon.
  */
 const SLOW_MINUTES = 240;
 
@@ -48,6 +54,22 @@ const SETTLED = /^(done|error)$/i;
 const GENERATES_THE_CAMPAIGN = /scan-config-generate-grid/;
 
 /**
+ * The POST the Generate button sends first: how many coordinates the grid
+ * would hold, refused above a hundred. The campaign itself is only sent once
+ * this has been answered.
+ */
+const COUNTS_THE_GRID = /grid-scan-coordinate-count/;
+
+/** The headers the app put on a call. The rest are the browser's, and the runner's fetch sets its own. */
+const APP_HEADERS = new Set([
+  'authorization',
+  'accept',
+  'content-type',
+  'virtual-lab-id',
+  'project-id',
+]);
+
+/**
  * The POST behind the Launch button.
  *
  * Which service runs a campaign depends on the workflow: obi-one launches a
@@ -60,9 +82,11 @@ function isFollowed(configuration: ScanConfigCase): boolean {
   return configuration.expect.completed !== undefined;
 }
 
-/** How long this case's run may take. */
+/** How long this case's run may take: what its seed measured, or its kind's budget. */
 function runMinutes(configuration: ScanConfigCase): number {
-  return configuration.slow ? SLOW_MINUTES : RUN_MINUTES;
+  return (
+    configuration.expect.completed?.within ?? (configuration.slow ? SLOW_MINUTES : RUN_MINUTES)
+  );
 }
 
 /**
@@ -88,7 +112,7 @@ export function campaignTimeout(fixture: ScanConfigFixture): number {
  * A configuration that says what the finished run holds is followed to "done"
  * and read; one that says nothing only has to start; one marked `launch: false`
  * stops before it starts at all. See `waitForCampaign` for why the wait is a
- * reload rather than a stare.
+ * stare at one page rather than a reload.
  */
 export async function runCampaign(
   page: Page,
@@ -104,9 +128,7 @@ export async function runCampaign(
   await expect(editor.submit).toHaveText(words.generate);
   await expect(editor.submit).toBeEnabled();
 
-  const generated = callSent(page, GENERATES_THE_CAMPAIGN);
-  await editor.submit.click(NO_NAVIGATION);
-  await expectAccepted(page, generated, 'Generating the campaign');
+  await generateCampaign(page, editor.submit);
 
   // The completed response carries the campaign ID, but the editor enables the
   // tab only once it has read the grid back: server work, so the call's clock.
@@ -155,6 +177,60 @@ export async function runCampaign(
 }
 
 /**
+ * Presses Generate and waits for the campaign to exist.
+ *
+ * The button sends two calls, the grid's size and then the campaign, and it is
+ * the first that the browser drops now and then under eight workers — "Response
+ * to preflight request doesn't pass access control check" — after which the app
+ * stops with the button still offered and nothing else sent. Two nightlies read
+ * that as a button that sent nothing. A dropped call carries no status, so the
+ * same request is sent again from here, where there is no CORS to hide it: a
+ * service that answers means the browser dropped a call the service was fine
+ * with, and the button is pressed once more; one that refuses is reported with
+ * the status the browser could not show. Counting a grid changes nothing on the
+ * server, which is what makes both the replay and the second press safe.
+ */
+async function generateCampaign(page: Page, submit: Locator): Promise<void> {
+  const generated = callSent(page, GENERATES_THE_CAMPAIGN, COUNTS_THE_GRID);
+  await submit.click(NO_NAVIGATION);
+  const outcome = await generated;
+
+  if (outcome === null || !('dropped' in outcome) || !COUNTS_THE_GRID.test(outcome.request.url())) {
+    await expectAccepted(page, Promise.resolve(outcome), 'Generating the campaign');
+    return;
+  }
+
+  const replayed = await send(outcome.request.url(), {
+    method: outcome.request.method(),
+    headers: replayHeaders(outcome.request.headers()),
+    body: outcome.request.postData(),
+    timeoutMs: CALL_TIMEOUT,
+  });
+
+  if (Result.isError(replayed)) {
+    throw new Error(
+      `Generating the campaign never reached the service: ${outcome.dropped}. The grid count sent ` +
+        `again from the runner got ${describe(replayed.error)}.${alsoSeen(page)}`
+    );
+  }
+
+  const again = callSent(page, GENERATES_THE_CAMPAIGN, COUNTS_THE_GRID);
+  await submit.click(NO_NAVIGATION);
+  await expectAccepted(
+    page,
+    again,
+    `Generating the campaign a second time, after the browser dropped the grid count (${outcome.dropped}),`
+  );
+}
+
+/** Only what the app itself set, so a call can be sent again from outside the browser. */
+export function replayHeaders(headers: Record<string, string>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(headers).filter(([name]) => APP_HEADERS.has(name.toLowerCase()))
+  );
+}
+
+/**
  * The call a button sends, watched from before the click.
  *
  * The app swallows what these answer — a 403 refusing a launch reaches the
@@ -165,13 +241,18 @@ export async function runCampaign(
  * arrive; `expectAccepted()` waits for the response body before allowing a UI
  * assertion that depends on it.
  */
-function callSent(page: Page, url: RegExp): Promise<CallOutcome> {
-  const matches = (request: Request) => request.method() === 'POST' && url.test(request.url());
+function callSent(page: Page, url: RegExp, first?: RegExp): Promise<CallOutcome> {
+  const matches = (request: Request) =>
+    request.method() === 'POST' &&
+    (url.test(request.url()) || (first?.test(request.url()) ?? false));
 
+  // The call itself answering, or either call refused. A call that has to be
+  // answered before it is not the answer.
   const answered = page
-    .waitForResponse((response) => matches(response.request()), {
-      timeout: CALL_TIMEOUT,
-    })
+    .waitForResponse(
+      (response) => matches(response.request()) && (!response.ok() || url.test(response.url())),
+      { timeout: CALL_TIMEOUT }
+    )
     .then((response): CallOutcome => ({ response }))
     .catch(() => null);
 
@@ -184,6 +265,7 @@ function callSent(page: Page, url: RegExp): Promise<CallOutcome> {
     })
     .then((request): CallOutcome => ({
       dropped: request.failure()?.errorText ?? 'failed',
+      request,
     }))
     .catch(() => null);
 
@@ -191,7 +273,7 @@ function callSent(page: Page, url: RegExp): Promise<CallOutcome> {
 }
 
 /** What a call did: answered, dropped by the browser, or never sent. */
-type CallOutcome = { response: Response } | { dropped: string } | null;
+type CallOutcome = { response: Response } | { dropped: string; request: Request } | null;
 
 /** Fails naming what the service said, rather than what the editor did not do. */
 async function expectAccepted(page: Page, call: Promise<CallOutcome>, what: string): Promise<void> {

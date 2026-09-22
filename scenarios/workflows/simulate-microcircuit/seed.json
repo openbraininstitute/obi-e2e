@@ -70,6 +70,7 @@
           "outputs": []
         },
         "completed": {
+          "within": 40,
           "inputs": [
             "Task configuration",
             "Circuit directory",

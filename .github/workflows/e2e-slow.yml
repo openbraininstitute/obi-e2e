@@ -3,8 +3,9 @@
 # `@slow`, excluded from the nightly job, and run here on their own with hours
 # rather than minutes on the clock.
 #
-# Each test's own budget comes from its seed's `expect.completed.within`; this
-# job only has to outlast the slowest of them.
+# Each test's own budget comes from its seed — `expect.completed.within` where
+# the case names one, four hours where it does not — and this job only has to
+# outlast the slowest of them.
 #
 # It starts with the nightly suite, at 07:00 UTC, and runs beside it rather than
 # after: the two use different projects, so neither waits on the other. A push to
@@ -30,12 +31,13 @@ on:
     types: [core-web-app-release]
 
 concurrency:
-  # The newest request wins: a push supersedes whatever is still running, rather
-  # than queueing six hours behind it. The cost is that the run being replaced has
-  # already spent the project's credits on its launches and reports nothing — and
-  # the 07:00 cron shares this group, so it will evict a push run in flight.
+  # Runs queue rather than supersede, the same choice `e2e.yml` made and for the
+  # same reason: the run being replaced has already spent the project's credits on
+  # its launches, and a cancelled run uploads no artifact, so it reports nothing
+  # to Teams and nothing to the dashboard. Only a manual dispatch supersedes the
+  # one before it.
   group: ${{ github.workflow }}-${{ inputs.environment || 'staging' }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'workflow_dispatch' }}
 
 permissions:
   contents: read
@@ -137,6 +139,12 @@ jobs:
         if: always()
         run: cat test-results/summary.md >> "$GITHUB_STEP_SUMMARY"
 
+      # Same as the regular suite: without this the dashboard has no scenario to
+      # open beside a slow failure, which is the half of a run it explains least.
+      - name: Collect the scenarios that failed
+        if: always()
+        run: bun scripts/ci/collect-scenarios.ts test-results/results.json playwright-report
+
       - id: report
         uses: actions/upload-artifact@v4
         if: always()
@@ -164,11 +172,13 @@ jobs:
 
   publish:
     needs: run
-    # Not `always()`. This workflow sets `cancel-in-progress: true`, so the 07:00
-    # cron evicts a push run in flight — and a cancelled run uploads no artifact,
-    # which would fail the download step and turn the job red for a cancellation
-    # nobody made by mistake. A run that finished, pass or fail, has a report.
-    if: needs.run.result == 'success' || needs.run.result == 'failure'
+    # `always()` has to be in here. An `if:` with no status function is silently
+    # ANDed with `success()`, so this job skipped itself on the first failing run
+    # it saw — exactly the run whose report people wanted. The rest filters out a
+    # cancellation: this workflow sets `cancel-in-progress: true`, the 07:00 cron
+    # evicts a push run in flight, and a cancelled run uploads no artifact for the
+    # download step to find. A run that finished, pass or fail, has one.
+    if: always() && (needs.run.result == 'success' || needs.run.result == 'failure')
     runs-on: ubuntu-latest
     permissions:
       contents: write
