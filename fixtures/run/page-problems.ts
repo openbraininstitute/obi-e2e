@@ -10,9 +10,6 @@
  *
  * The terminal prints only the first lines of an attachment. The whole list is
  * in the HTML report.
- *
- * Watching the page this closely also catches the one complaint worth acting
- * on rather than recording — see {@link STALE_BUNDLE}.
  */
 
 import type { Page, TestInfo } from '@playwright/test';
@@ -27,14 +24,9 @@ const REASON_LENGTH = 300;
 const KNOWN_NOISE = /antd: compatible/;
 
 /**
- * A deploy landing mid-run replaces the bundle, and the page still open asks
- * for chunks that are no longer served.
- *
- * Staging redeploys whenever main merges, so a nightly overlaps one every few
- * runs. The 404 reaches React as a boundary that never resolves, and from
- * there every locator on that page times out — a whole scenario reads as
- * drifted selectors. One reload fetches the HTML the new bundle names, which
- * is what a person hitting this would do.
+ * A deploy mid-run leaves the open page asking for chunks that are no longer
+ * served, and every locator on it then times out. One reload fetches the HTML
+ * the new bundle names.
  */
 const STALE_BUNDLE = /ChunkLoadError|Loading (?:CSS )?chunk \S+ failed/;
 
@@ -87,7 +79,7 @@ export function watchPage(page: Page): void {
     add(`${request.method()} ${request.url()} → ${request.failure()?.errorText ?? 'failed'}`);
   });
 
-  // Once per page: a second failure against fresh HTML is not a stale bundle.
+  // Once: a second failure against fresh HTML is not a stale bundle.
   let reloaded = false;
   const reloadOnce = (text: string): void => {
     if (reloaded || !STALE_BUNDLE.test(text) || page.isClosed()) return;
