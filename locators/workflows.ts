@@ -58,8 +58,11 @@ export function workflowBrowse(page: Page) {
     prerequisite: (name: string): Locator =>
       page.getByRole('radio').or(page.getByRole('button')).filter({ hasText: name }).first(),
 
+    // The role fallbacks hold until the test id ships to staging; the disabled
+    // form is a button, the enabled one an asChild link carrying the same id.
     useModel: page
-      .getByRole('button', { name: 'Use model' })
+      .getByTestId('workflow-use-model')
+      .or(page.getByRole('button', { name: 'Use model' }))
       .or(page.getByRole('link', { name: 'Use model' })),
 
     useSelection: page.getByTestId('workflow-browse-use-selection').getByRole('button', {

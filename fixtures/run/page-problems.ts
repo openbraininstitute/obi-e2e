@@ -10,6 +10,9 @@
  *
  * The terminal prints only the first lines of an attachment. The whole list is
  * in the HTML report.
+ *
+ * Watching the page this closely also catches the one complaint worth acting
+ * on rather than recording — see {@link STALE_BUNDLE}.
  */
 
 import type { Page, TestInfo } from '@playwright/test';
@@ -22,6 +25,18 @@ const REASON_LENGTH = 300;
 
 /** What the app logs on every page, whether or not anything is wrong. */
 const KNOWN_NOISE = /antd: compatible/;
+
+/**
+ * A deploy landing mid-run replaces the bundle, and the page still open asks
+ * for chunks that are no longer served.
+ *
+ * Staging redeploys whenever main merges, so a nightly overlaps one every few
+ * runs. The 404 reaches React as a boundary that never resolves, and from
+ * there every locator on that page times out — a whole scenario reads as
+ * drifted selectors. One reload fetches the HTML the new bundle names, which
+ * is what a person hitting this would do.
+ */
+const STALE_BUNDLE = /ChunkLoadError|Loading (?:CSS )?chunk \S+ failed/;
 
 /** Bundles, fonts and images say nothing about why a test failed. */
 const NOT_WORTH_REPORTING = /\/(?:_next|__nextjs)\/|\.(?:png|jpe?g|svg|woff2?|css|js)(?:\?|$)/;
@@ -72,7 +87,19 @@ export function watchPage(page: Page): void {
     add(`${request.method()} ${request.url()} → ${request.failure()?.errorText ?? 'failed'}`);
   });
 
-  page.on('pageerror', (error) => add(`uncaught: ${error.message}`));
+  // Once per page: a second failure against fresh HTML is not a stale bundle.
+  let reloaded = false;
+  const reloadOnce = (text: string): void => {
+    if (reloaded || !STALE_BUNDLE.test(text) || page.isClosed()) return;
+    reloaded = true;
+    add('the bundle changed under the page; reloading once');
+    void page.reload().catch(() => {});
+  };
+
+  page.on('pageerror', (error) => {
+    add(`uncaught: ${error.message}`);
+    reloadOnce(error.message);
+  });
 
   // A crashed tab makes every later step fail for a reason of its own.
   page.on('crash', () => add('the browser tab crashed'));
@@ -86,6 +113,7 @@ export function watchPage(page: Page): void {
     if (text === '' || KNOWN_NOISE.test(text)) return;
 
     add(`console: ${text.slice(0, REASON_LENGTH)}`);
+    reloadOnce(text);
   });
 }
 

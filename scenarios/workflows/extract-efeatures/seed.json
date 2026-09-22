@@ -260,7 +260,12 @@
         },
         "completed": {
           "inputs": ["Task configuration", "obi_one_coordinate.json"],
-          "outputs": ["Task logs", "extracted_features.json", "figures"]
+          "outputs": [
+            "Task logs",
+            "EFeature Extraction Result — E2E e-feature extraction",
+            "extracted_features.json",
+            "figures"
+          ]
         }
       }
     }
