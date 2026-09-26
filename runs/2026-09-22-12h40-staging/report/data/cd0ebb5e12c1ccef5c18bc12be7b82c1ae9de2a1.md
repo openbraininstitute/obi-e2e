@@ -1,0 +1,213 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: scenarios/data/state-persistence/state-persistence.spec.ts >> What the listing remembers >> Leaving the section keeps the listing as it was
+- Location: scenarios/data/state-persistence/state-persistence.spec.ts:71:2
+
+# Error details
+
+```
+Error: expect(locator).toBeVisible() failed
+
+Locator: getByTestId('data-table-container').getByRole('gridcell').first()
+Expected: visible
+Timeout: 30000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "to.be.visible" with timeout 30000ms
+  - waiting for getByTestId('data-table-container').getByRole('gridcell').first()
+
+```
+
+```yaml
+- menubar "t1/e2e-35725344220-1":
+  - button "CI Test User":
+    - img "UserFilled"
+  - button "t1":
+    - heading "t1" [level=3]
+  - img
+  - button "e2e-35725344220-1"
+  - button "toggle-workspace-panel":
+    - img
+- link "Coins 6000.00":
+  - /url: /app/virtual-lab/0f1a91f7-e871-4780-8f94-79ae61d32d51/484ce30e-5b9a-4057-8574-485d9f03a06e/credits
+  - img "Coins"
+  - text: "6000.00"
+- link "Home":
+  - /url: /app/virtual-lab/0f1a91f7-e871-4780-8f94-79ae61d32d51/484ce30e-5b9a-4057-8574-485d9f03a06e
+  - img "Home"
+- link "Data Explore":
+  - /url: /app/virtual-lab/0f1a91f7-e871-4780-8f94-79ae61d32d51/484ce30e-5b9a-4057-8574-485d9f03a06e/data
+  - text: Data
+  - img "Explore"
+- link "Workflows Workflow":
+  - /url: /app/virtual-lab/0f1a91f7-e871-4780-8f94-79ae61d32d51/484ce30e-5b9a-4057-8574-485d9f03a06e/workflows
+  - text: Workflows
+  - img "Workflow"
+- link "Notebooks Notebook":
+  - /url: /app/virtual-lab/0f1a91f7-e871-4780-8f94-79ae61d32d51/484ce30e-5b9a-4057-8574-485d9f03a06e/notebooks
+  - text: Notebooks
+  - img "Notebook"
+- link "Reports":
+  - /url: /app/virtual-lab/0f1a91f7-e871-4780-8f94-79ae61d32d51/484ce30e-5b9a-4057-8574-485d9f03a06e/reports
+- link:
+  - /url: /app/virtual-lab/0f1a91f7-e871-4780-8f94-79ae61d32d51/484ce30e-5b9a-4057-8574-485d9f03a06e/help
+- text: Help
+- img "Feedback star"
+- text: Feedback
+- tablist:
+  - tab "Public" [selected]
+  - tab "Project"
+- tablist:
+  - tab "Experimental" [selected]
+  - tab "Model"
+  - tab "Simulations"
+- button "Morphology warning":
+  - text: Morphology
+  - img "warning"
+- button "Single cell electrophysiology warning":
+  - text: Single cell electrophysiology
+  - img "warning"
+- button "Ion channel electrophysiology warning":
+  - text: Ion channel electrophysiology
+  - img "warning"
+- button "Neuron density warning":
+  - text: Neuron density
+  - img "warning"
+- button "Bouton density warning":
+  - text: Bouton density
+  - img "warning"
+- button "Synapse per connection warning":
+  - text: Synapse per connection
+  - img "warning"
+- button "EM mesh warning":
+  - text: EM mesh
+  - img "warning"
+- img "warning"
+- paragraph: An error occurred while fetching "Morphology" data for this region. We are sorry about the inconvenience. Please contact support.
+- button "Contact Support"
+- button "expand AI assistant":
+  - img
+  - text: OBI Assistant
+- alert
+```
+
+# Test source
+
+```ts
+  1   | import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
+  2   | import { routes } from '@fixtures/routes';
+  3   | import { setColumn } from '@fixtures/steps/listing-columns';
+  4   | import { AUTHENTICATED } from '@fixtures/tags';
+  5   | import { expect, test } from '@fixtures/test';
+  6   | import { WIDE_VIEWPORT } from '@fixtures/viewport';
+  7   | import { dataView } from '@locators/data-view';
+  8   | import { entityListing } from '@locators/listing';
+  9   | 
+  10  | const SLUG = entitySlug(Type.CellMorphology);
+  11  | const SEARCH = 'Sst-IRES';
+  12  | 
+  13  | test.use(WIDE_VIEWPORT);
+  14  | 
+  15  | test.describe('What the listing remembers', () => {
+  16  |   test.beforeEach(async ({ page, workspace }) => {
+  17  |     const listing = entityListing(page);
+  18  | 
+  19  |     await page.goto(routes.dataEntity(workspace.labId, workspace.projectId, SLUG));
+  20  | 
+> 21  |     await expect(listing.cells.first()).toBeVisible();
+      |                                        ^ Error: expect(locator).toBeVisible() failed
+  22  | 
+  23  |     await listing.search.clear();
+  24  |     await expect(listing.resultCount).toHaveText(/^6,225 results/);
+  25  |   });
+  26  | 
+  27  |   async function searchAndOpenOne(page: Parameters<typeof dataView>[0]) {
+  28  |     const listing = entityListing(page);
+  29  |     const view = dataView(page);
+  30  | 
+  31  |     await listing.search.fill(SEARCH);
+  32  |     await expect(listing.resultCount).not.toHaveText(/^6,225 results/);
+  33  |     const filtered = await listing.resultCount.innerText();
+  34  | 
+  35  |     await listing.cells
+  36  |       .filter({ hasText: new RegExp(SEARCH) })
+  37  |       .first()
+  38  |       .click();
+  39  |     await view.viewDetails.click();
+  40  |     await page.waitForURL(/\/data\/view\//);
+  41  | 
+  42  |     return filtered;
+  43  |   }
+  44  | 
+  45  |   test(
+  46  |     'The close button brings the listing back as it was',
+  47  |     { tag: AUTHENTICATED },
+  48  |     async ({ page }) => {
+  49  |       const listing = entityListing(page);
+  50  |       const filtered = await searchAndOpenOne(page);
+  51  | 
+  52  |       await dataView(page).close.click();
+  53  |       await page.waitForURL(/browse\/entity/);
+  54  | 
+  55  |       await expect(listing.search).toHaveValue(SEARCH);
+  56  |       await expect(listing.resultCount).toHaveText(filtered);
+  57  |     }
+  58  |   );
+  59  | 
+  60  |   test('The breadcrumb starts the listing fresh', { tag: AUTHENTICATED }, async ({ page }) => {
+  61  |     const listing = entityListing(page);
+  62  |     await searchAndOpenOne(page);
+  63  | 
+  64  |     await dataView(page).breadcrumbLink('Morphology').click();
+  65  |     await page.waitForURL(/browse\/entity/);
+  66  | 
+  67  |     await expect(listing.search).toHaveValue('');
+  68  |     await expect(listing.resultCount).toHaveText(/^6,225 results/);
+  69  |   });
+  70  | 
+  71  |   test(
+  72  |     'Leaving the section keeps the listing as it was',
+  73  |     { tag: AUTHENTICATED },
+  74  |     async ({ page, workspace }) => {
+  75  |       const listing = entityListing(page);
+  76  | 
+  77  |       await listing.search.fill(SEARCH);
+  78  |       await expect(listing.resultCount).not.toHaveText(/^6,225 results/);
+  79  |       const filtered = await listing.resultCount.innerText();
+  80  | 
+  81  |       await page.goto(`/app/virtual-lab/${workspace.labId}/${workspace.projectId}/workflows`);
+  82  |       await page.goto(routes.dataEntity(workspace.labId, workspace.projectId, SLUG));
+  83  | 
+  84  |       await expect(listing.search).toHaveValue(SEARCH);
+  85  |       await expect(listing.resultCount).toHaveText(filtered);
+  86  |     }
+  87  |   );
+  88  | 
+  89  |   test('The column layout outlives a fresh start', { tag: AUTHENTICATED }, async ({ page }) => {
+  90  |     const listing = entityListing(page);
+  91  |     const column = 'Contributors';
+  92  | 
+  93  |     await setColumn(page, column, false);
+  94  |     await expect(listing.columnToggle(column)).not.toBeChecked();
+  95  |     await expect(listing.columnHeader(column)).toBeHidden();
+  96  | 
+  97  |     await searchAndOpenOne(page);
+  98  |     await dataView(page).breadcrumbLink('Morphology').click();
+  99  |     await page.waitForURL(/browse\/entity/);
+  100 | 
+  101 |     await expect(listing.search).toHaveValue('');
+  102 |     await expect(listing.columnHeader(column)).toBeHidden();
+  103 | 
+  104 |     await setColumn(page, column, true);
+  105 |     await expect(listing.columnHeader(column)).toBeVisible();
+  106 |   });
+  107 | });
+  108 | 
+```

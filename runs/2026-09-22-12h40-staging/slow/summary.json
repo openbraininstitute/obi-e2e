@@ -1,0 +1,122 @@
+{
+  "passed": 5,
+  "failed": 1,
+  "flaky": 0,
+  "skipped": 3,
+  "durationMs": 2416635,
+  "environment": "staging",
+  "baseUrl": "https://main.preview.openbraininstitute.org",
+  "browser": "chromium",
+  "commit": "729a3e5d339eeb7672a67d426b917e7c4c6e02fd",
+  "runUrl": "https://github.com/openbraininstitute/obi-e2e/actions/runs/35725344281",
+  "reportUrl": "",
+  "trigger": "On deploy",
+  "failures": [
+    {
+      "title": "scenarios/workflows/simulate-microcircuit/simulate-microcircuit.spec.ts › Microcircuit simulation › Generate a simulation campaign and launch it: two somatic current clamps, on the circuit's own defaults",
+      "file": "scenarios/workflows/simulate-microcircuit/simulate-microcircuit.spec.ts",
+      "line": 40,
+      "project": "slow",
+      "error": "Error: The campaign is still \"Running\"."
+    }
+  ],
+  "totalFailures": 1,
+  "services": [
+    {
+      "key": "entitycore",
+      "label": "Entity core",
+      "version": "2026.9.1",
+      "status": "healthy"
+    },
+    {
+      "key": "virtual-lab",
+      "label": "Virtual lab manager",
+      "status": "healthy"
+    },
+    {
+      "key": "obi-one",
+      "label": "OBI One",
+      "version": "2026.9.4",
+      "status": "healthy"
+    },
+    {
+      "key": "circuit",
+      "label": "Circuit",
+      "version": "2026.9.0",
+      "status": "healthy"
+    },
+    {
+      "key": "notebook",
+      "label": "Notebook service",
+      "status": "healthy"
+    },
+    {
+      "key": "thumbnail",
+      "label": "Thumbnail generation",
+      "status": "healthy"
+    },
+    {
+      "key": "simulator",
+      "label": "Small scale simulator",
+      "status": "healthy"
+    },
+    {
+      "key": "ai-agent",
+      "label": "AI agent",
+      "version": "0.1.26",
+      "status": "healthy"
+    },
+    {
+      "key": "auth-manager",
+      "label": "Auth manager",
+      "version": "2026.08.05.1",
+      "status": "healthy"
+    },
+    {
+      "key": "launch-system",
+      "label": "Launch system",
+      "status": "skipped",
+      "problem": "reachable only inside the VPC"
+    }
+  ],
+  "features": [
+    {
+      "name": "Brain region simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    },
+    {
+      "name": "Microcircuit simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 1,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 2404931
+    },
+    {
+      "name": "Whole brain simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    }
+  ],
+  "credits": {
+    "labBalance": 19707.2,
+    "required": 6000,
+    "projectId": "7a4aa147-eb10-4e39-891e-2b9c1909e32a",
+    "assigned": 6000,
+    "remaining": 6000,
+    "spent": 0,
+    "reversed": "ok",
+    "returned": 6000,
+    "removed": "ok"
+  }
+}
