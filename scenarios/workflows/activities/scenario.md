@@ -25,7 +25,7 @@ Expected:
 - There is a box to search activities by name
 - There is a way to filter the columns
 
-## The category picker offers all five categories
+## The category picker offers all six categories
 
 Precondition:
 
@@ -39,6 +39,7 @@ Expected:
 
 - "Build" is offered
 - "Simulate" is offered
+- "Extract" is offered
 - "Process data" is offered
 - "Optimize" is offered
 - "Validate" is offered
