@@ -10,7 +10,7 @@ on:
       environment:
         description: Target environment
         type: choice
-        options: [staging, production]
+        options: [preview, staging, production]
         default: staging
       grep:
         description: Only run tests matching this tag or title (e.g. @credits)
@@ -18,15 +18,25 @@ on:
         default: ''
   repository_dispatch:
     # `core-web-app` fires this when it releases, with the tag in
-    # `client_payload.release`. It is the only cross-repo trigger: the release
-    # goes to staging, like every other unattended run.
-    types: [core-web-app-release]
+    # `client_payload.release`. The release goes to staging, like every other
+    # unattended run.
+    #
+    # `core-web-app-main` is fired on every merge to `core-web-app`'s main, with
+    # the merge commit in `client_payload.commit`, once the main preview serves
+    # that commit — the waiting happens there. It tests the main preview.
+    types: [core-web-app-release, core-web-app-main]
 
 # Pull requests are not tested here for the time being: the suite runs against
 # staging and production only. Putting per-PR runs back means restoring the
 # `pull_request` trigger, or adding the `e2e-preview` type that
 # `pr-label-bridge.example.yml` fires to the dispatch above — see git history
 # for both.
+#
+# Three targets, each with its URL in a repository variable: `preview`
+# (PREVIEW_APP_URI, the main branch's Amplify preview), `staging`
+# (STAGING_APP_URI) and `production` (PRODUCTION_APP_URI). The preview runs on
+# the staging backend, so it signs in with the staging secrets and skips what
+# `@production` marks.
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.action }}
@@ -51,17 +61,21 @@ jobs:
           EVENT: ${{ github.event_name }}
           INPUT_ENV: ${{ inputs.environment }}
           INPUT_GREP: ${{ inputs.grep }}
+          ACTION: ${{ github.event.action }}
         run: |
           case "$EVENT" in
             schedule)
               # Production is off until its credentials exist. To bring it back, add
               # {name:"production",environment:"production",grep:""} to this list.
               runs=$(jq -cn '[{name:"staging",environment:"staging",grep:""}]') ;;
+            repository_dispatch)
+              env=$([[ "$ACTION" == core-web-app-main ]] && echo preview || echo staging)
+              runs=$(jq -cn --arg env "$env" '[{name:$env,environment:$env,grep:""}]') ;;
             workflow_dispatch)
               runs=$(jq -cn --arg env "$INPUT_ENV" --arg grep "$INPUT_GREP" \
                 '[{name:$env,environment:$env,grep:$grep}]') ;;
             *)
-              # A push or a release dispatch. Only the arm above reads an input,
+              # A push. Only the manual arm reads an input,
               # and only a manual dispatch can set one, so production stays
               # unreachable from anything automatic.
               runs=$(jq -cn '[{name:"staging",environment:"staging",grep:""}]') ;;
@@ -87,7 +101,12 @@ jobs:
       CI: 'true'
       E2E_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
       E2E_ENVIRONMENT: ${{ matrix.run.environment }}
-      E2E_ENV: ${{ matrix.run.environment }}
+      # The deployment behind the target: the preview is the staging backend.
+      E2E_ENV: ${{ matrix.run.environment == 'production' && 'production' || 'staging' }}
+      E2E_BASE_URL: >-
+        ${{ matrix.run.environment == 'production' && vars.PRODUCTION_APP_URI
+            || matrix.run.environment == 'preview' && vars.PREVIEW_APP_URI
+            || vars.STAGING_APP_URI }}
       E2E_TEST_USERNAME: >-
         ${{ matrix.run.environment == 'production' && secrets.OBI_USERNAME_PRODUCTION
             || secrets.OBI_USERNAME_STAGING }}
@@ -130,7 +149,11 @@ jobs:
           # production and the slow one at staging and everything else about them
           # matches, so without this they would share a Teams thread and a report
           # folder while testing two different deployments.
-          key="${now%% *}-$EVENT-${RELEASE:-${SHA:0:7}}-$E2E_ENVIRONMENT"
+          # A merge dispatch seeds it with core-web-app's commit: two merges the
+          # same day are two runs, and the sha here is obi-e2e's own.
+          seed="${RELEASE:-${RELEASE_COMMIT:-$SHA}}"
+          [[ -n "$RELEASE" ]] || seed="${seed:0:7}"
+          key="${now%% *}-$EVENT-$seed-$E2E_ENVIRONMENT"
           echo "key=$key" >> "$GITHUB_OUTPUT"
           {
             echo "TEAMS_THREAD_KEY=$key"
@@ -157,7 +180,10 @@ jobs:
         env:
           MS_TEAMS_WEBHOOK_URI: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
           TEAMS_LAYOUT: thread
-          E2E_SUITES: ${{ github.event_name == 'workflow_dispatch' && 'regular' || 'regular, slow' }}
+          # The slow suite skips the preview: hours of campaigns on every merge.
+          E2E_SUITES: >-
+            ${{ (github.event_name == 'workflow_dispatch' || matrix.run.environment == 'preview')
+                && 'regular' || 'regular, slow' }}
         run: bun scripts/ci/teams-card.ts --start
 
       - name: Cache Playwright browsers
@@ -171,7 +197,9 @@ jobs:
         run: bun run browsers
 
       - name: Check configuration
-        run: bun run preflight
+        run: |
+          : "${E2E_BASE_URL:?No URL for ${E2E_ENVIRONMENT}: set the repository variable}"
+          bun run preflight
 
       - name: Run tests
         id: tests
