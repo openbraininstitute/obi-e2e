@@ -29,7 +29,7 @@ on:
 # Pull requests are not tested here for the time being: the suite runs against
 # staging and production only. Putting per-PR runs back means restoring the
 # `pull_request` trigger, or adding the `e2e-preview` type that
-# `pr-label-bridge.example.yml` fires to the dispatch above — see git history
+# `.github/examples/pr-label-bridge.example.yml` fires to the dispatch above — see git history
 # for both.
 #
 # Three targets, each with its URL in a repository variable: `preview`
