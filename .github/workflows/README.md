@@ -1,5 +1,8 @@
 # Workflows
 
+The `*.example.yml` templates for other repositories live in `../examples/`, not
+here: GitHub runs every YAML file in this folder, whatever its name.
+
 `e2e.yml` runs the tests. It decides what to run from the trigger:
 
 | Trigger                         | Target      | What runs   | Result     |
@@ -15,7 +18,7 @@
 thread key so the release gets a thread of its own.
 
 `core-web-app` fires `core-web-app-main` after a merge to its main, with the
-merge commit in `client_payload.commit` — see `core-web-app-main.example.yml`.
+merge commit in `client_payload.commit` — see `../examples/core-web-app-main.example.yml`.
 Amplify builds main on its own, so that workflow polls the preview's
 `/app/version` until its `git describe` ends in the merged commit, and only then
 dispatches: a build that never goes live starts no run. A newer merge cancels
@@ -158,7 +161,7 @@ user that tests virtual lab creation. Leave them unset and those tests skip.
 ## The `e2e` label bridge
 
 Not wired up at the moment — `e2e.yml` listens for `core-web-app-release` and
-for nothing else. `pr-label-bridge.example.yml` stays as the template:
+for nothing else. `../examples/pr-label-bridge.example.yml` stays as the template:
 `core-web-app` deploys every PR to a preview URL, and a small workflow there can
 wait for the preview and dispatch to this repo when the `e2e` label is added.
 Add the `e2e-preview` type to the `repository_dispatch` trigger, and restore the
