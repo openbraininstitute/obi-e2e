@@ -7,11 +7,23 @@
 | Schedule, 05:00 UTC             | staging     | full suite  | Teams card |
 | Push to `main`                  | staging     | full suite  | Teams card |
 | `core-web-app-release` dispatch | staging     | full suite  | Teams card |
+| `core-web-app-main` dispatch    | preview     | full suite  | Teams card |
 | Manual run                      | your choice | your choice | Teams card |
 
 `core-web-app` fires the dispatch when it releases, with the tag in
 `client_payload.release`. Both suites listen for it, and the tag seeds the
 thread key so the release gets a thread of its own.
+
+`core-web-app` fires `core-web-app-main` after a merge to its main, with the
+merge commit in `client_payload.commit` — see `core-web-app-main.example.yml`.
+Amplify builds main on its own, so that workflow polls the preview's
+`/app/version` until its `git describe` ends in the merged commit, and only then
+dispatches: a build that never goes live starts no run. A newer merge cancels
+the wait for an older one. Only the
+regular suite listens: the slow campaigns would take hours on every merge.
+
+The preview is the main branch on the staging backend: it signs in with the
+staging secrets, and `@production` tests skip there as they do on staging.
 
 Pull requests are not tested for the time being: the suite runs against staging
 and production only. The `pull_request` trigger and the `e2e-preview` dispatch
@@ -53,7 +65,8 @@ The two suites are separate workflow runs that finish hours apart, and both
 land under one parent message. The webhook never returns a message id, so
 neither run can reply to anything; instead each computes the same **thread key**
 in its first step — `<UTC date>-<event>-<seed>-<environment>`, the seed being
-the release tag or the short sha — and the Power Automate flow keeps the
+the release tag, or the short sha of the merged `core-web-app` commit or of
+this repository — and the Power Automate flow keeps the
 key-to-message-id map. The environment is in there because dispatching the
 regular suite at production and the slow one at staging matches on everything
 else, and the two would otherwise share a thread while testing two deployments.
@@ -124,7 +137,9 @@ access control is Enterprise Cloud only.
 
 ## Configuration
 
-Repository **variables**: `E2E_BASE_URL_STAGING`, `E2E_BASE_URL_PRODUCTION`,
+Repository **variables**: `PREVIEW_APP_URI`, `STAGING_APP_URI` and
+`PRODUCTION_APP_URI` (each target's app URL, no trailing slash; a run fails at
+its configuration check when its own is missing),
 `E2E_PROJECT_CREDITS` (optional; defaults to 2,000 in the test code) and
 `E2E_SLOW_PROJECT_CREDITS` (optional; 500), which funds the slow workflow's own
 project so either suite can be refunded without touching the other.

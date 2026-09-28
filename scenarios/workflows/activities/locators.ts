@@ -4,6 +4,7 @@ import type { Page } from '@playwright/test';
 export const CATEGORY_OPTIONS = [
   'Build',
   'Simulate',
+  'Extract',
   'Process data',
   'Optimize',
   'Validate',
