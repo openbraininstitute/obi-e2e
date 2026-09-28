@@ -197,6 +197,8 @@ jobs:
         run: bun run browsers
 
       - name: Check configuration
+        env:
+          E2E_GREP: ${{ matrix.run.grep }}
         run: |
           : "${E2E_BASE_URL:?No URL for ${E2E_ENVIRONMENT}: set the repository variable}"
           bun run preflight
