@@ -186,17 +186,12 @@ export function credentials(role: Role): { username: string; password: string } 
 }
 
 /**
- * What each suite funds its project with when CI names no amount.
- *
- * Only what a campaign actually spends leaves the lab: the teardown deletes the
- * project and the rest goes back, so the number is a ceiling rather than a cost.
- * It has to clear the priciest single launch in the suite, not just the total —
- * a project holding less than one launch's quote is refused with an
- * insufficient-funds 403 however little the run has spent so far.
+ * A ceiling, not a cost: the teardown returns what the run did not spend. It
+ * has to clear the priciest single launch, not the total — a project holding
+ * less than one launch's quote is refused with a 403.
  */
 const DEFAULT_CREDITS = { regular: 2_000, slow: 500 } as const;
 
-/** The variable each suite reads, so a suite can be refunded without the other. */
 const CREDITS_VARIABLE = {
   regular: 'E2E_PROJECT_CREDITS',
   slow: 'E2E_SLOW_PROJECT_CREDITS',
@@ -204,14 +199,8 @@ const CREDITS_VARIABLE = {
 
 type Suite = keyof typeof DEFAULT_CREDITS;
 
-/**
- * Which suite is running.
- *
- * The slow campaigns have a workflow of their own that selects them by project
- * — see `.github/workflows/e2e-slow.yml` — and that selection is the only thing
- * that distinguishes the two runs before any test starts, which is when the
- * project is funded.
- */
+const SUITE_VARIABLE = 'E2E_SUITE';
+
 export function suiteOf(argv: readonly string[]): Suite {
   const selected = argv.flatMap((arg, index) =>
     arg === '--project' ? [argv[index + 1]] : [arg.split('--project=')[1]]
@@ -220,7 +209,12 @@ export function suiteOf(argv: readonly string[]): Suite {
   return selected.includes('slow') ? 'slow' : 'regular';
 }
 
-/** The credits a suite funds its project with; see {@link DEFAULT_CREDITS}. */
+/** Playwright spawns a worker without the command line, so it reads the variable instead. */
+export function resolveSuite(argv: readonly string[], env: NodeJS.ProcessEnv): Suite {
+  const told = env[SUITE_VARIABLE];
+  return told === 'slow' || told === 'regular' ? told : suiteOf(argv);
+}
+
 export function creditsFor(suite: Suite, raw: string | undefined): number {
   if (!raw) return DEFAULT_CREDITS[suite];
 
@@ -231,9 +225,11 @@ export function creditsFor(suite: Suite, raw: string | undefined): number {
   return parsed;
 }
 
-const SUITE = suiteOf(process.argv);
+const SUITE = resolveSuite(process.argv, process.env);
 
-/** The variable this run's ceiling came from, for a notice that says where to raise it. */
+// Imported first while the config loads, so the workers inherit this.
+process.env[SUITE_VARIABLE] = SUITE;
+
 export const PROJECT_CREDITS_VARIABLE = CREDITS_VARIABLE[SUITE];
 
 /** Credits this run moves into its project. */

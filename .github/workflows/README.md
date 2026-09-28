@@ -140,9 +140,8 @@ access control is Enterprise Cloud only.
 Repository **variables**: `PREVIEW_APP_URI`, `STAGING_APP_URI` and
 `PRODUCTION_APP_URI` (each target's app URL, no trailing slash; a run fails at
 its configuration check when its own is missing),
-`E2E_PROJECT_CREDITS` (optional; defaults to 2,000 in the test code) and
-`E2E_SLOW_PROJECT_CREDITS` (optional; 500), which funds the slow workflow's own
-project so either suite can be refunded without touching the other.
+`E2E_PROJECT_CREDITS` (optional; defaults to 2,000 in the test code),
+`E2E_SLOW_PROJECT_CREDITS` (optional; 500, and read by the slow workflow).
 
 Repository **secrets** (same names as the Selenium repo, plus one):
 `OBI_USERNAME`, `OBI_PASSWORD`, `LAB_ID_STAGING`, `LAB_ID_PRODUCTION`,
