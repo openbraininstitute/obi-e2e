@@ -8,7 +8,7 @@ here: GitHub runs every YAML file in this folder, whatever its name.
 | Trigger                         | Target      | What runs   | Result     |
 | ------------------------------- | ----------- | ----------- | ---------- |
 | Schedule, 05:00 UTC             | staging     | full suite  | Teams card |
-| Push to `main`                  | staging     | full suite  | Teams card |
+| Push to `main` (merged PR)      | preview     | full suite  | Teams card |
 | `core-web-app-release` dispatch | staging     | full suite  | Teams card |
 | `core-web-app-main` dispatch    | preview     | full suite  | Teams card |
 | Manual run                      | your choice | your choice | Teams card |

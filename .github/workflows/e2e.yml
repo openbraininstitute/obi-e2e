@@ -78,10 +78,11 @@ jobs:
               runs=$(jq -cn --arg env "$INPUT_ENV" --arg grep "$INPUT_GREP" \
                 '[{name:$env,environment:$env,grep:$grep}]') ;;
             *)
-              # A push. Only the manual arm reads an input,
-              # and only a manual dispatch can set one, so production stays
-              # unreachable from anything automatic.
-              runs=$(jq -cn '[{name:"staging",environment:"staging",grep:""}]') ;;
+              # A push to this repository: a merged PR is tested against the main
+              # preview. Only the manual arm reads an input, and only a manual
+              # dispatch can set one, so production stays unreachable from
+              # anything automatic.
+              runs=$(jq -cn '[{name:"preview",environment:"preview",grep:""}]') ;;
           esac
           # The host each target serves, for the job title: "staging" alone does
           # not say which URL the run hit.
@@ -193,9 +194,10 @@ jobs:
         env:
           MS_TEAMS_WEBHOOK_URI: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
           TEAMS_LAYOUT: thread
-          # The slow suite skips the preview: hours of campaigns on every merge.
+          # The slow suite skips a core-web-app merge: hours of campaigns on every
+          # merge. A push here runs it too, against the same preview.
           E2E_SUITES: >-
-            ${{ (github.event_name == 'workflow_dispatch' || matrix.run.environment == 'preview')
+            ${{ (github.event_name == 'workflow_dispatch' || github.event.action == 'core-web-app-main')
                 && 'regular' || 'regular, slow' }}
         run: bun scripts/ci/teams-card.ts --start
 
