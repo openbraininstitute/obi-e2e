@@ -1,4 +1,4 @@
-import { FlaskConical, Globe, type LucideIcon, Rocket } from 'lucide-react';
+import { FlaskConical, GitBranch, Globe, type LucideIcon, Rocket } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { ChartCard, CreditsBar, Legend, OutcomeDonut } from '@/charts';
@@ -299,6 +299,7 @@ function Report({ run, suite }: { run: string; suite: Suite }) {
 
 /** A deployment nobody has taught the page about still gets a sensible glyph. */
 const ENVIRONMENT_ICON: Record<string, LucideIcon> = {
+  preview: GitBranch,
   staging: FlaskConical,
   production: Rocket,
 };
@@ -363,11 +364,12 @@ export function App() {
   const summary = run ? summaries[suite] : null;
 
   // runs.json is newest first, so all of these come out newest first too.
-  // Both deployments are always offered, even before one has published
+  // All three targets are always offered, even before one has published
   // anything — production has not, and a picker with a single option in it is
   // not a picker. Anything else that turns up in a folder name joins them.
   const environments = useMemo(
-    () => [...new Set(['production', 'staging', ...runs.map(runEnvironment)])].toSorted(),
+    () =>
+      [...new Set(['preview', 'production', 'staging', ...runs.map(runEnvironment)])].toSorted(),
     [runs]
   );
   const ofEnvironment = useMemo(
