@@ -1,6 +1,8 @@
+import { NO_NAVIGATION } from '@fixtures/interactions';
 import { AUTHENTICATED } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { entityListing } from '@locators/listing';
+import type { Page } from '@playwright/test';
 
 import { balanceOf, COST_COLUMN, credits, creditsRoute, HISTORY_COLUMNS } from './locators';
 
@@ -29,9 +31,15 @@ test.describe('Project credits', () => {
   test('Pricing opens the public plans in a new tab', { tag: AUTHENTICATED }, async ({ page }) => {
     const view = credits(page);
 
-    const opened = page.waitForEvent('popup');
-    await view.pricing.click();
-    const plans = await opened;
+    // The button is rendered before React listens to it, and a click then opens
+    // nothing: click again until a tab comes up.
+    let plans: Page | undefined;
+    await expect(async () => {
+      const opened = page.waitForEvent('popup', { timeout: 3_000 });
+      await view.pricing.click(NO_NAVIGATION);
+      plans = await opened;
+    }, 'Pricing never opened a tab.').toPass({ timeout: 45_000 });
+    if (!plans) throw new Error('Pricing opened no tab.');
 
     await expect(
       plans.getByRole('heading', { name: 'Pricing', exact: true, level: 1 })

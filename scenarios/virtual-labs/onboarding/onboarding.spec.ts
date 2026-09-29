@@ -1,3 +1,4 @@
+import { clickUntil } from '@fixtures/interactions';
 import { RUN_ID } from '@fixtures/run/env';
 import { trackOnboardingProject } from '@fixtures/run/onboarding-workspace';
 import { ONBOARDING } from '@fixtures/tags';
@@ -43,13 +44,15 @@ test.describe('Onboarding user', () => {
   test(
     'Onboarding user creates a project in the virtual lab',
     { tag: ONBOARDING },
-    async ({ page }) => {
+    async ({ page }, testInfo) => {
       const locators = onboardingLocators(page);
       const { labId, projectId: initialProjectId } = await openCurrentWorkspace(page);
-      const projectName = `Onboarding project ${RUN_ID}`;
+      // A serial group retries from its first test, and the first attempt may have
+      // created its project already: a retry needs a name of its own.
+      const retry = testInfo.retry ? ` retry ${testInfo.retry}` : '';
+      const projectName = `Onboarding project ${RUN_ID}${retry}`;
 
-      await locators.currentProject.click();
-      await expect(locators.addProject).toBeVisible();
+      await clickUntil(locators.currentProject, locators.addProject);
       await locators.addProject.click();
       await expect(locators.modalShell).toBeVisible();
 
@@ -86,7 +89,7 @@ test.describe('Onboarding user', () => {
       const { labId, projectId } = await openCurrentWorkspace(page);
 
       await page.goto(`/app/virtual-lab/${labId}/${projectId}/team`);
-      await locators.addProjectMember.click();
+      await clickUntil(locators.addProjectMember, locators.projectInviteHeading);
 
       await expect(locators.projectInviteHeading).toBeVisible();
       await expect(locators.projectInviteEmail).toBeVisible();
@@ -104,7 +107,7 @@ test.describe('Onboarding user', () => {
       const { labId, projectId } = await openCurrentWorkspace(page);
 
       await page.goto(`/app/virtual-lab/${labId}/${projectId}`);
-      await locators.currentVirtualLab.click();
+      await clickUntil(locators.currentVirtualLab, locators.labMembersTab);
       await locators.labMembersTab.click();
 
       await expect(locators.teamMembers).toBeVisible();
@@ -125,7 +128,7 @@ test.describe('Onboarding user', () => {
       const { labId, projectId } = await openCurrentWorkspace(page);
 
       await page.goto(`/app/virtual-lab/${labId}/${projectId}/credits`);
-      await locators.buyCredits.click();
+      await clickUntil(locators.buyCredits, locators.purchaseCredits);
       await locators.purchaseCredits.click();
 
       await expect(locators.creditVerificationDialog).toBeVisible();
@@ -139,7 +142,7 @@ test.describe('Onboarding user', () => {
     const locators = onboardingLocators(page);
     await openCurrentWorkspace(page);
 
-    await locators.profileButton.click();
+    await clickUntil(locators.profileButton, locators.subscriptionTab);
     await locators.subscriptionTab.click();
 
     await expect(locators.subscriptionSection).toBeVisible();

@@ -1,3 +1,4 @@
+import { clickUntil } from '@fixtures/interactions';
 import { routes } from '@fixtures/routes';
 import { AUTHENTICATED } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
@@ -22,11 +23,9 @@ test.describe('Workflows page', () => {
   test('Build offers the models it can make', { tag: AUTHENTICATED }, async ({ page }) => {
     const hub = workflowsHub(page);
 
-    await hub.category('build').click();
-
     // Choosing a category is a navigation, and the types arrive with the page.
-    await page.waitForURL(/activity=build/);
-    await expect(hub.typeMenu('build')).toBeVisible();
+    await clickUntil(hub.category('build'), hub.typeMenu('build'));
+    await expect(page).toHaveURL(/activity=build/);
 
     for (const { label, type } of TYPES.build) {
       const card = workflowType(page, type);
@@ -38,10 +37,8 @@ test.describe('Workflows page', () => {
   test('Simulate offers the models it can run', { tag: AUTHENTICATED }, async ({ page }) => {
     const hub = workflowsHub(page);
 
-    await hub.category('simulate').click();
-
-    await page.waitForURL(/activity=simulate/);
-    await expect(hub.typeMenu('simulate')).toBeVisible();
+    await clickUntil(hub.category('simulate'), hub.typeMenu('simulate'));
+    await expect(page).toHaveURL(/activity=simulate/);
 
     for (const { label, type } of TYPES.simulate) {
       const card = workflowType(page, type);

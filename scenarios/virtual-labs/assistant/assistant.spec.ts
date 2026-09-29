@@ -1,3 +1,4 @@
+import { clickUntil } from '@fixtures/interactions';
 import { AUTHENTICATED } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 
@@ -12,7 +13,7 @@ test.describe('OBI Assistant', () => {
   test('Open the assistant panel', { tag: AUTHENTICATED }, async ({ page }) => {
     const panel = assistant(page);
 
-    await panel.open.click();
+    await clickUntil(panel.open, panel.question);
 
     await expect(panel.heading.first()).toBeVisible();
     await expect(panel.question).toBeVisible();
@@ -23,11 +24,11 @@ test.describe('OBI Assistant', () => {
   test('The panel suggests questions to start from', { tag: AUTHENTICATED }, async ({ page }) => {
     const panel = assistant(page);
 
-    await panel.open.click();
-    await expect(panel.question).toBeVisible();
+    await clickUntil(panel.open, panel.question);
 
+    // The panel fetches its suggestions once it opens, so they can arrive after it.
+    await expect.poll(async () => (await suggestions(page)).length).toBeGreaterThan(0);
     const suggested = await suggestions(page);
-    expect(suggested.length).toBeGreaterThan(0);
     for (const question of suggested) {
       expect(question.trim()).not.toBe('');
     }
@@ -39,8 +40,7 @@ test.describe('OBI Assistant', () => {
   test('Close the assistant panel', { tag: AUTHENTICATED }, async ({ page }) => {
     const panel = assistant(page);
 
-    await panel.open.click();
-    await expect(panel.question).toBeVisible();
+    await clickUntil(panel.open, panel.question);
 
     await panel.collapse.click();
 
