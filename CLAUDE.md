@@ -30,6 +30,9 @@ bun run test    # or a single spec while iterating
   `locators/` folder only once a second scenario needs it.
 - Assertions live in the spec, never in a locator module.
 - No `waitForTimeout`. Web-first assertions already retry.
+- First click after page load: `clickUntil(target, shows)` from
+  `@fixtures/interactions`. Pre-hydration click does nothing, raises no error;
+  staging drops it every run.
 - Every test is independent and leaves no data behind outside the QA lab.
 - A test declares its context with a tag, imported from `@fixtures/tags`.
   `VISITOR` (`@public`) runs signed out. `AUTHENTICATED` (`@private`) runs as the

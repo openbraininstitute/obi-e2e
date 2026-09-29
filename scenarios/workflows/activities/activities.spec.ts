@@ -1,7 +1,9 @@
+import { clickUntil } from '@fixtures/interactions';
 import { routes } from '@fixtures/routes';
 import { AUTHENTICATED } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { entityListing } from '@locators/listing';
+import { workflowsHub } from '@locators/workflows';
 
 import { activityFilters, BUILD_TYPES, CATEGORY_OPTIONS, SIMULATE_TYPES } from './locators';
 
@@ -27,7 +29,16 @@ test.describe('Workflow activities', () => {
     async ({ page }) => {
       const filters = activityFilters(page);
 
-      await filters.category.click();
+      // core-web-app #1968 took Extract out from behind its feature flag; a
+      // deployment older than that (staging, until it catches up) offers five.
+      const extract = workflowsHub(page).category('extract');
+      await expect(workflowsHub(page).category('build')).toBeVisible();
+      test.skip(
+        (await extract.count()) === 0,
+        'Extract is still behind a feature flag on this deployment (ungated by core-web-app #1968).'
+      );
+
+      await clickUntil(filters.category, filters.options.first());
 
       await expect(filters.options).toHaveCount(CATEGORY_OPTIONS.length);
       for (const category of CATEGORY_OPTIONS) {
@@ -43,7 +54,7 @@ test.describe('Workflow activities', () => {
       const filters = activityFilters(page);
 
       await expect(filters.category).toHaveText('Build');
-      await filters.type.click();
+      await clickUntil(filters.type, filters.options.first());
 
       for (const { group, type } of BUILD_TYPES) {
         await expect(filters.group(group)).toBeVisible();
@@ -63,7 +74,7 @@ test.describe('Workflow activities', () => {
       await expect(filters.category).toHaveText('Build');
       const wasType = await filters.type.innerText();
 
-      await filters.category.click();
+      await clickUntil(filters.category, filters.option('Simulate'));
       await filters.option('Simulate').click();
 
       await expect(filters.category).toHaveText('Simulate');

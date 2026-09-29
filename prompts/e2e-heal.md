@@ -65,7 +65,9 @@ Classify:
 - **Locator drift** — renamed or moved. Update the locator. If it had no test
   id, add one to `core-web-app` rather than chasing a new label.
 - **Timing** — the element arrives late, or the page beat its own hydration.
-  Wait for the thing itself; never add a sleep.
+  Wait for the thing itself; never add a sleep. Hydration sign: click
+  passes, what it opens never shows, snapshot still shows closed state. Fix:
+  `clickUntil(target, shows)` from `@fixtures/interactions`.
 - **Flow change** — a new step or dialog. Update the test, and say that
   `scenario.md` needs the same edit.
 - **Not in this deployment** — behind a flag, or newer than the build under
