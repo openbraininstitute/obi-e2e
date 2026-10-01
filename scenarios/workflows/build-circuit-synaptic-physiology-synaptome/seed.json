@@ -1,0 +1,90 @@
+{
+  "name": "Circuit synaptic physiology of a single-neuron synaptome",
+  "activity": "build",
+  "env": ["staging"],
+  "workflow": {
+    "label": "Circuit synaptic physiology",
+    "type": "circuit-synaptic-physiology-campaign"
+  },
+  "schemaName": "SynapseParameterizationScanConfig",
+  "selection": {
+    "mode": "single",
+    "entities": ["nbS1-O1__202247__cADpyr__L5_TPC_A"]
+  },
+  "cases": [
+    {
+      "name": "an inhibitory model on the thalamic inputs, the default excitatory model on the rest",
+      "config": {
+        "info": {
+          "type": "Info",
+          "campaign_name": "SynParamTest02",
+          "campaign_description": "Test"
+        },
+        "synaptic_models": {
+          "INH default model": {
+            "type": "InhibitoryTsodyksMarkramSynapticModel"
+          }
+        },
+        "neuron_sets": {
+          "AllVirtual": {
+            "type": "AllVirtualNeurons"
+          }
+        },
+        "synapse_model_assigners": {
+          "Synaptic parameterization 0": {
+            "type": "AllPairsSynapticModelAssigner",
+            "random_seed": 1,
+            "edge_population_name": "external_S1nonbarrel_neurons__S1nonbarrel_neurons__chemical"
+          },
+          "Synaptic parameterization 1": {
+            "type": "PresynapticNeuronSetSynapticModelAssigner",
+            "random_seed": 1,
+            "edge_population_name": "POm__S1nonbarrel_neurons__chemical",
+            "synaptic_model": {
+              "block_dict_name": "synaptic_models",
+              "block_name": "INH default model",
+              "type": "SynapticModelReference"
+            },
+            "source_neuron_set": {
+              "block_dict_name": "neuron_sets",
+              "block_name": "AllVirtual",
+              "type": "BiophysicalNeuronSetReference"
+            }
+          },
+          "Synaptic parameterization 2": {
+            "type": "PresynapticNeuronSetSynapticModelAssigner",
+            "random_seed": 1,
+            "edge_population_name": "VPM__S1nonbarrel_neurons__chemical",
+            "synaptic_model": {
+              "block_dict_name": "synaptic_models",
+              "block_name": "INH default model",
+              "type": "SynapticModelReference"
+            },
+            "source_neuron_set": {
+              "block_dict_name": "neuron_sets",
+              "block_name": "AllVirtual",
+              "type": "BiophysicalNeuronSetReference"
+            }
+          }
+        }
+      },
+      "expect": {
+        "coordinateCount": 1,
+        "generated": {
+          "inputs": ["obi_one_coordinate.json"],
+          "outputs": []
+        },
+        "completed": {
+          "inputs": ["Task configuration", "obi_one_coordinate.json", "Circuit directory"],
+          "outputs": ["Task logs", "nbS1-O1__202247__cADpyr__L5_TPC_A (synapse-parameterized)"],
+          "views": {
+            "nbS1-O1__202247__cADpyr__L5_TPC_A (synapse-parameterized)": {
+              "Scale": "Single",
+              "Number of neurons": "1"
+            }
+          }
+        }
+      }
+    }
+  ]
+}
