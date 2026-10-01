@@ -1,0 +1,104 @@
+{
+  "name": "Circuit synaptic physiology of a neuron pair",
+  "activity": "build",
+  "env": ["staging", "production"],
+  "workflow": {
+    "label": "Circuit synaptic physiology",
+    "type": "circuit-synaptic-physiology-campaign"
+  },
+  "schemaName": "SynapseParameterizationScanConfig",
+  "selection": {
+    "mode": "single",
+    "entities": ["nbS1-O1-E2PV-maxNsyn-HEX0-L2"]
+  },
+  "cases": [
+    {
+      "name": "an excitatory model on the synapses between the pair",
+      "config": {
+        "info": {
+          "type": "Info",
+          "campaign_name": "E2E circuit synaptic physiology",
+          "campaign_description": "One excitatory Tsodyks-Markram model on every synapse between the pair."
+        },
+        "distributions": {
+          "exc_conductance": {
+            "type": "FloatConstantDistribution",
+            "value": 1.0
+          },
+          "exc_delay": {
+            "type": "FloatConstantDistribution",
+            "value": 1.5
+          }
+        },
+        "synaptic_models": {
+          "exc_tm": {
+            "type": "ExcitatoryTsodyksMarkramSynapticModel",
+            "conductance_distribution": {
+              "block_dict_name": "distributions",
+              "block_name": "exc_conductance"
+            },
+            "delay_distribution": {
+              "block_dict_name": "distributions",
+              "block_name": "exc_delay"
+            }
+          }
+        },
+        "synapse_model_assigners": {
+          "pair_synapses": {
+            "type": "AllPairsSynapticModelAssigner",
+            "edge_population_name": "S1nonbarrel_neurons__S1nonbarrel_neurons__chemical",
+            "synaptic_model": {
+              "block_dict_name": "synaptic_models",
+              "block_name": "exc_tm"
+            }
+          }
+        }
+      },
+      "expect": {
+        "coordinateCount": 1,
+        "generated": {
+          "inputs": ["obi_one_coordinate.json"],
+          "outputs": []
+        },
+        "completed": {
+          "inputs": ["Task configuration", "obi_one_coordinate.json", "Circuit directory"],
+          "outputs": ["Task logs", "nbS1-O1-E2PV-maxNsyn-HEX0-L2 (synapse-parameterized)"],
+          "views": {
+            "nbS1-O1-E2PV-maxNsyn-HEX0-L2 (synapse-parameterized)": {
+              "Scale": "Pair neuron",
+              "Number of neurons": "2"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "the default model drawn with two random seeds, giving a grid of two coordinates",
+      "config": {
+        "info": {
+          "type": "Info",
+          "campaign_name": "E2E circuit synaptic physiology seeds",
+          "campaign_description": "The form's default model on the pair's synapses, drawn with two seeds."
+        },
+        "synapse_model_assigners": {
+          "pair_synapses": {
+            "type": "AllPairsSynapticModelAssigner",
+            "edge_population_name": "S1nonbarrel_neurons__S1nonbarrel_neurons__chemical",
+            "random_seed": [1, 2]
+          }
+        }
+      },
+      "expect": {
+        "coordinateCount": 2,
+        "generated": {
+          "inputs": ["obi_one_coordinate.json"],
+          "outputs": []
+        },
+        "completed": {
+          "inputs": ["Task configuration", "obi_one_coordinate.json", "Circuit directory"],
+          "outputs": ["Task logs", "nbS1-O1-E2PV-maxNsyn-HEX0-L2 (synapse-parameterized)"]
+        }
+      }
+    }
+  ]
+}
