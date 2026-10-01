@@ -11,14 +11,20 @@ built by hand in the app, as four tabs of its own.
 Nothing is browsed for first: every input is picked inside the form. The
 features have to exist before the form can be filled, and a new project holds
 none, so the test extracts them first, with the "Intracellular EFeatures"
-workflow on recording "C190101A1-MT-C1", a bAC cell, as `targets.json` beside
-this file describes. The e-model is a bAC one to match, on a basket cell
-morphology.
+workflow on recording "C060109A1-SR-C1", a cADpyr cell, as `targets.json` beside
+this file describes.
+
+The e-model is a cADpyr one to match, on a layer 5 pyramidal morphology. It
+follows a campaign a scientist ran by hand: sodium and two potassium channels
+on the soma, the same three and a persistent sodium channel on the axon, each
+conductance free between bounds. The morphology needs every section list the
+form's default passive parameters name, apical dendrites included: an
+interneuron, which has none, is refused two seconds into the run.
 
 The seed keeps the run as short as the optimizer allows: two individuals, one
-generation. Even so it takes longer than the nightly suite can wait for, so the
-seed marks it slow. The seed also says which deployments the workflow runs on,
-so no line here does.
+generation, where the hand-run campaign took thirty. Even so it takes longer
+than the nightly suite can wait for, so the seed marks it slow. The seed also
+says which deployments the workflow runs on, so no line here does.
 
 User: credits
 Seed: seed.json
@@ -101,10 +107,11 @@ Steps:
 Expected:
 
 - The coordinate leaves "created"
-- The coordinate reaches "done"
+- The coordinate reaches "done" (within 30 minutes)
 - Its inputs are exactly: "Task configuration" and "obi_one_coordinate.json"
-- Its outputs are exactly: "Task logs", the optimization result named after the
-  e-model, the e-model itself, and the ME-model built from it
+- Its outputs are exactly: "Task logs", the e-model "E2E_cADpyr", the ME-model
+  built from it, "E2E_cADpyr MEModel", and the optimization's "final.json" and
+  "analysis_figures"
 
 Steps:
 
