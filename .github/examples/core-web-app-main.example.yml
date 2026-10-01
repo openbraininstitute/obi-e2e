@@ -20,7 +20,8 @@ jobs:
     steps:
       # Amplify builds main on its own after the push. Until that build is live
       # the preview serves the commit before it. `/app/version` reports
-      # `git describe`, which ends in `-g<sha>`.
+      # `git describe`, which ends in `-g<sha>`. A build never goes live in
+      # under 7 minutes, so polling starts after that, then once a minute.
       - name: Wait for the main preview to serve this commit
         timeout-minutes: 45
         env:
@@ -28,10 +29,11 @@ jobs:
           SHA: ${{ github.sha }}
         run: |
           : "${PREVIEW_APP_URI:?set the PREVIEW_APP_URI repository variable}"
+          sleep 420
           until curl -sf "$PREVIEW_APP_URI/app/version" | jq -e --arg sha "${SHA:0:7}" \
               '.version | contains("g" + $sha)' > /dev/null; do
             echo "Waiting for $PREVIEW_APP_URI to serve ${SHA:0:7}…"
-            sleep 30
+            sleep 60
           done
 
       - name: Dispatch to obi-e2e
