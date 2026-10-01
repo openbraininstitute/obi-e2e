@@ -122,6 +122,9 @@ export function scanConfigModelPicker(page: Page) {
     open: page.getByTestId('scan-config-select-model'),
     overlay,
     panel: overlay.getByTestId('data-table-container'),
+    /** Public or the project's own: a task result a run registered lives in the project. */
+    scope: (name: 'public' | 'project'): Locator =>
+      overlay.getByTestId(`scope-selector-tab-${name}`),
     row: (name: string): Locator => overlay.getByTestId(`data-grid-row-${name}`),
     /** The row of one entity. Its test id carries only the name, which two entities can share. */
     rowWithId: (id: string): Locator =>
@@ -198,6 +201,120 @@ export function scanConfigAmplitudes(page: Page) {
     extract: (row: Locator): Locator => row.getByTestId('scan-config-amplitude-extract'),
 
     validation: (row: Locator): Locator => row.getByTestId('scan-config-amplitude-validation'),
+  };
+}
+
+/**
+ * The e-type field: a search over entitycore's e-type taxonomy rather than a
+ * browsable table, so it opens a dropdown of its own instead of the model
+ * picker. core-web-app gives neither half a test id; the dropdown is portaled
+ * out of the field and is only told apart by its search box.
+ */
+export function scanConfigETypePicker(field: Locator) {
+  const page = field.page();
+  const dropdown = page.getByRole('dialog').filter({ has: page.getByPlaceholder(SEARCH_E_TYPE) });
+
+  return {
+    open: field.getByRole('combobox'),
+    search: dropdown.getByPlaceholder(SEARCH_E_TYPE),
+    option: (label: string): Locator => dropdown.getByRole('button', { name: label, exact: true }),
+  };
+}
+
+const SEARCH_E_TYPE = /^Search e-type/;
+
+/**
+ * What each section list's card is headed with. The card shows nothing else
+ * that names it.
+ *
+ * ponytail: copied from obi-one's schema (`base_parameters.choices`), so a
+ * relabelled section list breaks the lookup until this is updated. A test id
+ * on the card, keyed by the choice's name, retires the table.
+ */
+const SECTION_LIST_LABELS: Record<string, string> = {
+  all: 'All sections',
+  myelinated: 'Myelinated',
+  somadend: 'Soma and dendrites',
+  somatic: 'Somatic',
+  axonal: 'Axonal',
+  apical: 'Apical',
+  basal: 'Basal',
+  alldend: 'All dendrites',
+  allnoaxon: 'All sections without axon',
+  somaxon: 'Soma and axon',
+  allact: 'All active sections',
+};
+
+/** The card title a section list shows, or a failure naming the ones known. */
+export function sectionListLabel(name: string): string {
+  const label = SECTION_LIST_LABELS[name];
+  if (label === undefined) {
+    throw new Error(
+      `"${name}" is not a section list the Mechanisms section offers. It offers: ` +
+        `${Object.keys(SECTION_LIST_LABELS).join(', ')}.`
+    );
+  }
+  return label;
+}
+
+/** An ion channel model as the Mechanisms section shows it: its name, and its id when known. */
+export type MechanismModel = { name: string; id?: string };
+
+/**
+ * The Mechanisms section of the e-model optimisation form.
+ *
+ * Hand-built rather than generated from the schema. Its inner tabs carry test
+ * ids; the cards and rows past them get theirs from core-web-app's
+ * `test/emodel-optimisation-testids`, keyed by what the seed already holds: a
+ * section list by its schema name, a model by its entity id, a parameter by its
+ * NMODL name. Until that ships, each falls back to the words it shows, matched
+ * exactly because "All sections" also heads "All sections without axon", and
+ * "gNaTg" is a parameter of the same channel as "gNaTgbar". Both halves of each
+ * `.or()` are the same element.
+ */
+export function scanConfigEModelMechanisms(page: Page) {
+  const middle = page.getByTestId('scan-config-middle-content');
+  const named = (text: string): Locator => page.getByText(text, { exact: true });
+
+  /** A card or a row button, by the title it shows. */
+  const button = (title: string): Locator =>
+    middle.getByRole('button').filter({ has: named(title) });
+
+  /** A row in one of the drawers, by the name it shows. */
+  const row = (name: string): Locator => middle.getByRole('listitem').filter({ has: named(name) });
+
+  /** The marked element when the model's id is known, else the one showing its name. */
+  const byModel = (prefix: string, model: MechanismModel, fallback: Locator): Locator =>
+    model.id === undefined ? fallback : middle.getByTestId(`${prefix}${model.id}`).or(fallback);
+
+  return {
+    tab: (key: string): Locator => page.getByTestId(`scan-config-emodel-mechanisms-tab-${key}`),
+
+    /** Opens the drawer of one section list. It toggles: pressed means open. */
+    sectionList: (name: string): Locator =>
+      middle
+        .getByTestId(`scan-config-emodel-section-list-${name}`)
+        .or(button(sectionListLabel(name))),
+
+    /** Region Assignment: the box that assigns one model to the open section list. */
+    assign: (model: MechanismModel): Locator =>
+      byModel('scan-config-emodel-assign-', model, row(model.name)).getByRole('checkbox'),
+
+    /** Parameters Selection: the model whose parameters the third drawer lists. */
+    model: (model: MechanismModel): Locator =>
+      byModel('scan-config-emodel-model-', model, button(model.name)),
+
+    parameter: (name: string) => {
+      const parameter = middle.getByTestId(`scan-config-emodel-parameter-${name}`).or(row(name));
+      return {
+        row: parameter,
+        include: parameter.getByRole('checkbox'),
+        mode: (mode: 'Fixed' | 'Bounds'): Locator => parameter.getByRole('radio', { name: mode }),
+        value: parameter.getByPlaceholder('Value', { exact: true }),
+        min: parameter.getByPlaceholder('Min', { exact: true }),
+        max: parameter.getByPlaceholder('Max', { exact: true }),
+      };
+    },
   };
 }
 

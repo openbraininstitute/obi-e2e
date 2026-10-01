@@ -116,10 +116,17 @@ export async function startWorkflow(
   await page.waitForURL(new RegExp(`/workflows/${activity}/(new|configure)/`));
 }
 
-/** Picks what the workflow works from. Returns a reason when the project has none. */
+/**
+ * Picks what the workflow works from. Returns a reason when the project has none.
+ *
+ * `rowId` is for an entity whose name others share, such as a circuit a build
+ * registered: every build of one circuit registers its copy under the same
+ * name, and a copy another test is still uploading is the newest row.
+ */
 export async function chooseEntities(
   page: Page,
-  selection: ScanConfigSelection
+  selection: ScanConfigSelection,
+  rowId?: string
 ): Promise<WorkflowUnavailable> {
   const browse = workflowBrowse(page);
   const listing = entityListing(page);
@@ -140,7 +147,9 @@ export async function chooseEntities(
     await listing.search.fill(name);
     await expect(listing.resultCount).toBeVisible();
 
-    const row = listing.rows.filter({ hasText: name }).first();
+    const named = listing.rows.filter({ hasText: name });
+    // The name's first row, unless one id was asked for: the search matches by substring.
+    const row = (rowId ? named.and(page.locator(`[row-id="${rowId}"]`)) : named).first();
     if (!(await appears(row))) {
       return `This project holds no "${name}" to build from.`;
     }
