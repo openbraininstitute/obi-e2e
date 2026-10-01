@@ -3,9 +3,12 @@
 import { entityName, type EntityTypeName } from '@api/entities';
 import { EntityTypeDict } from '@fixtures/entity-types';
 import {
+  type MechanismModel,
   scanConfigAmplitudes,
   scanConfigControl,
   scanConfigEditor,
+  scanConfigEModelMechanisms,
+  scanConfigETypePicker,
   scanConfigField,
   scanConfigHeld,
   scanConfigModelPicker,
@@ -19,7 +22,7 @@ import {
 import { morphologyLocations, morphologyViewer, sceneLoading } from '@locators/viewer';
 import { expect, type Locator, type Page } from '@playwright/test';
 
-import { NO_NAVIGATION } from '../interactions';
+import { clickUntil, NO_NAVIGATION } from '../interactions';
 import type { ScanConfigCase } from './index';
 import { ScanConfigUiElement } from './ui-elements';
 
@@ -46,6 +49,14 @@ const OPENS_WITHIN = 5_000;
  */
 const SCENE_DRAWS_WITHIN = 180_000;
 
+/**
+ * The type obi-one gives the e-model optimisation form's Mechanisms section.
+ *
+ * The one root element the editor does not generate from the schema, so the
+ * seed's own type is what says it needs driving by hand.
+ */
+const E_MODEL_MECHANISMS = 'EModelOptimisationParameters';
+
 export class ScanConfigDriver {
   private readonly editor: ReturnType<typeof scanConfigEditor>;
 
@@ -60,6 +71,11 @@ export class ScanConfigDriver {
     for (const [rootElement, value] of Object.entries(configuration.config)) {
       if (rootElement === 'type') continue;
       if (!isRecord(value)) throw new Error(`Root element "${rootElement}" must be an object.`);
+
+      if (value.type === E_MODEL_MECHANISMS) {
+        await this.fillEModelMechanisms(rootElement, value);
+        continue;
+      }
 
       if (typeof value.type === 'string') {
         await this.openRootElement(rootElement, this.editor.block());
@@ -237,8 +253,14 @@ export class ScanConfigDriver {
         await this.setSelection(field, value, at);
         return;
 
+      // A task result is picked from the same catalogue a model is, as one row.
       case ScanConfigUiElement.ModelSelectorSingle:
+      case ScanConfigUiElement.TaskResultSelector:
         await this.pickModel(field, value, at);
+        return;
+
+      case ScanConfigUiElement.EtypeSelector:
+        await this.pickEType(field, value, at);
         return;
 
       case ScanConfigUiElement.SelectEFeaturesByProtocol:
@@ -484,9 +506,22 @@ export class ScanConfigDriver {
     await this.page.keyboard.press('Escape');
   }
 
+  /**
+   * Picks one entity in the editor's catalogue, by name or by id.
+   *
+   * An id is for a name two entities share: the public morphologies come in
+   * pairs, one registered for the rat and one for the mouse. `scope` says which
+   * half of the catalogue holds it. The catalogue first opens on the public
+   * entities, and what a run registered — the result of an extraction, say —
+   * sits in the project. It then keeps whichever half it showed last, so a pick
+   * that follows one from the project names its scope too.
+   */
   private async pickModel(field: Locator, value: unknown, at: string): Promise<void> {
-    if (!isRecord(value) || typeof value.name !== 'string') {
-      throw new Error(`${at}: needs a { "name": … } naming the entity to pick`);
+    const entity = await entityToPick(value, at);
+
+    const scope = isRecord(value) ? value.scope : undefined;
+    if (scope !== undefined && scope !== 'public' && scope !== 'project') {
+      throw new Error(`${at}: "scope" must be "public" or "project", got ${JSON.stringify(scope)}`);
     }
 
     const picker = scanConfigModelPicker(this.page);
@@ -495,16 +530,204 @@ export class ScanConfigDriver {
     const catalogue = picker.panel;
     await expect(catalogue).toBeVisible();
 
-    const name = value.name;
-    await catalogue.getByRole('textbox', { name: 'Search' }).fill(name);
+    if (scope !== undefined) await picker.scope(scope).click(NO_NAVIGATION);
 
-    await tickRow(picker, { name }, at);
+    await catalogue.getByRole('textbox', { name: 'Search' }).fill(entity.name);
+
+    await tickRow(picker, entity, at);
     await expect(
       picker.confirm,
-      `${at}: "${name}" was selected but the picker cannot confirm it.`
+      `${at}: "${entity.name}" was selected but the picker cannot confirm it.`
     ).toBeEnabled();
 
     await confirmPicker(picker, at);
+  }
+
+  /** Picks an e-type by the label the taxonomy gives it, such as "bAC". */
+  private async pickEType(field: Locator, value: unknown, at: string): Promise<void> {
+    if (!isRecord(value) || typeof value.name !== 'string') {
+      throw new Error(`${at}: needs a { "name": … } naming the e-type, such as "bAC"`);
+    }
+
+    const picker = scanConfigETypePicker(field);
+
+    await clickUntil(picker.open, picker.search);
+    await picker.search.fill(value.name);
+
+    await expect(
+      picker.option(value.name),
+      `${at}: no e-type is called "${value.name}".`
+    ).toBeVisible();
+    await picker.option(value.name).click(NO_NAVIGATION);
+
+    await expect(
+      field,
+      `${at}: "${value.name}" was picked but the field does not show it.`
+    ).toContainText(value.name);
+  }
+
+  /**
+   * Fills the Mechanisms section of the e-model optimisation form.
+   *
+   * It is not generated from the schema: four hand-built tabs, each writing its
+   * own part of the value. Mechanism Selection picks the ion channel models,
+   * Region Assignment gives each section list the ones it takes, and
+   * Parameters Selection says which of their parameters the optimizer may
+   * move, and between which bounds. The global and passive parameters arrive
+   * filled in, and a seed that names them is refused rather than ignored.
+   *
+   * The section lists share one "open" drawer across the tabs, and a card
+   * toggles it, so each is only pressed when it is not open already.
+   */
+  private async fillEModelMechanisms(
+    rootElement: string,
+    value: Record<string, unknown>
+  ): Promise<void> {
+    const unsupported = ['global_parameters', 'base_parameters', 'distribution_parameters'].filter(
+      (key) => key in value
+    );
+    if (unsupported.length > 0) {
+      throw new Error(
+        `${rootElement}: the driver keeps the form's own ${unsupported.join(', ')}. ` +
+          'Leave them out of the seed, or teach the driver the Global Parameters tab.'
+      );
+    }
+
+    const mechanisms = isRecord(value.mechanisms) ? value.mechanisms : null;
+    const models = mechanisms?.ion_channel_models;
+    const regions = mechanisms?.mechanism_regions;
+    if (!Array.isArray(models) || models.length === 0 || !isRecord(regions)) {
+      throw new Error(
+        `${rootElement}.mechanisms: needs "ion_channel_models" and the "mechanism_regions" ` +
+          'each of them goes to'
+      );
+    }
+
+    const section = scanConfigEModelMechanisms(this.page);
+    const middle = this.page.getByTestId('scan-config-middle-content');
+    const at = `${rootElement}.mechanisms`;
+
+    // The drawers show a model by its entity name, so every id is read into one first.
+    const picked = new Map<string, MechanismModel>();
+    for (const [index, entry] of models.entries()) {
+      const model = await entityToPick(entry, `${at}.ion_channel_models[${index}]`);
+      picked.set(model.id ?? model.name, model);
+    }
+    const modelOf = (reference: unknown, where: string): MechanismModel => {
+      const key = isRecord(reference) ? (reference.id_str ?? reference.name) : undefined;
+      const model = typeof key === 'string' ? picked.get(key) : undefined;
+      if (model === undefined) {
+        throw new Error(`${where}: assigns a model "ion_channel_models" does not list`);
+      }
+      return model;
+    };
+
+    await this.openMechanismsTab(section, 'mechanism_selection');
+    await this.pickEntities(middle, models, `${at}.ion_channel_models`);
+
+    const assignments = Object.entries(regions).map(([region, entries]) => {
+      if (!Array.isArray(entries) || entries.length === 0) {
+        throw new Error(`${at}.mechanism_regions.${region}: needs at least one model`);
+      }
+      return { region, entries: entries.filter(isRecord) };
+    });
+
+    if (assignments.length === 0) {
+      throw new Error(`${at}.mechanism_regions: names no section list`);
+    }
+
+    await this.openMechanismsTab(section, 'region_assignment');
+    for (const { region, entries } of assignments) {
+      await openDrawer(section.sectionList(region));
+      for (const [index, entry] of entries.entries()) {
+        const model = modelOf(
+          entry.ion_channel_model,
+          `${at}.mechanism_regions.${region}[${index}]`
+        );
+        await section.assign(model).check(NO_NAVIGATION);
+        await expect(section.assign(model)).toBeChecked();
+      }
+    }
+
+    await this.openMechanismsTab(section, 'parameters_selection');
+    for (const { region, entries } of assignments) {
+      for (const [index, entry] of entries.entries()) {
+        const where = `${at}.mechanism_regions.${region}[${index}]`;
+        const parameters = isRecord(entry.parameters) ? Object.entries(entry.parameters) : [];
+        if (parameters.length === 0) continue;
+
+        await openDrawer(section.sectionList(region));
+        await openDrawer(section.model(modelOf(entry.ion_channel_model, where)));
+
+        for (const [parameter, selection] of parameters) {
+          await this.setOptimizationParameter(
+            section,
+            parameter,
+            selection,
+            `${where}.parameters.${parameter}`
+          );
+        }
+      }
+    }
+  }
+
+  /**
+   * Moves to one of the Mechanisms tabs, and clicks again if the editor did
+   * not follow. The tab marks itself active: two of them show the same cards,
+   * so what is on the page cannot tell them apart.
+   */
+  private async openMechanismsTab(
+    section: ReturnType<typeof scanConfigEModelMechanisms>,
+    tab: string
+  ): Promise<void> {
+    const item = section.tab(tab);
+
+    await expect(async () => {
+      await this.page.keyboard.press('Escape');
+      await item.click(NO_NAVIGATION);
+      await expect(item).toHaveAttribute('data-active', 'true', { timeout: OPENS_WITHIN });
+    }, `The Mechanisms section never opened "${tab}".`).toPass();
+  }
+
+  /**
+   * Lets the optimizer move one parameter, or pins it.
+   *
+   * A parameter is offered unticked; ticking it adds it as a fixed value, and
+   * "Bounds" swaps that for a lower and an upper one.
+   */
+  private async setOptimizationParameter(
+    section: ReturnType<typeof scanConfigEModelMechanisms>,
+    name: string,
+    selection: unknown,
+    at: string
+  ): Promise<void> {
+    const optimization = isRecord(selection) && isRecord(selection.value) ? selection.value : null;
+    const bounds = optimization?.bounds;
+    const fixed = optimization?.value;
+
+    const parameter = section.parameter(name);
+    await expect(parameter.row, `${at}: the model offers no parameter "${name}".`).toBeVisible();
+
+    await parameter.include.check(NO_NAVIGATION);
+
+    if (optimization?.mode === 'bounds') {
+      if (
+        !Array.isArray(bounds) ||
+        bounds.length !== 2 ||
+        !bounds.every((b) => typeof b === 'number')
+      ) {
+        throw new Error(`${at}: "bounds" mode needs "bounds": [lower, upper]`);
+      }
+      await parameter.mode('Bounds').check(NO_NAVIGATION);
+      await parameter.min.fill(String(bounds[0]));
+      await parameter.max.fill(String(bounds[1]));
+      return;
+    }
+
+    if (typeof fixed !== 'number') {
+      throw new Error(`${at}: needs { "mode": "bounds", "bounds": […] } or a fixed "value"`);
+    }
+    await parameter.value.fill(String(fixed));
   }
 
   private async setSelection(field: Locator, value: unknown, at: string): Promise<void> {
@@ -619,6 +842,18 @@ async function confirmPicker(
 ): Promise<void> {
   await picker.confirm.click(NO_NAVIGATION);
   await expect(picker.overlay, `${at}: the picker never closed.`).toHaveCount(0);
+}
+
+/**
+ * Opens one drawer of the Mechanisms section, unless it already is.
+ *
+ * A card toggles its drawer, and the open one is shared across the tabs, so a
+ * plain click on the card the last tab left open closes it instead.
+ */
+async function openDrawer(card: Locator): Promise<void> {
+  await expect(card).toBeVisible();
+  if ((await card.getAttribute('aria-pressed')) !== 'true') await card.click(NO_NAVIGATION);
+  await expect(card).toHaveAttribute('aria-pressed', 'true');
 }
 
 type PickedEntity = { name: string; id?: string };

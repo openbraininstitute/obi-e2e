@@ -12,6 +12,14 @@ export type Project = { id: string; name: string; created_at?: string };
 /** How many projects one lab can hold. */
 export const PROJECT_LIMIT = 40;
 
+/** The product tours the app can start. Mirrors `OnboardingFeature` in core-web-app. */
+export const TOURS = [
+  'workspace-project',
+  'workspace-data',
+  'workspace-workflow',
+  'simulation-spike-replay',
+] as const;
+
 /** Calls the virtual lab manager as the user the token belongs to. */
 export class VirtualLabApi {
   constructor(
@@ -88,6 +96,14 @@ export class VirtualLabApi {
 
   deleteLab(labId: string): Promise<unknown> {
     return this.call(`/virtual-labs/${encodeURIComponent(labId)}`, { method: 'DELETE' });
+  }
+
+  /** Marks a tour dismissed for this user, as its Skip button does. */
+  dismissTour(tour: (typeof TOURS)[number]): Promise<unknown> {
+    return this.call(`/users/preferences/onboarding/${encodeURIComponent(tour)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ dismissed: true }),
+    });
   }
 
   private static amount(value: unknown, at: string): number {

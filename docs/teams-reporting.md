@@ -46,8 +46,8 @@ compute the same **thread key** and send it:
 2026-09-18-repository_dispatch-2026.09.18.1-staging
 ```
 
-The seed is the release tag, or the short commit sha. The flow keeps a
-SharePoint list mapping key → message id.
+The seed is the release tag, the run id of a manual dispatch, or the short
+commit sha. The flow keeps a SharePoint list mapping key → message id.
 
 - **First call with a key** → post a new parent, save the id.
 - **Every later call** → reply under the saved id.

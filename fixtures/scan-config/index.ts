@@ -80,10 +80,22 @@ export type ScanConfigSelection =
   | (SelectionBase & { mode: 'single'; entities: [string] })
   | (SelectionBase & { mode: 'multiple'; entities: string[]; prerequisite?: string });
 
-export const SCAN_CONFIG_ACTIVITIES = ['build', 'simulate', 'extract', 'process'] as const;
+export const SCAN_CONFIG_ACTIVITIES = [
+  'build',
+  'simulate',
+  'extract',
+  'process',
+  'optimize',
+] as const;
 export type ScanConfigActivity = (typeof SCAN_CONFIG_ACTIVITIES)[number];
 
-/** A scenario folder keeps its seed beside its spec, under this name. */
+/**
+ * A scenario folder keeps its seed beside its spec, under this name.
+ *
+ * A case that drives a second workflow — the extraction an optimization aims
+ * at, the simulation of what a build registered — names its own file beside
+ * this one with a case-level `Seed:`, so the folder still stands alone.
+ */
 export const SEED_NAME = 'seed.json';
 
 const SCENARIOS_DIR = path.resolve(import.meta.dirname, '..', '..', 'scenarios');
@@ -105,21 +117,24 @@ export function notDeployedHere(fixture: ScanConfigFixture): string {
   );
 }
 
-/** Every scenario folder that carries a seed, at any depth. */
-export function seedFolders(): string[] {
+/** Every seed under the scenarios, at any depth: each JSON file there is one. */
+export function seedFiles(): string[] {
   return fs
     .readdirSync(SCENARIOS_DIR, { recursive: true })
     .flatMap((entry) => {
       const relative = String(entry);
-      if (path.basename(relative) !== SEED_NAME) return [];
-      return [path.join(SCENARIOS_DIR, path.dirname(relative))];
+      if (path.extname(relative) !== '.json') return [];
+      return [path.join(SCENARIOS_DIR, relative)];
     })
     .toSorted();
 }
 
-/** The seed beside a spec. A spec passes its own `import.meta.dir`. */
-export function loadSeed(folder: string): ScanConfigFixture {
-  const file = path.join(folder, SEED_NAME);
+/**
+ * A seed beside a spec. A spec passes its own `import.meta.dir`, and a file
+ * name only when a case names one other than `seed.json`.
+ */
+export function loadSeed(folder: string, name: string = SEED_NAME): ScanConfigFixture {
+  const file = path.join(folder, name);
   const raw: unknown = JSON.parse(fs.readFileSync(file, 'utf8'));
   return parseScanConfigFixture(raw, path.relative(process.cwd(), file));
 }

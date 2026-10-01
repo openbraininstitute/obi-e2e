@@ -142,9 +142,12 @@ jobs:
       # The name of the Teams thread this run posts into. Both workflows compute
       # it the same way and never compare notes: same day, same event, same seed
       # is what puts the regular suite's card and the slow suite's card under one
-      # parent message. A release dispatch seeds it with the tag, everything else
-      # with the sha, so a second run the same day opens its own thread. Keep
-      # this step identical in both workflows — the two agreeing is the mechanism.
+      # parent message. A release dispatch seeds it with the tag, a manual
+      # dispatch with its own run id, everything else with the sha. Seeded by the
+      # sha, every manual dispatch of the day landed on the first one's card, one
+      # badge each, and overwrote its report folder. A manual dispatch of each
+      # workflow now opens a thread of its own. Keep this step identical in both
+      # workflows — the two agreeing is the mechanism.
       - name: Thread key
         id: thread
         env:
@@ -153,6 +156,7 @@ jobs:
           RELEASE_URL: ${{ github.event.client_payload.release_url }}
           RELEASE_COMMIT: ${{ github.event.client_payload.commit }}
           SHA: ${{ github.sha }}
+          RUN: ${{ github.run_id }}
         run: |
           # One `date` call, not two: the key's day and the stamp below must not
           # straddle midnight. The stamp is frozen here because the parent card is
@@ -167,6 +171,7 @@ jobs:
           # same day are two runs, and the sha here is obi-e2e's own.
           seed="${RELEASE:-${RELEASE_COMMIT:-$SHA}}"
           [[ -n "$RELEASE" ]] || seed="${seed:0:7}"
+          [[ "$EVENT" != workflow_dispatch ]] || seed="$RUN"
           key="${now%% *}-$EVENT-$seed-$E2E_ENVIRONMENT"
           echo "key=$key" >> "$GITHUB_OUTPUT"
           {

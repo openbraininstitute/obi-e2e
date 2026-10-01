@@ -1,0 +1,260 @@
+{
+  "name": "E-features for an e-model optimization to aim at",
+  "activity": "extract",
+  "env": ["staging"],
+  "workflow": {
+    "label": "Intracellular EFeatures",
+    "type": "efeature-extraction-campaign"
+  },
+  "schemaName": "EModelEFeatureExtractionScanConfig",
+  "selection": {
+    "mode": "none"
+  },
+  "requires": {
+    "featureFlag": "efeature_extraction_campaign"
+  },
+  "cases": [
+    {
+      "name": "the e-features of one bAC recording, to optimize against",
+      "config": {
+        "info": {
+          "type": "Info",
+          "campaign_name": "E2E e-model optimization targets",
+          "campaign_description": "The e-features an e-model optimization aims at."
+        },
+        "initialize": {
+          "type": "ExtractionInitialize",
+          "electrical_cell_recording": [
+            {
+              "id_str": "627728e5-320c-4860-a442-c25b9d0a052b",
+              "type": "ElectricalCellRecordingFromID"
+            }
+          ]
+        },
+        "efeatures_by_protocol": {
+          "type": "ProtocolAndFeatureSelection",
+          "selection": {
+            "extra_features_by_protocol": {},
+            "protocols": [
+              {
+                "extraction_amplitudes": [
+                  [-0.006, false],
+                  [-0.003, false],
+                  [0.056, false],
+                  [0.066, false],
+                  [0.084, false],
+                  [0.097, false],
+                  [0.103, false],
+                  [0.112, false],
+                  [0.119, false],
+                  [0.131, false],
+                  [0.141, false],
+                  [0.153, false],
+                  [0.162, false],
+                  [0.166, false],
+                  [0.175, false],
+                  [0.184, false],
+                  [0.191, false],
+                  [0.197, false],
+                  [0.203, false],
+                  [0.231, false],
+                  [0.233, false],
+                  [0.234, false],
+                  [0.253, false],
+                  [0.281, false],
+                  [0.287, false],
+                  [0.303, false],
+                  [0.347, false]
+                ],
+                "features": [
+                  {
+                    "spike_detection_threshold": null,
+                    "trace_resampling_timestep": null,
+                    "type": "VoltageBaseFeature",
+                    "stim_start": 0,
+                    "stim_end": 0,
+                    "stim_mid": 0,
+                    "stim_mid_2": 0
+                  },
+                  {
+                    "spike_detection_threshold": null,
+                    "trace_resampling_timestep": null,
+                    "type": "VoltageAfterStimFeature",
+                    "stim_start": 0,
+                    "stim_end": 0
+                  },
+                  {
+                    "spike_detection_threshold": null,
+                    "trace_resampling_timestep": null,
+                    "type": "APAmplitudeFeature",
+                    "stim_start": 0,
+                    "stim_end": 0
+                  },
+                  {
+                    "spike_detection_threshold": null,
+                    "trace_resampling_timestep": null,
+                    "type": "APlastAmpFeature",
+                    "stim_start": 0,
+                    "stim_end": 0
+                  },
+                  {
+                    "spike_detection_threshold": null,
+                    "trace_resampling_timestep": null,
+                    "type": "AHPDepthFeature",
+                    "stim_start": 0,
+                    "stim_end": 0,
+                    "stim_mid": 0,
+                    "stim_mid_2": 0
+                  },
+                  {
+                    "spike_detection_threshold": null,
+                    "trace_resampling_timestep": null,
+                    "type": "MeanFrequencyFeature",
+                    "stim_start": 0,
+                    "stim_end": 0,
+                    "stim_mid": 0,
+                    "stim_mid_2": 0
+                  },
+                  {
+                    "spike_detection_threshold": null,
+                    "trace_resampling_timestep": null,
+                    "type": "InvTimeToFirstSpikeFeature",
+                    "stim_start": 0,
+                    "stim_end": 0
+                  },
+                  {
+                    "spike_detection_threshold": null,
+                    "trace_resampling_timestep": null,
+                    "type": "TimeToLastSpikeFeature",
+                    "stim_start": 0,
+                    "stim_end": 0
+                  },
+                  {
+                    "spike_detection_threshold": null,
+                    "trace_resampling_timestep": null,
+                    "type": "InvFirstISIFeature",
+                    "stim_start": 0,
+                    "stim_end": 0
+                  },
+                  {
+                    "spike_detection_threshold": null,
+                    "trace_resampling_timestep": null,
+                    "type": "InvSecondISIFeature",
+                    "stim_start": 0,
+                    "stim_end": 0
+                  },
+                  {
+                    "spike_detection_threshold": null,
+                    "trace_resampling_timestep": null,
+                    "type": "InvThirdISIFeature",
+                    "stim_start": 0,
+                    "stim_end": 0
+                  },
+                  {
+                    "spike_detection_threshold": null,
+                    "trace_resampling_timestep": null,
+                    "type": "InvFourthISIFeature",
+                    "stim_start": 0,
+                    "stim_end": 0
+                  },
+                  {
+                    "spike_detection_threshold": null,
+                    "trace_resampling_timestep": null,
+                    "type": "InvFifthISIFeature",
+                    "stim_start": 0,
+                    "stim_end": 0
+                  },
+                  {
+                    "spike_detection_threshold": null,
+                    "trace_resampling_timestep": null,
+                    "type": "InvLastISIFeature",
+                    "stim_start": 0,
+                    "stim_end": 0
+                  },
+                  {
+                    "spike_detection_threshold": null,
+                    "trace_resampling_timestep": null,
+                    "type": "BurstNumberFeature",
+                    "stim_start": 0,
+                    "stim_end": 0
+                  },
+                  {
+                    "spike_detection_threshold": null,
+                    "trace_resampling_timestep": null,
+                    "type": "ISICVFeature",
+                    "stim_start": 0,
+                    "stim_end": 0
+                  }
+                ],
+                "spike_detection_threshold": null,
+                "trace_resampling_timestep": null,
+                "type": "IDRestProtocol",
+                "stim_start": 0,
+                "stim_end": 0
+              },
+              {
+                "extraction_amplitudes": [
+                  [-0.003, false],
+                  [0, false],
+                  [0.003, false]
+                ],
+                "features": [
+                  {
+                    "spike_detection_threshold": null,
+                    "trace_resampling_timestep": null,
+                    "type": "VoltageBaseFeature",
+                    "stim_start": 0,
+                    "stim_end": 0,
+                    "stim_mid": 0,
+                    "stim_mid_2": 0
+                  },
+                  {
+                    "spike_detection_threshold": null,
+                    "trace_resampling_timestep": null,
+                    "type": "OhmicInputResistanceVbSsseFeature",
+                    "stim_start": 0,
+                    "stim_end": 0
+                  },
+                  {
+                    "spike_detection_threshold": null,
+                    "trace_resampling_timestep": null,
+                    "type": "VoltageDeflectionFeature",
+                    "stim_start": 0,
+                    "stim_end": 0
+                  },
+                  {
+                    "spike_detection_threshold": null,
+                    "trace_resampling_timestep": null,
+                    "type": "VoltageDeflectionBeginFeature",
+                    "stim_start": 0,
+                    "stim_end": 0
+                  }
+                ],
+                "spike_detection_threshold": null,
+                "trace_resampling_timestep": null,
+                "type": "IVProtocol",
+                "stim_start": 0,
+                "stim_end": 0
+              }
+            ],
+            "type": "SelectEFeaturesByProtocol"
+          }
+        },
+        "settings": {
+          "type": "Settings",
+          "spike_detection_threshold": -20,
+          "trace_resampling_timestep": 0.025,
+          "default_std_value": 0.01,
+          "threshold_nvalue_save": 1,
+          "bound_max_std": false,
+          "interpolate_rmp": false,
+          "threshold_efeature_std": 0,
+          "minimum_protocol_delay": 0
+        }
+      },
+      "expect": {
+        "coordinateCount": 1
+      }
+    }
+  ]
+}

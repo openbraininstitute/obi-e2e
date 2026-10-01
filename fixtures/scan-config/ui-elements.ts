@@ -25,6 +25,9 @@ export const ScanConfigUiElement = {
   FloatOptional: 'float_optional',
   SelectEFeaturesByProtocol: 'select_efeatures_by_protocol',
   MorphologyLocationSelection: 'morphology_location_selection',
+  TaskResultSelector: 'task_result_selector',
+  EtypeSelector: 'etype_selector',
+  EModelOptimisationParameters: 'emodel_optimisation_parameters',
 } as const;
 
 export type TScanConfigUiElement = (typeof ScanConfigUiElement)[keyof typeof ScanConfigUiElement];

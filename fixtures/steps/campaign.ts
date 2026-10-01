@@ -153,15 +153,7 @@ export async function runCampaign(
   // A case the lab cannot afford to run stops with the button offered, unpressed.
   if (configuration.launch === false) return;
 
-  const launched = callSent(page, LAUNCHES_THE_CAMPAIGN);
-  await results.launch.click(NO_NAVIGATION);
-
-  if (fixture.workflow.confirmsCost) {
-    await expect(results.costConfirm).toBeVisible();
-    await results.costConfirm.click(NO_NAVIGATION);
-  }
-
-  await expectAccepted(page, launched, 'Launching the campaign');
+  await launchCampaign(page, fixture);
 
   await expect(
     status,
@@ -174,6 +166,52 @@ export async function runCampaign(
   await expect(status).toHaveText(/^done$/i);
 
   await checkCompletedOutput(page, configuration);
+}
+
+/**
+ * Runs a campaign for what it leaves behind rather than to test it: the
+ * precondition of a case that works from its result, such as the e-features
+ * an e-model optimization aims at, or the circuit a simulation runs.
+ *
+ * Nothing the campaign shows is checked — its own scenario does that — only
+ * that each call behind a button is accepted and the run reaches "done".
+ */
+export async function runForItsOutput(
+  page: Page,
+  fixture: ScanConfigFixture,
+  configuration: ScanConfigCase
+): Promise<void> {
+  const editor = scanConfigEditor(page);
+  const results = scanConfigResults(page);
+  const words = scanConfigWords[fixture.activity];
+
+  await new ScanConfigDriver(page).apply(configuration);
+  await expect(editor.submit, `${fixture.name}: the form is still incomplete.`).toBeEnabled();
+
+  await generateCampaign(page, editor.submit);
+  await expect(editor.tab(words.resultsTab)).toBeEnabled({ timeout: CALL_TIMEOUT });
+
+  await openTab(page, editor, words.resultsTab);
+  await launchCampaign(page, fixture);
+
+  const status = results.coordinates.first().getByTestId('scan-config-status');
+  await waitForCampaign(status, runMinutes(configuration));
+  await expect(status, `${fixture.name} ran, but did not finish.`).toHaveText(/^done$/i);
+}
+
+/** Presses Launch, confirms the cost where the workflow asks, and waits for the call. */
+async function launchCampaign(page: Page, fixture: ScanConfigFixture): Promise<void> {
+  const results = scanConfigResults(page);
+
+  const launched = callSent(page, LAUNCHES_THE_CAMPAIGN);
+  await results.launch.click(NO_NAVIGATION);
+
+  if (fixture.workflow.confirmsCost) {
+    await expect(results.costConfirm).toBeVisible();
+    await results.costConfirm.click(NO_NAVIGATION);
+  }
+
+  await expectAccepted(page, launched, 'Launching the campaign');
 }
 
 /**

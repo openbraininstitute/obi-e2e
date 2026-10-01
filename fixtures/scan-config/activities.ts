@@ -34,4 +34,10 @@ export const scanConfigWords: Record<ScanConfigActivity, ScanConfigWords> = {
     newCampaign: 'New skeletonization campaign',
     launch: 'Launch skeletonizations',
   },
+  optimize: {
+    resultsTab: 'optimizations',
+    generate: 'Generate optimization(s)',
+    newCampaign: 'New optimization campaign',
+    launch: 'Launch optimizations',
+  },
 };
