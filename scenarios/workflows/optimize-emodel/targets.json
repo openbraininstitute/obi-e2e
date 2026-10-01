@@ -1,5 +1,5 @@
 {
-  "name": "E-features for an e-model optimization to aim at",
+  "name": "E-features of a cADpyr pyramidal cell, for an e-model optimization to aim at",
   "activity": "extract",
   "env": ["staging"],
   "workflow": {
@@ -15,18 +15,18 @@
   },
   "cases": [
     {
-      "name": "the e-features of one bAC recording, to optimize against",
+      "name": "the IDRest and IV e-features of one cADpyr recording",
       "config": {
         "info": {
           "type": "Info",
-          "campaign_name": "E2E e-model optimization targets",
-          "campaign_description": "The e-features an e-model optimization aims at."
+          "campaign_name": "E2E cADpyr e-features",
+          "campaign_description": "The IDRest and IV e-features of recording C060109A1-SR-C1, to optimize against."
         },
         "initialize": {
           "type": "ExtractionInitialize",
           "electrical_cell_recording": [
             {
-              "id_str": "627728e5-320c-4860-a442-c25b9d0a052b",
+              "id_str": "ad6e67a9-db2e-44ff-9d8f-df17f4dbeea7",
               "type": "ElectricalCellRecordingFromID"
             }
           ]
@@ -38,33 +38,38 @@
             "protocols": [
               {
                 "extraction_amplitudes": [
-                  [-0.006, false],
-                  [-0.003, false],
-                  [0.056, false],
-                  [0.066, false],
-                  [0.084, false],
-                  [0.097, false],
-                  [0.103, false],
-                  [0.112, false],
-                  [0.119, false],
-                  [0.131, false],
-                  [0.141, false],
-                  [0.153, false],
-                  [0.162, false],
-                  [0.166, false],
-                  [0.175, false],
-                  [0.184, false],
-                  [0.191, false],
-                  [0.197, false],
-                  [0.203, false],
-                  [0.231, false],
-                  [0.233, false],
-                  [0.234, false],
-                  [0.253, false],
-                  [0.281, false],
-                  [0.287, false],
-                  [0.303, false],
-                  [0.347, false]
+                  [-0.023, false],
+                  [-0.021, false],
+                  [-0.015, false],
+                  [0.182, false],
+                  [0.189, false],
+                  [0.216, false],
+                  [0.221, false],
+                  [0.258, false],
+                  [0.292, false],
+                  [0.298, false],
+                  [0.331, false],
+                  [0.334, false],
+                  [0.366, false],
+                  [0.371, false],
+                  [0.404, false],
+                  [0.406, false],
+                  [0.441, false],
+                  [0.443, false],
+                  [0.478, false],
+                  [0.48, false],
+                  [0.514, false],
+                  [0.517, false],
+                  [0.55, false],
+                  [0.551, false],
+                  [0.587, false],
+                  [0.592, false],
+                  [0.623, false],
+                  [0.624, false],
+                  [0.662, false],
+                  [0.697, false],
+                  [0.7, false],
+                  [0.736, false]
                 ],
                 "features": [
                   {
@@ -194,9 +199,31 @@
               },
               {
                 "extraction_amplitudes": [
+                  [-0.084, false],
+                  [-0.082, false],
+                  [-0.068, false],
+                  [-0.067, false],
+                  [-0.052, false],
+                  [-0.048, false],
+                  [-0.046, false],
+                  [-0.036, false],
+                  [-0.028, false],
+                  [-0.02, false],
+                  [-0.018, false],
+                  [-0.014, false],
+                  [-0.012, false],
+                  [-0.01, false],
                   [-0.003, false],
-                  [0, false],
-                  [0.003, false]
+                  [0.001, false],
+                  [0.005, false],
+                  [0.01, false],
+                  [0.011, false],
+                  [0.013, false],
+                  [0.014, false],
+                  [0.024, false],
+                  [0.032, false],
+                  [0.036, false],
+                  [0.043, false]
                 ],
                 "features": [
                   {

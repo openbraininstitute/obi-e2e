@@ -8,16 +8,25 @@ import type { ScanConfigCase, ScanConfigView } from '../scan-config';
 
 const LOG_FILE = 'Task logs';
 
+/**
+ * How long a file list may take to settle once the run has finished. The
+ * outputs are fetched one by one after "done", and a circuit's polls for its
+ * visualization for twenty seconds.
+ */
+const FILES_SETTLE_WITHIN = 60_000;
+
 async function checkFiles(panel: Locator, names: string[]): Promise<void> {
   const files = panel.locator('[data-file-name]');
 
   // Comparing the names, not the count, so a changed output prints what changed.
+  // A bounded retry: `toPass()` alone retries until the test runs out of clock,
+  // so a list that will never match held an optimization's page for half an hour.
   await expect(async () => {
     const shown = await files.evaluateAll((items) =>
       items.map((item) => item.getAttribute('data-file-name') ?? '')
     );
     expect(shown.toSorted()).toEqual(names.toSorted());
-  }).toPass();
+  }).toPass({ timeout: FILES_SETTLE_WITHIN });
 
   for (const name of names) {
     await expect(panel.locator(`[data-file-name="${name}"]`)).toBeVisible();
