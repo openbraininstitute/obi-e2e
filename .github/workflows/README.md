@@ -68,9 +68,9 @@ The two suites are separate workflow runs that finish hours apart, and both
 land under one parent message. The webhook never returns a message id, so
 neither run can reply to anything; instead each computes the same **thread key**
 in its first step — `<UTC date>-<event>-<seed>-<environment>`, the seed being
-the release tag, or the short sha of the merged `core-web-app` commit or of
-this repository — and the Power Automate flow keeps the
-key-to-message-id map. The environment is in there because dispatching the
+the release tag, the run id of a manual dispatch, or the short sha of the
+merged `core-web-app` commit or of this repository — and the Power Automate
+flow keeps the key-to-message-id map. The environment is in there because dispatching the
 regular suite at production and the slow one at staging matches on everything
 else, and the two would otherwise share a thread while testing two deployments.
 
