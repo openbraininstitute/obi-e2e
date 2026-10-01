@@ -199,7 +199,11 @@ const CREDITS_VARIABLE = {
 
 type Suite = keyof typeof DEFAULT_CREDITS;
 
-const SUITE_VARIABLE = 'E2E_SUITE';
+/**
+ * Not `E2E_SUITE`: the workflows set that to name the suite's Teams badge, and
+ * the Teams script imports this file, which rewrote "Slow" to "regular".
+ */
+const SUITE_VARIABLE = 'E2E_CREDITS_SUITE';
 
 export function suiteOf(argv: readonly string[]): Suite {
   const selected = argv.flatMap((arg, index) =>

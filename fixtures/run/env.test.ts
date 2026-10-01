@@ -44,6 +44,15 @@ test('an amount from CI wins over the default', () => {
   expect(creditsFor('slow', '2500')).toBe(2_500);
 });
 
+test('loading the env leaves the Teams badge name alone', () => {
+  const env = JSON.stringify(`${import.meta.dir}/env.ts`);
+  const run = Bun.spawnSync(
+    [process.execPath, '-e', `await import(${env}); process.stdout.write(process.env.E2E_SUITE)`],
+    { env: { ...process.env, E2E_SUITE: 'Slow' } }
+  );
+  expect(run.stdout.toString()).toBe('Slow');
+});
+
 test('an amount that is not a positive number is refused', () => {
   expect(() => creditsFor('slow', '0')).toThrow('E2E_SLOW_PROJECT_CREDITS');
   expect(() => creditsFor('regular', 'plenty')).toThrow('E2E_PROJECT_CREDITS');
