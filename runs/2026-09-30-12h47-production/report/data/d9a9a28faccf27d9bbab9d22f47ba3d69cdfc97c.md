@@ -1,0 +1,781 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: scenarios/data/experimental-neuron-density/browse/browse.spec.ts >> Neuron density listing >> Every Neuron density filter narrows the listing
+- Location: scenarios/data/experimental-neuron-density/browse/browse.spec.ts:140:2
+
+# Error details
+
+```
+Error: click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('column-filter-trigger-Brain region').or(getByRole('button', { name: 'Filter Brain region', exact: true }))
+    - locator resolved to <button type="button" data-state="closed" aria-expanded="false" aria-haspopup="dialog" aria-controls="radix-_r_q_" data-slot="popover-trigger" aria-label="Filter Brain region" data-testid="column-filter-trigger-Brain region" class="flex size-7 shrink-0 items-center justify-center rounded-full transition-colors text-gray-500 hover:bg-gray-100 hover:text-primary-7">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is visible, enabled and stable
+      - scrolling into view if needed
+      - done scrolling
+      - <div data-name="nextstep-prevent-click-overlay-right"></div> from <div data-name="nextstep-overlay">…</div> subtree intercepts pointer events
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is visible, enabled and stable
+      - scrolling into view if needed
+      - done scrolling
+      - <div data-name="nextstep-prevent-click-overlay-right"></div> from <div data-name="nextstep-overlay">…</div> subtree intercepts pointer events
+    - retrying click action
+      - waiting 100ms
+    58 × waiting for element to be visible, enabled and stable
+       - element is visible, enabled and stable
+       - scrolling into view if needed
+       - done scrolling
+       - <div data-name="nextstep-prevent-click-overlay-right"></div> from <div data-name="nextstep-overlay">…</div> subtree intercepts pointer events
+     - retrying click action
+       - waiting 500ms
+
+
+Call Log:
+- Timeout 45000ms exceeded while waiting on the predicate
+```
+
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e6]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - menubar "user CI Test's virtual lab/e2e-36726867714-1" [ref=e12]:
+          - button "user CI Test" [ref=e13] [cursor=pointer]:
+            - img "UserFilled" [ref=e14]
+          - button [ref=e18] [cursor=pointer]:
+            - heading "user CI Test's virtual lab" [level=3] [ref=e19]
+          - button "e2e-36726867714-1" [ref=e22] [cursor=pointer]
+          - button "toggle-workspace-panel" [ref=e23] [cursor=pointer]
+        - link "Coins 2000.00" [ref=e26] [cursor=pointer]:
+          - /url: /app/virtual-lab/781aff8a-1ab3-45b2-886c-b42fd7954335/e33e6212-6d5d-4ecc-9f16-5c45920af506/credits
+          - img "Coins"
+          - generic [ref=e27]: "2000.00"
+      - generic [ref=e28]:
+        - link "Home" [ref=e31] [cursor=pointer]:
+          - /url: /app/virtual-lab/781aff8a-1ab3-45b2-886c-b42fd7954335/e33e6212-6d5d-4ecc-9f16-5c45920af506
+          - img "Home"
+        - link "Data Explore" [ref=e34] [cursor=pointer]:
+          - /url: /app/virtual-lab/781aff8a-1ab3-45b2-886c-b42fd7954335/e33e6212-6d5d-4ecc-9f16-5c45920af506/data
+          - generic [ref=e35]: Data
+          - img "Explore"
+        - link "Workflows Workflow" [ref=e38] [cursor=pointer]:
+          - /url: /app/virtual-lab/781aff8a-1ab3-45b2-886c-b42fd7954335/e33e6212-6d5d-4ecc-9f16-5c45920af506/workflows
+          - generic [ref=e39]: Workflows
+          - img "Workflow"
+        - link "Notebooks Notebook" [ref=e42] [cursor=pointer]:
+          - /url: /app/virtual-lab/781aff8a-1ab3-45b2-886c-b42fd7954335/e33e6212-6d5d-4ecc-9f16-5c45920af506/notebooks
+          - generic [ref=e43]: Notebooks
+          - img "Notebook"
+        - link "Reports" [ref=e46] [cursor=pointer]:
+          - /url: /app/virtual-lab/781aff8a-1ab3-45b2-886c-b42fd7954335/e33e6212-6d5d-4ecc-9f16-5c45920af506/reports
+        - generic [ref=e49]:
+          - link [ref=e50] [cursor=pointer]:
+            - /url: /app/virtual-lab/781aff8a-1ab3-45b2-886c-b42fd7954335/e33e6212-6d5d-4ecc-9f16-5c45920af506/help
+          - generic [ref=e51]: Help
+        - generic [ref=e53]:
+          - generic [ref=e54] [cursor=pointer]:
+            - img "Feedback star"
+          - generic [ref=e55]: Feedback
+    - generic [ref=e57]:
+      - tablist [ref=e61]:
+        - tab "Public" [selected] [ref=e62] [cursor=pointer]
+        - tab "Project" [ref=e64] [cursor=pointer]
+      - generic [ref=e66]:
+        - generic [ref=e69]:
+          - combobox [ref=e75] [cursor=pointer]:
+            - generic [ref=e76]:
+              - generic [ref=e77]: Species
+              - generic [ref=e78]: All
+          - generic [ref=e81]:
+            - tablist [ref=e84]:
+              - tab "Experimental" [selected] [ref=e85] [cursor=pointer]
+              - tab "Model" [ref=e86] [cursor=pointer]
+              - tab "Simulations" [ref=e87] [cursor=pointer]
+            - generic [ref=e88]:
+              - button "Morphology 6225 of 6225" [ref=e91] [cursor=pointer]:
+                - generic [ref=e92]: Morphology
+                - generic [ref=e94]:
+                  - generic [ref=e95]: "6225"
+                  - generic [ref=e96]: of
+                  - generic [ref=e97]: "6225"
+              - button "Single cell electrophysiology 2247 of 2247" [ref=e100] [cursor=pointer]:
+                - generic [ref=e101]: Single cell electrophysiology
+                - generic [ref=e103]:
+                  - generic [ref=e104]: "2247"
+                  - generic [ref=e105]: of
+                  - generic [ref=e106]: "2247"
+              - button "Ion channel electrophysiology 33198 of 33198" [ref=e109] [cursor=pointer]:
+                - generic [ref=e110]: Ion channel electrophysiology
+                - generic [ref=e112]:
+                  - generic [ref=e113]: "33198"
+                  - generic [ref=e114]: of
+                  - generic [ref=e115]: "33198"
+              - button "Neuron density 62 of 62" [ref=e118] [cursor=pointer]:
+                - generic [ref=e119]: Neuron density
+                - generic [ref=e121]:
+                  - generic [ref=e122]: "62"
+                  - generic [ref=e123]: of
+                  - generic [ref=e124]: "62"
+              - button "Bouton density 6 of 6" [ref=e127] [cursor=pointer]:
+                - generic [ref=e128]: Bouton density
+                - generic [ref=e130]:
+                  - generic [ref=e131]: "6"
+                  - generic [ref=e132]: of
+                  - generic [ref=e133]: "6"
+              - button "Synapse per connection 12 of 12" [ref=e136] [cursor=pointer]:
+                - generic [ref=e137]: Synapse per connection
+                - generic [ref=e139]:
+                  - generic [ref=e140]: "12"
+                  - generic [ref=e141]: of
+                  - generic [ref=e142]: "12"
+              - button "EM mesh 2739 of 2739" [ref=e145] [cursor=pointer]:
+                - generic [ref=e146]: EM mesh
+                - generic [ref=e148]:
+                  - generic [ref=e149]: "2739"
+                  - generic [ref=e150]: of
+                  - generic [ref=e151]: "2739"
+              - button "Intracellular e-feature extraction 0 of 0" [ref=e154] [cursor=pointer]:
+                - generic [ref=e155]: Intracellular e-feature extraction
+                - generic [ref=e157]:
+                  - generic [ref=e158]: "0"
+                  - generic [ref=e159]: of
+                  - generic [ref=e160]: "0"
+        - generic [ref=e162]:
+          - generic [ref=e164]:
+            - generic [ref=e165]:
+              - button "Close search" [ref=e166] [cursor=pointer]
+              - textbox "Search" [active] [ref=e171]:
+                - /placeholder: Search for entities…
+            - button "Filters" [ref=e172] [cursor=pointer]
+            - button "Columns" [ref=e177] [cursor=pointer]
+          - generic [ref=e184]:
+            - generic [ref=e185]: No entities to show
+            - grid [ref=e186]:
+              - rowgroup [ref=e187]:
+                - row [ref=e188]:
+                  - columnheader [ref=e189]:
+                    - checkbox "Column with Header Selection" [ref=e190] [cursor=pointer]
+              - rowgroup [ref=e191]:
+                - row [ref=e192]:
+                  - columnheader "Brain region Filter Brain region" [ref=e193]:
+                    - generic [ref=e195]:
+                      - button "Brain region" [ref=e196] [cursor=pointer]
+                      - button "Filter Brain region" [ref=e201] [cursor=pointer]
+                  - columnheader "Species Filter Species" [ref=e204]:
+                    - generic [ref=e206]:
+                      - button "Species" [ref=e207] [cursor=pointer]
+                      - button "Filter Species" [ref=e212] [cursor=pointer]
+                  - columnheader "M-type Filter M-type" [ref=e215]:
+                    - generic [ref=e217]:
+                      - button "M-type" [ref=e218] [cursor=pointer]
+                      - button "Filter M-type" [ref=e223] [cursor=pointer]
+                  - columnheader "E-type Filter E-type" [ref=e226]:
+                    - generic [ref=e228]:
+                      - button "E-type" [ref=e229] [cursor=pointer]
+                      - button "Filter E-type" [ref=e234] [cursor=pointer]
+                  - columnheader "Density [1/mm³]" [ref=e237]:
+                    - button "Density [1/mm³]" [ref=e240]:
+                      - generic "Density" [ref=e241]
+                      - generic [ref=e242]: "[1/mm³]"
+                  - columnheader "N° of Measurements" [ref=e243]:
+                    - button "N° of Measurements" [ref=e246]
+                  - columnheader "Name Filter Name" [ref=e248]:
+                    - generic [ref=e250]:
+                      - button "Name" [ref=e251] [cursor=pointer]
+                      - button "Filter Name" [ref=e256] [cursor=pointer]
+                  - columnheader "Age" [ref=e259]:
+                    - button "Age" [ref=e262] [cursor=pointer]
+                  - columnheader "Contributors Filter Contributors" [ref=e267]:
+                    - generic [ref=e269]:
+                      - button "Contributors" [ref=e270]
+                      - button "Filter Contributors" [ref=e272] [cursor=pointer]
+                  - columnheader "Registration date Filter Registration date" [ref=e275]:
+                    - generic [ref=e277]:
+                      - button "Registration date" [ref=e278] [cursor=pointer]
+                      - button "Filter Registration date" [ref=e283] [cursor=pointer]
+                  - columnheader "Lifecycle status Filter Lifecycle status" [ref=e286]:
+                    - generic [ref=e288]:
+                      - button "Lifecycle status" [ref=e289]
+                      - button "Filter Lifecycle status" [ref=e291] [cursor=pointer]
+              - rowgroup [ref=e294]:
+                - row [ref=e295] [cursor=pointer]:
+                  - gridcell [ref=e296]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e297]
+                - row [ref=e298] [cursor=pointer]:
+                  - gridcell [ref=e299]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e300]
+                - row [ref=e301] [cursor=pointer]:
+                  - gridcell [ref=e302]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e303]
+                - row [ref=e304] [cursor=pointer]:
+                  - gridcell [ref=e305]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e306]
+                - row [ref=e307] [cursor=pointer]:
+                  - gridcell [ref=e308]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e309]
+                - row [ref=e310] [cursor=pointer]:
+                  - gridcell [ref=e311]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e312]
+                - row [ref=e313] [cursor=pointer]:
+                  - gridcell [ref=e314]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e315]
+                - row [ref=e316] [cursor=pointer]:
+                  - gridcell [ref=e317]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e318]
+                - row [ref=e319] [cursor=pointer]:
+                  - gridcell [ref=e320]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e321]
+                - row [ref=e322] [cursor=pointer]:
+                  - gridcell [ref=e323]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e324]
+                - row [ref=e325] [cursor=pointer]:
+                  - gridcell [ref=e326]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e327]
+                - row [ref=e328] [cursor=pointer]:
+                  - gridcell [ref=e329]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e330]
+                - row [ref=e331] [cursor=pointer]:
+                  - gridcell [ref=e332]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e333]
+                - row [ref=e334] [cursor=pointer]:
+                  - gridcell [ref=e335]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e336]
+                - row [ref=e337] [cursor=pointer]:
+                  - gridcell [ref=e338]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e339]
+                - row [ref=e340] [cursor=pointer]:
+                  - gridcell [ref=e341]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e342]
+                - row [ref=e343] [cursor=pointer]:
+                  - gridcell [ref=e344]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e345]
+                - row [ref=e346] [cursor=pointer]:
+                  - gridcell [ref=e347]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e348]
+                - row [ref=e349] [cursor=pointer]:
+                  - gridcell [ref=e350]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e351]
+                - row [ref=e352] [cursor=pointer]:
+                  - gridcell [ref=e353]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e354]
+                - row [ref=e355] [cursor=pointer]:
+                  - gridcell [ref=e356]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e357]
+                - row [ref=e358] [cursor=pointer]:
+                  - gridcell [ref=e359]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e360]
+              - rowgroup [ref=e361]:
+                - row [ref=e362] [cursor=pointer]:
+                  - gridcell "Field CA1, pyramidal layer" [ref=e363]
+                  - gridcell "Rattus norvegicus" [ref=e364]
+                  - gridcell "SP_CCKBC" [ref=e365]
+                  - gridcell "—" [ref=e366]
+                  - gridcell "4691.101" [ref=e367]
+                  - gridcell "—" [ref=e368]
+                  - gridcell "Neuron density for SP_CCKBC neurons in CA1_SP" [ref=e369]
+                  - gridcell "—" [ref=e370]
+                  - gridcell "Armando Romani" [ref=e371]
+                  - gridcell "Nov 25, 2021" [ref=e374]
+                  - gridcell "Active" [ref=e375]
+                - row [ref=e377] [cursor=pointer]:
+                  - gridcell "Field CA1, pyramidal layer" [ref=e378]
+                  - gridcell "Rattus norvegicus" [ref=e379]
+                  - gridcell "SP_PC" [ref=e380]
+                  - gridcell "—" [ref=e381]
+                  - gridcell "264000" [ref=e382]
+                  - gridcell "—" [ref=e383]
+                  - gridcell "Neuron density for SP_PC neurons in CA1_SP" [ref=e384]
+                  - gridcell "—" [ref=e385]
+                  - gridcell "Armando Romani" [ref=e386]
+                  - gridcell "Nov 25, 2021" [ref=e389]
+                  - gridcell "Active" [ref=e390]
+                - row [ref=e392] [cursor=pointer]:
+                  - gridcell "Field CA1, pyramidal layer" [ref=e393]
+                  - gridcell "Rattus norvegicus" [ref=e394]
+                  - gridcell "SP_AA" [ref=e395]
+                  - gridcell "—" [ref=e396]
+                  - gridcell "1915.5329" [ref=e397]
+                  - gridcell "—" [ref=e398]
+                  - gridcell "Neuron density for SP_AA neurons in CA1_SP" [ref=e399]
+                  - gridcell "—" [ref=e400]
+                  - gridcell "Armando Romani" [ref=e401]
+                  - gridcell "Nov 25, 2021" [ref=e404]
+                  - gridcell "Active" [ref=e405]
+                - row [ref=e407] [cursor=pointer]:
+                  - gridcell "Primary Field CA1, stratum oriens" [ref=e408]
+                  - gridcell "Rattus norvegicus" [ref=e409]
+                  - gridcell "SO_BP" [ref=e410]
+                  - gridcell "—" [ref=e411]
+                  - gridcell "81.1418" [ref=e412]
+                  - gridcell "—" [ref=e413]
+                  - gridcell "Neuron density for SO_BP neurons in CA1_SO" [ref=e414]
+                  - gridcell "—" [ref=e415]
+                  - gridcell "Armando Romani" [ref=e416]
+                  - gridcell "Nov 25, 2021" [ref=e419]
+                  - gridcell "Active" [ref=e420]
+                - row [ref=e422] [cursor=pointer]:
+                  - gridcell "Field CA1, pyramidal layer" [ref=e423]
+                  - gridcell "Rattus norvegicus" [ref=e424]
+                  - gridcell "SP_PVBC" [ref=e425]
+                  - gridcell "—" [ref=e426]
+                  - gridcell "7206.0523" [ref=e427]
+                  - gridcell "—" [ref=e428]
+                  - gridcell "Neuron density for SP_PVBC neurons in CA1_SP" [ref=e429]
+                  - gridcell "—" [ref=e430]
+                  - gridcell "Armando Romani" [ref=e431]
+                  - gridcell "Nov 25, 2021" [ref=e434]
+                  - gridcell "Active" [ref=e435]
+                - row [ref=e437] [cursor=pointer]:
+                  - gridcell "Field CA1, stratum radiatum" [ref=e438]
+                  - gridcell "Rattus norvegicus" [ref=e439]
+                  - gridcell "SR_SCA" [ref=e440]
+                  - gridcell "—" [ref=e441]
+                  - gridcell "120.2854" [ref=e442]
+                  - gridcell "—" [ref=e443]
+                  - gridcell "Neuron density for SR_SCA neurons in CA1_SR" [ref=e444]
+                  - gridcell "—" [ref=e445]
+                  - gridcell "Armando Romani" [ref=e446]
+                  - gridcell "Nov 25, 2021" [ref=e449]
+                  - gridcell "Active" [ref=e450]
+                - row [ref=e452] [cursor=pointer]:
+                  - gridcell "Field CA1, stratum lacunosum-moleculare" [ref=e453]
+                  - gridcell "Rattus norvegicus" [ref=e454]
+                  - gridcell "SLM_PPA" [ref=e455]
+                  - gridcell "—" [ref=e456]
+                  - gridcell "313.6522" [ref=e457]
+                  - gridcell "—" [ref=e458]
+                  - gridcell "Neuron density for SLM_PPA neurons in CA1_SLM" [ref=e459]
+                  - gridcell "—" [ref=e460]
+                  - gridcell "Armando Romani" [ref=e461]
+                  - gridcell "Nov 25, 2021" [ref=e464]
+                  - gridcell "Active" [ref=e465]
+                - row [ref=e467] [cursor=pointer]:
+                  - gridcell "Primary Field CA1, stratum oriens" [ref=e468]
+                  - gridcell "Rattus norvegicus" [ref=e469]
+                  - gridcell "SO_OLM" [ref=e470]
+                  - gridcell "—" [ref=e471]
+                  - gridcell "700.3821" [ref=e472]
+                  - gridcell "—" [ref=e473]
+                  - gridcell "Neuron density for SO_OLM neurons in CA1_SO" [ref=e474]
+                  - gridcell "—" [ref=e475]
+                  - gridcell "Armando Romani" [ref=e476]
+                  - gridcell "Nov 25, 2021" [ref=e479]
+                  - gridcell "Active" [ref=e480]
+                - row [ref=e482] [cursor=pointer]:
+                  - gridcell "Field CA1, pyramidal layer" [ref=e483]
+                  - gridcell "Rattus norvegicus" [ref=e484]
+                  - gridcell "SP_BS" [ref=e485]
+                  - gridcell "—" [ref=e486]
+                  - gridcell "2189.1805" [ref=e487]
+                  - gridcell "—" [ref=e488]
+                  - gridcell "Neuron density for SP_BS neurons in CA1_SP" [ref=e489]
+                  - gridcell "—" [ref=e490]
+                  - gridcell "Armando Romani" [ref=e491]
+                  - gridcell "Nov 25, 2021" [ref=e494]
+                  - gridcell "Active" [ref=e495]
+                - row [ref=e497] [cursor=pointer]:
+                  - gridcell "Field CA1, pyramidal layer" [ref=e498]
+                  - gridcell "Rattus norvegicus" [ref=e499]
+                  - gridcell "SP_Ivy" [ref=e500]
+                  - gridcell "—" [ref=e501]
+                  - gridcell "11480.1666" [ref=e502]
+                  - gridcell "—" [ref=e503]
+                  - gridcell "Neuron density for SP_Ivy neurons in CA1_SP" [ref=e504]
+                  - gridcell "—" [ref=e505]
+                  - gridcell "Armando Romani" [ref=e506]
+                  - gridcell "Nov 25, 2021" [ref=e509]
+                  - gridcell "Active" [ref=e510]
+                - row [ref=e512] [cursor=pointer]:
+                  - gridcell "Primary Field CA1, stratum oriens" [ref=e513]
+                  - gridcell "Rattus norvegicus" [ref=e514]
+                  - gridcell "SO_BS" [ref=e515]
+                  - gridcell "—" [ref=e516]
+                  - gridcell "226.343" [ref=e517]
+                  - gridcell "—" [ref=e518]
+                  - gridcell "Neuron density for SO_BS neurons in CA1_SO" [ref=e519]
+                  - gridcell "—" [ref=e520]
+                  - gridcell "Armando Romani" [ref=e521]
+                  - gridcell "Nov 25, 2021" [ref=e524]
+                  - gridcell "Active" [ref=e525]
+                - row [ref=e527] [cursor=pointer]:
+                  - gridcell "Primary Field CA1, stratum oriens" [ref=e528]
+                  - gridcell "Rattus norvegicus" [ref=e529]
+                  - gridcell "SO_Tri" [ref=e530]
+                  - gridcell "—" [ref=e531]
+                  - gridcell "298.9436" [ref=e532]
+                  - gridcell "—" [ref=e533]
+                  - gridcell "Neuron density for SO_Tri neurons in CA1_SO" [ref=e534]
+                  - gridcell "—" [ref=e535]
+                  - gridcell "Armando Romani" [ref=e536]
+                  - gridcell "Nov 25, 2021" [ref=e539]
+                  - gridcell "Active" [ref=e540]
+                - row [ref=e542] [cursor=pointer]:
+                  - gridcell "Field CA1, pyramidal layer" [ref=e543]
+                  - gridcell "Rattus norvegicus" [ref=e544]
+                  - gridcell "SP_PC" [ref=e545]
+                  - gridcell "—" [ref=e546]
+                  - gridcell "264000" [ref=e547]
+                  - gridcell "5" [ref=e548]
+                  - gridcell "Neuron density for SP_PC neurons in CA1_SP" [ref=e549]
+                  - gridcell "—" [ref=e550]
+                  - gridcell "Armando Romani" [ref=e551]
+                  - gridcell "Nov 17, 2021" [ref=e554]
+                  - gridcell "Active" [ref=e555]
+                - row [ref=e557] [cursor=pointer]:
+                  - gridcell "Field CA1, pyramidal layer" [ref=e558]
+                  - gridcell "Rattus norvegicus" [ref=e559]
+                  - gridcell "—" [ref=e560]
+                  - gridcell "—" [ref=e561]
+                  - gridcell "272400" [ref=e562]
+                  - gridcell "5" [ref=e563]
+                  - 'gridcell "Neuron density: CA1_SP" [ref=e564]'
+                  - gridcell "—" [ref=e565]
+                  - gridcell "Armando Romani" [ref=e566]
+                  - gridcell "Nov 17, 2021" [ref=e569]
+                  - gridcell "Active" [ref=e570]
+                - row [ref=e572] [cursor=pointer]:
+                  - gridcell "Field CA1, stratum radiatum" [ref=e573]
+                  - gridcell "Rattus norvegicus" [ref=e574]
+                  - gridcell "—" [ref=e575]
+                  - gridcell "—" [ref=e576]
+                  - gridcell "1900" [ref=e577]
+                  - gridcell "5" [ref=e578]
+                  - 'gridcell "Neuron density: CA1_SR" [ref=e579]'
+                  - gridcell "—" [ref=e580]
+                  - gridcell "Armando Romani" [ref=e581]
+                  - gridcell "Nov 17, 2021" [ref=e584]
+                  - gridcell "Active" [ref=e585]
+                - row [ref=e587] [cursor=pointer]:
+                  - gridcell "Field CA1, stratum lacunosum-moleculare" [ref=e588]
+                  - gridcell "Rattus norvegicus" [ref=e589]
+                  - gridcell "—" [ref=e590]
+                  - gridcell "—" [ref=e591]
+                  - gridcell "1900" [ref=e592]
+                  - gridcell "5" [ref=e593]
+                  - 'gridcell "Neuron density: CA1_SLM" [ref=e594]'
+                  - gridcell "—" [ref=e595]
+                  - gridcell "Armando Romani" [ref=e596]
+                  - gridcell "Nov 17, 2021" [ref=e599]
+                  - gridcell "Active" [ref=e600]
+                - row [ref=e602] [cursor=pointer]:
+                  - gridcell "Primary Field CA1, stratum oriens" [ref=e603]
+                  - gridcell "Rattus norvegicus" [ref=e604]
+                  - gridcell "—" [ref=e605]
+                  - gridcell "—" [ref=e606]
+                  - gridcell "11300" [ref=e607]
+                  - gridcell "5" [ref=e608]
+                  - 'gridcell "Neuron density: CA1_SO" [ref=e609]'
+                  - gridcell "—" [ref=e610]
+                  - gridcell "Armando Romani" [ref=e611]
+                  - gridcell "Nov 17, 2021" [ref=e614]
+                  - gridcell "Active" [ref=e615]
+                - row [ref=e617] [cursor=pointer]:
+                  - gridcell "Cornu ammonis 1" [ref=e618]
+                  - gridcell "Rattus norvegicus" [ref=e619]
+                  - gridcell "—" [ref=e620]
+                  - gridcell "—" [ref=e621]
+                  - gridcell "35200" [ref=e622]
+                  - gridcell "5" [ref=e623]
+                  - 'gridcell "Neuron density: CA1" [ref=e624]'
+                  - gridcell "—" [ref=e625]
+                  - gridcell "Armando Romani" [ref=e626]
+                  - gridcell "Nov 17, 2021" [ref=e629]
+                  - gridcell "Active" [ref=e630]
+                - row [ref=e632] [cursor=pointer]:
+                  - gridcell "Ventral posterolateral nucleus of the thalamus" [ref=e633]
+                  - gridcell "Mus musculus" [ref=e634]
+                  - gridcell "—" [ref=e635]
+                  - gridcell "—" [ref=e636]
+                  - gridcell "57467" [ref=e637]
+                  - gridcell "1" [ref=e638]
+                  - gridcell "Neuron_Density-VPL-JME-015864" [ref=e639]
+                  - gridcell "21 days" [ref=e640]
+                  - gridcell "École Polytechnique Fédérale de Lausanne 1 more contributors" [ref=e641]:
+                    - generic [ref=e642]:
+                      - generic [ref=e643]: École Polytechnique Fédérale de Lausanne
+                      - button "1 more contributors" [ref=e644]: "+1"
+                  - gridcell "Mar 23, 2021" [ref=e645]
+                  - gridcell "Active" [ref=e646]
+                - row [ref=e648] [cursor=pointer]:
+                  - gridcell "Reticular nucleus of the thalamus" [ref=e649]
+                  - gridcell "Mus musculus" [ref=e650]
+                  - gridcell "—" [ref=e651]
+                  - gridcell "—" [ref=e652]
+                  - gridcell "68750" [ref=e653]
+                  - gridcell "37" [ref=e654]
+                  - gridcell "Neuron_Density-Rt-JME-015864" [ref=e655]
+                  - gridcell "21 days" [ref=e656]
+                  - gridcell "École Polytechnique Fédérale de Lausanne 1 more contributors" [ref=e657]:
+                    - generic [ref=e658]:
+                      - generic [ref=e659]: École Polytechnique Fédérale de Lausanne
+                      - button "1 more contributors" [ref=e660]: "+1"
+                  - gridcell "Mar 23, 2021" [ref=e661]
+                  - gridcell "Active" [ref=e662]
+                - row [ref=e664] [cursor=pointer]:
+                  - gridcell "Primary somatosensory area, hindlimb representation" [ref=e665]
+                  - gridcell "Rattus norvegicus" [ref=e666]
+                  - gridcell "—" [ref=e667]
+                  - gridcell "—" [ref=e668]
+                  - gridcell "72772.4906" [ref=e669]
+                  - gridcell "1" [ref=e670]
+                  - gridcell "P14-13_3" [ref=e671]
+                  - gridcell "—" [ref=e672]
+                  - gridcell "Cajal Institute, Polytechnical University of Madrid" [ref=e673]
+                  - gridcell "Mar 11, 2020" [ref=e676]
+                  - gridcell "Active" [ref=e677]
+                - row [ref=e679] [cursor=pointer]:
+                  - gridcell "Primary somatosensory area, hindlimb representation" [ref=e680]
+                  - gridcell "Rattus norvegicus" [ref=e681]
+                  - gridcell "—" [ref=e682]
+                  - gridcell "—" [ref=e683]
+                  - gridcell "132850.8927" [ref=e684]
+                  - gridcell "1" [ref=e685]
+                  - gridcell "P14-17_4" [ref=e686]
+                  - gridcell "—" [ref=e687]
+                  - gridcell "Cajal Institute, Polytechnical University of Madrid" [ref=e688]
+                  - gridcell "Mar 11, 2020" [ref=e691]
+                  - gridcell "Active" [ref=e692]
+              - rowgroup
+              - rowgroup
+              - rowgroup
+              - rowgroup
+          - generic [ref=e697]:
+            - generic [ref=e698]:
+              - list [ref=e699]:
+                - listitem "Previous Page" [ref=e700]:
+                  - button [disabled] [ref=e701]:
+                    - img "left" [ref=e702]
+                - listitem "1" [ref=e705] [cursor=pointer]
+                - listitem "2" [ref=e707] [cursor=pointer]
+                - listitem "3" [ref=e709] [cursor=pointer]
+                - listitem "Next Page" [ref=e711] [cursor=pointer]:
+                  - button [ref=e712]:
+                    - img "right" [ref=e713]
+              - combobox [ref=e716] [cursor=pointer]:
+                - generic: 30 / page
+            - generic [ref=e717]: 62 results
+    - button "expand AI assistant" [ref=e720] [cursor=pointer]:
+      - generic [ref=e723]: OBI Assistant
+  - alert [ref=e724]
+  - generic [ref=e730]:
+    - generic [ref=e731]:
+      - heading "Data location" [level=1] [ref=e732]
+      - generic [ref=e733]:
+        - img "left" [ref=e734] [cursor=pointer]
+        - generic [ref=e737]: 1 of 5
+        - img "right" [ref=e738] [cursor=pointer]
+    - paragraph [ref=e741]: Browse public and project data.
+    - generic [ref=e742]:
+      - button "Skip" [ref=e743] [cursor=pointer]
+      - button "Next tip" [ref=e744] [cursor=pointer]
+```
+
+# Test source
+
+```ts
+  1   | /** Shared check for one column filter of a listing. */
+  2   | 
+  3   | import { columnFilter, filterKind } from '@locators/column-filter';
+  4   | import { entityListing, listingError } from '@locators/listing';
+  5   | import { expect, type Locator, type Page } from '@playwright/test';
+  6   | 
+  7   | import { NO_NAVIGATION } from '../interactions';
+  8   | import { expectListing } from './listing';
+  9   | 
+  10  | const NO_MATCH = 'zzzz-no-such-value';
+  11  | 
+  12  | /** Asserts the count, unless the listing gave up — then it reports that instead. */
+  13  | async function expectCount(page: Page, pattern: RegExp, message: string): Promise<void> {
+  14  |   const failed = listingError(page);
+  15  | 
+  16  |   await Promise.race([
+  17  |     expect(entityListing(page).resultCount, message).toHaveText(pattern),
+  18  |     failed.waitFor({ state: 'visible' }).then(async () => {
+  19  |       throw new Error(`${message}: the listing gave up — ${(await failed.innerText()).trim()}`);
+  20  |     }),
+  21  |   ]);
+  22  | }
+  23  | 
+  24  | /** Whether a facet option is ticked, however the panel draws it. */
+  25  | async function isTicked(box: Locator): Promise<boolean> {
+  26  |   return box
+  27  |     .isChecked()
+  28  |     .catch(async () => (await box.getAttribute('aria-checked').catch(() => null)) === 'true');
+  29  | }
+  30  | 
+  31  | async function resultCount(page: Page): Promise<number> {
+  32  |   const text = await entityListing(page).resultCount.innerText();
+  33  |   return Number(text.replace(/[^\d]/g, ''));
+  34  | }
+  35  | 
+  36  | /** How many equal readings in a row count as settled. */
+  37  | const STEADY_READINGS = 3;
+  38  | 
+  39  | /** Reads the count until it holds still. */
+  40  | async function steady(
+  41  |   page: Page,
+  42  |   accept: (count: number) => boolean,
+  43  |   timeout: number
+  44  | ): Promise<number> {
+  45  |   let last = Number.NaN;
+  46  |   let held = 0;
+  47  | 
+  48  |   await expect
+  49  |     .poll(
+  50  |       async () => {
+  51  |         const now = await resultCount(page);
+  52  |         held = now === last ? held + 1 : 0;
+  53  |         last = now;
+  54  |         return accept(now) && held + 1 >= STEADY_READINGS;
+  55  |       },
+  56  |       { intervals: [1_000], timeout }
+  57  |     )
+  58  |     .toBe(true);
+  59  | 
+  60  |   return last;
+  61  | }
+  62  | 
+  63  | /**
+  64  |  * The result count of the unfiltered listing.
+  65  |  *
+  66  |  * A listing shows "0 results" while it fetches, including the refetch after a
+  67  |  * filter is cleared, so a non-zero figure is waited for first. A listing that
+  68  |  * really is empty gives none, and its zero is taken after that wait.
+  69  |  */
+  70  | async function settledCount(page: Page): Promise<number> {
+  71  |   await expect(entityListing(page).resultCount).toBeVisible();
+  72  | 
+  73  |   // Short: an empty listing spends this once per column.
+  74  |   const populated = await steady(page, (count) => count > 0, 15_000)
+  75  |     .then((count) => count)
+  76  |     .catch(() => null);
+  77  | 
+  78  |   return populated ?? (await steady(page, () => true, 30_000).catch(() => resultCount(page)));
+  79  | }
+  80  | 
+  81  | /** Opens a column filter. Retried, because a re-render closes the panel. */
+  82  | async function open(page: Page, column: string) {
+  83  |   const filter = columnFilter(page);
+  84  | 
+  85  |   await entityListing(page).table.waitFor();
+  86  | 
+  87  |   await expect(async () => {
+  88  |     if (!(await filter.panel.isVisible().catch(() => false))) {
+  89  |       await filter.trigger(column).click(NO_NAVIGATION);
+  90  |     }
+  91  |     await expect(filter.apply).toBeVisible({ timeout: 1_500 });
+> 92  |   }).toPass({ timeout: 45_000 });
+      |     ^ Error: click: Timeout 30000ms exceeded.
+  93  | 
+  94  |   return filter;
+  95  | }
+  96  | 
+  97  | /**
+  98  |  * Runs one pass at the open panel, reopening it first when it has gone.
+  99  |  *
+  100 |  * The listing re-renders the table header when a background call lands, which
+  101 |  * unmounts the popover — a panel opened while `regions?page_size=1000` was in
+  102 |  * flight was gone a second later. `attempt` must be safe to run twice.
+  103 |  */
+  104 | async function inPanel(
+  105 |   page: Page,
+  106 |   column: string,
+  107 |   attempt: (filter: ReturnType<typeof columnFilter>) => Promise<void>,
+  108 |   message: string
+  109 | ): Promise<void> {
+  110 |   await expect(async () => {
+  111 |     const filter = columnFilter(page);
+  112 |     if (!(await filter.panel.isVisible().catch(() => false))) {
+  113 |       await filter.trigger(column).click(NO_NAVIGATION);
+  114 |       await expect(filter.apply).toBeVisible({ timeout: 5_000 });
+  115 |     }
+  116 |     await attempt(filter);
+  117 |   }, message).toPass({ timeout: 60_000 });
+  118 | }
+  119 | 
+  120 | /** Filters the listing by one column, checks the count, then resets it. */
+  121 | export async function checkFilter(page: Page, column: string): Promise<void> {
+  122 |   await expectListing(page);
+  123 |   const before = await settledCount(page);
+  124 |   const filter = await open(page, column);
+  125 |   const kind = await filterKind(filter.panel);
+  126 | 
+  127 |   let applied = false;
+  128 | 
+  129 |   switch (kind) {
+  130 |     case 'facet': {
+  131 |       const arrived = await filter.options
+  132 |         .first()
+  133 |         .waitFor({ state: 'visible', timeout: 20_000 })
+  134 |         .then(() => true)
+  135 |         .catch(() => false);
+  136 | 
+  137 |       if (!arrived) break;
+  138 |       applied = true;
+  139 | 
+  140 |       let expected = Number.NaN;
+  141 | 
+  142 |       await inPanel(
+  143 |         page,
+  144 |         column,
+  145 |         async (opened) => {
+  146 |           const option = opened.options.first();
+  147 |           await expect(option).toBeVisible({ timeout: 10_000 });
+  148 | 
+  149 |           const badge = opened.optionCount(option);
+  150 |           const shown =
+  151 |             (await badge.count()) > 0
+  152 |               ? await badge.innerText().catch(() => '')
+  153 |               : ((await option.innerText().catch(() => '')).trim().split(/\s+/).at(-1) ?? '');
+  154 |           expected = Number(shown.replace(/[^\d]/g, ''));
+  155 | 
+  156 |           // Ticked, not clicked: a repeat pass would untick it.
+  157 |           const box = option
+  158 |             .getByTestId('column-filter-option-checkbox')
+  159 |             .or(option.getByRole('checkbox'));
+  160 |           if (!(await isTicked(box))) await box.click({ ...NO_NAVIGATION, timeout: 5_000 });
+  161 | 
+  162 |           await opened.apply.click({ ...NO_NAVIGATION, timeout: 5_000 });
+  163 |         },
+  164 |         `the "${column}" facet could not be applied`
+  165 |       );
+  166 | 
+  167 |       if (Number.isFinite(expected) && expected > 0) {
+  168 |         await expectCount(
+  169 |           page,
+  170 |           new RegExp(`^${expected.toLocaleString('en-US')} results`),
+  171 |           `the "${column}" facet promised ${expected} results`
+  172 |         );
+  173 |       }
+  174 |       break;
+  175 |     }
+  176 | 
+  177 |     case 'value': {
+  178 |       applied = true;
+  179 |       await filter.value.fill(NO_MATCH);
+  180 |       await filter.apply.click(NO_NAVIGATION);
+  181 |       await expectCount(
+  182 |         page,
+  183 |         /^0 results/,
+  184 |         `the "${column}" filter matched something it should not have`
+  185 |       );
+  186 |       break;
+  187 |     }
+  188 | 
+  189 |     case 'range': {
+  190 |       applied = true;
+  191 |       await filter.min.fill('999999999');
+  192 |       await filter.max.fill('1');
+```

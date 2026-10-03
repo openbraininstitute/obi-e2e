@@ -1,0 +1,114 @@
+{
+  "passed": 6,
+  "failed": 0,
+  "flaky": 0,
+  "skipped": 3,
+  "durationMs": 845044,
+  "environment": "production",
+  "baseUrl": "https://www.openbraininstitute.org",
+  "browser": "chromium",
+  "commit": "52b1d6dd096fa4ad6b59a9a1ad92c3d6907d31c6",
+  "runUrl": "https://github.com/openbraininstitute/obi-e2e/actions/runs/36726894280",
+  "reportUrl": "",
+  "trigger": "Manual",
+  "failures": [],
+  "totalFailures": 0,
+  "services": [
+    {
+      "key": "entitycore",
+      "label": "Entity core",
+      "version": "2026.9.2",
+      "status": "healthy"
+    },
+    {
+      "key": "virtual-lab",
+      "label": "Virtual lab manager",
+      "status": "healthy"
+    },
+    {
+      "key": "obi-one",
+      "label": "OBI One",
+      "version": "2026.9.22",
+      "status": "healthy"
+    },
+    {
+      "key": "circuit",
+      "label": "Circuit",
+      "version": "2026.9.0",
+      "status": "healthy"
+    },
+    {
+      "key": "notebook",
+      "label": "Notebook service",
+      "status": "healthy"
+    },
+    {
+      "key": "thumbnail",
+      "label": "Thumbnail generation",
+      "status": "healthy"
+    },
+    {
+      "key": "simulator",
+      "label": "Small scale simulator",
+      "status": "healthy"
+    },
+    {
+      "key": "ai-agent",
+      "label": "AI agent",
+      "status": "healthy"
+    },
+    {
+      "key": "auth-manager",
+      "label": "Auth manager",
+      "version": "2026.08.05.1",
+      "status": "healthy"
+    },
+    {
+      "key": "launch-system",
+      "label": "Launch system",
+      "status": "skipped",
+      "problem": "reachable only inside the VPC"
+    }
+  ],
+  "features": [
+    {
+      "name": "Brain region simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    },
+    {
+      "name": "Microcircuit simulation",
+      "section": "workflows",
+      "passed": 1,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 835472
+    },
+    {
+      "name": "Whole brain simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    }
+  ],
+  "credits": {
+    "labBalance": 10100,
+    "required": 500,
+    "variable": "E2E_SLOW_PROJECT_CREDITS",
+    "projectId": "97b74e5c-1ff2-48ca-b60d-93da665f0b11",
+    "assigned": 500,
+    "remaining": 201.85,
+    "spent": 298.15,
+    "reversed": "ok",
+    "returned": 201.85,
+    "removed": "ok"
+  }
+}

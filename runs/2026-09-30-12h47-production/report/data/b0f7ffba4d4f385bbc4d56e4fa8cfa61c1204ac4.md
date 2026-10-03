@@ -1,0 +1,568 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: scenarios/data/ion-channel-model/browse/browse.spec.ts >> Ion channel model listing >> The Ion channel model table offers no columns beyond these
+- Location: scenarios/data/ion-channel-model/browse/browse.spec.ts:75:2
+
+# Error details
+
+```
+TimeoutError: click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('toolbar-pill-columns').or(getByRole('button', { name: 'Columns' }))
+    - locator resolved to <button type="button" title="Columns" aria-label="Columns" aria-describedby="_r_2_" data-testid="toolbar-pill-columns" class="group/toolbar-pill relative flex h-10 min-w-10 shrink-0 items-center justify-center gap-0 rounded-full px-2.5 has-[>svg]:px-2.5 outline-none hover:pr-3.5 transition-[box-shadow,background-color] duration-300 ease-in-out active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100 bg-white text-primary-8 shadow-sm hover:bg-gray-100 hover:shadow-md focus-visible:r…>…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is visible, enabled and stable
+      - scrolling into view if needed
+      - done scrolling
+      - <div data-name="nextstep-prevent-click-overlay-right"></div> from <div data-name="nextstep-overlay">…</div> subtree intercepts pointer events
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is visible, enabled and stable
+      - scrolling into view if needed
+      - done scrolling
+      - <div data-name="nextstep-prevent-click-overlay-right"></div> from <div data-name="nextstep-overlay">…</div> subtree intercepts pointer events
+    - retrying click action
+      - waiting 100ms
+    56 × waiting for element to be visible, enabled and stable
+       - element is visible, enabled and stable
+       - scrolling into view if needed
+       - done scrolling
+       - <div data-name="nextstep-prevent-click-overlay-right"></div> from <div data-name="nextstep-overlay">…</div> subtree intercepts pointer events
+     - retrying click action
+       - waiting 500ms
+
+```
+
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e6]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - menubar "user CI Test's virtual lab/e2e-36726867714-1" [ref=e12]:
+          - button "user CI Test" [ref=e13] [cursor=pointer]:
+            - img "UserFilled" [ref=e14]
+          - button [ref=e18] [cursor=pointer]:
+            - heading "user CI Test's virtual lab" [level=3] [ref=e19]
+          - button "e2e-36726867714-1" [ref=e22] [cursor=pointer]
+          - button "toggle-workspace-panel" [ref=e23] [cursor=pointer]
+        - link "Coins 2000.00" [ref=e26] [cursor=pointer]:
+          - /url: /app/virtual-lab/781aff8a-1ab3-45b2-886c-b42fd7954335/e33e6212-6d5d-4ecc-9f16-5c45920af506/credits
+          - img "Coins"
+          - generic [ref=e27]: "2000.00"
+      - generic [ref=e28]:
+        - link "Home" [ref=e31] [cursor=pointer]:
+          - /url: /app/virtual-lab/781aff8a-1ab3-45b2-886c-b42fd7954335/e33e6212-6d5d-4ecc-9f16-5c45920af506
+          - img "Home"
+        - link "Data Explore" [ref=e34] [cursor=pointer]:
+          - /url: /app/virtual-lab/781aff8a-1ab3-45b2-886c-b42fd7954335/e33e6212-6d5d-4ecc-9f16-5c45920af506/data
+          - generic [ref=e35]: Data
+          - img "Explore"
+        - link "Workflows Workflow" [ref=e38] [cursor=pointer]:
+          - /url: /app/virtual-lab/781aff8a-1ab3-45b2-886c-b42fd7954335/e33e6212-6d5d-4ecc-9f16-5c45920af506/workflows
+          - generic [ref=e39]: Workflows
+          - img "Workflow"
+        - link "Notebooks Notebook" [ref=e42] [cursor=pointer]:
+          - /url: /app/virtual-lab/781aff8a-1ab3-45b2-886c-b42fd7954335/e33e6212-6d5d-4ecc-9f16-5c45920af506/notebooks
+          - generic [ref=e43]: Notebooks
+          - img "Notebook"
+        - link "Reports" [ref=e46] [cursor=pointer]:
+          - /url: /app/virtual-lab/781aff8a-1ab3-45b2-886c-b42fd7954335/e33e6212-6d5d-4ecc-9f16-5c45920af506/reports
+        - generic [ref=e49]:
+          - link [ref=e50] [cursor=pointer]:
+            - /url: /app/virtual-lab/781aff8a-1ab3-45b2-886c-b42fd7954335/e33e6212-6d5d-4ecc-9f16-5c45920af506/help
+          - generic [ref=e51]: Help
+        - generic [ref=e53]:
+          - generic [ref=e54] [cursor=pointer]:
+            - img "Feedback star"
+          - generic [ref=e55]: Feedback
+    - generic [ref=e57]:
+      - tablist [ref=e61]:
+        - tab "Public" [selected] [ref=e62] [cursor=pointer]
+        - tab "Project" [ref=e64] [cursor=pointer]
+      - generic [ref=e66]:
+        - generic [ref=e69]:
+          - combobox [ref=e75] [cursor=pointer]:
+            - generic [ref=e76]:
+              - generic [ref=e77]: Species
+              - generic [ref=e78]: All
+          - generic [ref=e81]:
+            - tablist [ref=e84]:
+              - tab "Experimental" [selected] [ref=e85] [cursor=pointer]
+              - tab "Model" [ref=e86] [cursor=pointer]
+              - tab "Simulations" [ref=e87] [cursor=pointer]
+            - generic [ref=e88]:
+              - button "Morphology 6225 of 6225" [ref=e91] [cursor=pointer]:
+                - generic [ref=e92]: Morphology
+                - generic [ref=e94]:
+                  - generic [ref=e95]: "6225"
+                  - generic [ref=e96]: of
+                  - generic [ref=e97]: "6225"
+              - button "Single cell electrophysiology 2247 of 2247" [ref=e100] [cursor=pointer]:
+                - generic [ref=e101]: Single cell electrophysiology
+                - generic [ref=e103]:
+                  - generic [ref=e104]: "2247"
+                  - generic [ref=e105]: of
+                  - generic [ref=e106]: "2247"
+              - button "Ion channel electrophysiology 33198 of 33198" [ref=e109] [cursor=pointer]:
+                - generic [ref=e110]: Ion channel electrophysiology
+                - generic [ref=e112]:
+                  - generic [ref=e113]: "33198"
+                  - generic [ref=e114]: of
+                  - generic [ref=e115]: "33198"
+              - button "Neuron density 62 of 62" [ref=e118] [cursor=pointer]:
+                - generic [ref=e119]: Neuron density
+                - generic [ref=e121]:
+                  - generic [ref=e122]: "62"
+                  - generic [ref=e123]: of
+                  - generic [ref=e124]: "62"
+              - button "Bouton density 6 of 6" [ref=e127] [cursor=pointer]:
+                - generic [ref=e128]: Bouton density
+                - generic [ref=e130]:
+                  - generic [ref=e131]: "6"
+                  - generic [ref=e132]: of
+                  - generic [ref=e133]: "6"
+              - button "Synapse per connection 12 of 12" [ref=e136] [cursor=pointer]:
+                - generic [ref=e137]: Synapse per connection
+                - generic [ref=e139]:
+                  - generic [ref=e140]: "12"
+                  - generic [ref=e141]: of
+                  - generic [ref=e142]: "12"
+              - button "EM mesh 2739 of 2739" [ref=e145] [cursor=pointer]:
+                - generic [ref=e146]: EM mesh
+                - generic [ref=e148]:
+                  - generic [ref=e149]: "2739"
+                  - generic [ref=e150]: of
+                  - generic [ref=e151]: "2739"
+              - button "Intracellular e-feature extraction 0 of 0" [ref=e154] [cursor=pointer]:
+                - generic [ref=e155]: Intracellular e-feature extraction
+                - generic [ref=e157]:
+                  - generic [ref=e158]: "0"
+                  - generic [ref=e159]: of
+                  - generic [ref=e160]: "0"
+        - generic [ref=e162]:
+          - generic [ref=e164]:
+            - generic [ref=e165]:
+              - button "Close search" [ref=e166] [cursor=pointer]
+              - textbox "Search" [active] [ref=e171]:
+                - /placeholder: Search for entities…
+            - button "Filters" [ref=e172] [cursor=pointer]
+            - button "Columns" [ref=e177] [cursor=pointer]
+          - generic [ref=e184]:
+            - generic [ref=e185]: No entities to show
+            - grid [ref=e186]:
+              - rowgroup [ref=e187]:
+                - row [ref=e188]:
+                  - columnheader [ref=e189]:
+                    - checkbox "Column with Header Selection" [ref=e190] [cursor=pointer]
+              - rowgroup [ref=e191]:
+                - row [ref=e192]:
+                  - columnheader "Preview" [ref=e193]:
+                    - button "Preview" [ref=e196]
+                  - columnheader "Name Filter Name" [ref=e198]:
+                    - generic [ref=e200]:
+                      - button "Name" [ref=e201] [cursor=pointer]
+                      - button "Filter Name" [ref=e206] [cursor=pointer]
+                  - columnheader "Brain region Filter Brain region" [ref=e209]:
+                    - generic [ref=e211]:
+                      - button "Brain region" [ref=e212] [cursor=pointer]
+                      - button "Filter Brain region" [ref=e217] [cursor=pointer]
+                  - columnheader "Species Filter Species" [ref=e220]:
+                    - generic [ref=e222]:
+                      - button "Species" [ref=e223] [cursor=pointer]
+                      - button "Filter Species" [ref=e228] [cursor=pointer]
+                  - columnheader "Temperature [°C] Filter Temperature" [ref=e231]:
+                    - generic [ref=e233]:
+                      - button "Temperature [°C]" [ref=e234] [cursor=pointer]:
+                        - generic "Temperature" [ref=e235]
+                        - generic [ref=e236]: "[°C]"
+                      - button "Filter Temperature" [ref=e240] [cursor=pointer]
+                  - columnheader "Temperature dependent Filter Temperature dependent" [ref=e243]:
+                    - generic [ref=e245]:
+                      - button "Temperature dependent" [ref=e246] [cursor=pointer]
+                      - button "Filter Temperature dependent" [ref=e251] [cursor=pointer]
+                  - columnheader "LJP corrected Filter LJP corrected" [ref=e254]:
+                    - generic [ref=e256]:
+                      - button "LJP corrected" [ref=e257] [cursor=pointer]
+                      - button "Filter LJP corrected" [ref=e262] [cursor=pointer]
+                  - columnheader "Registration date Filter Registration date" [ref=e265]:
+                    - generic [ref=e267]:
+                      - button "Registration date" [ref=e268] [cursor=pointer]
+                      - button "Filter Registration date" [ref=e273] [cursor=pointer]
+                  - columnheader "Lifecycle status Filter Lifecycle status" [ref=e276]:
+                    - generic [ref=e278]:
+                      - button "Lifecycle status" [ref=e279]
+                      - button "Filter Lifecycle status" [ref=e281] [cursor=pointer]
+              - rowgroup [ref=e284]:
+                - row [ref=e285] [cursor=pointer]:
+                  - gridcell [ref=e286]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e287]
+                - row [ref=e288] [cursor=pointer]:
+                  - gridcell [ref=e289]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e290]
+                - row [ref=e291] [cursor=pointer]:
+                  - gridcell [ref=e292]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e293]
+                - row [ref=e294] [cursor=pointer]:
+                  - gridcell [ref=e295]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e296]
+                - row [ref=e297] [cursor=pointer]:
+                  - gridcell [ref=e298]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e299]
+                - row [ref=e300] [cursor=pointer]:
+                  - gridcell [ref=e301]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e302]
+                - row [ref=e303] [cursor=pointer]:
+                  - gridcell [ref=e304]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e305]
+                - row [ref=e306] [cursor=pointer]:
+                  - gridcell [ref=e307]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e308]
+                - row [ref=e309] [cursor=pointer]:
+                  - gridcell [ref=e310]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e311]
+                - row [ref=e312] [cursor=pointer]:
+                  - gridcell [ref=e313]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e314]
+                - row [ref=e315] [cursor=pointer]:
+                  - gridcell [ref=e316]:
+                    - checkbox "Press Space to toggle row selection (unchecked)" [ref=e317]
+              - rowgroup [ref=e318]:
+                - row [ref=e319] [cursor=pointer]:
+                  - gridcell [ref=e320]:
+                    - img "Kv3.2" [ref=e322]
+                  - gridcell "Kv3.2" [ref=e323]
+                  - gridcell "Root" [ref=e324]
+                  - gridcell "Cricetulus griseus" [ref=e325]
+                  - gridcell "22 °C" [ref=e326]
+                  - gridcell "False" [ref=e327]
+                  - gridcell "False" [ref=e328]
+                  - gridcell "Aug 29, 2025" [ref=e329]
+                  - gridcell "Active" [ref=e330]
+                - row [ref=e332] [cursor=pointer]:
+                  - gridcell [ref=e333]:
+                    - img "HCN3" [ref=e335]
+                  - gridcell "HCN3" [ref=e336]
+                  - gridcell "Basic cell groups and regions" [ref=e337]
+                  - gridcell "Mus musculus" [ref=e338]
+                  - gridcell "—" [ref=e339]
+                  - gridcell "False" [ref=e340]
+                  - gridcell "False" [ref=e341]
+                  - gridcell "Aug 29, 2025" [ref=e342]
+                  - gridcell "Active" [ref=e343]
+                - row [ref=e345] [cursor=pointer]:
+                  - gridcell [ref=e346]:
+                    - img "HCN2" [ref=e348]
+                  - gridcell "HCN2" [ref=e349]
+                  - gridcell "Basic cell groups and regions" [ref=e350]
+                  - gridcell "Mus musculus" [ref=e351]
+                  - gridcell "—" [ref=e352]
+                  - gridcell "False" [ref=e353]
+                  - gridcell "False" [ref=e354]
+                  - gridcell "Aug 29, 2025" [ref=e355]
+                  - gridcell "Active" [ref=e356]
+                - row [ref=e358] [cursor=pointer]:
+                  - gridcell [ref=e359]:
+                    - img "Kv1.3" [ref=e361]
+                  - gridcell "Kv1.3" [ref=e362]
+                  - gridcell "Root" [ref=e363]
+                  - gridcell "Rattus norvegicus" [ref=e364]
+                  - gridcell "—" [ref=e365]
+                  - gridcell "False" [ref=e366]
+                  - gridcell "False" [ref=e367]
+                  - gridcell "Aug 29, 2025" [ref=e368]
+                  - gridcell "Active" [ref=e369]
+                - row [ref=e371] [cursor=pointer]:
+                  - gridcell [ref=e372]:
+                    - img "HCN4" [ref=e374]
+                  - gridcell "HCN4" [ref=e375]
+                  - gridcell "Basic cell groups and regions" [ref=e376]
+                  - gridcell "Mus musculus" [ref=e377]
+                  - gridcell "—" [ref=e378]
+                  - gridcell "False" [ref=e379]
+                  - gridcell "False" [ref=e380]
+                  - gridcell "Aug 29, 2025" [ref=e381]
+                  - gridcell "Active" [ref=e382]
+                - row [ref=e384] [cursor=pointer]:
+                  - gridcell [ref=e385]:
+                    - img "Km3" [ref=e387]
+                  - gridcell "Km3" [ref=e388]
+                  - gridcell "Root" [ref=e389]
+                  - gridcell "Rattus norvegicus" [ref=e390]
+                  - gridcell "—" [ref=e391]
+                  - gridcell "False" [ref=e392]
+                  - gridcell "False" [ref=e393]
+                  - gridcell "Aug 29, 2025" [ref=e394]
+                  - gridcell "Active" [ref=e395]
+                - row [ref=e397] [cursor=pointer]:
+                  - gridcell [ref=e398]:
+                    - img "Km2" [ref=e400]
+                  - gridcell "Km2" [ref=e401]
+                  - gridcell "Root" [ref=e402]
+                  - gridcell "Rattus norvegicus" [ref=e403]
+                  - gridcell "—" [ref=e404]
+                  - gridcell "False" [ref=e405]
+                  - gridcell "False" [ref=e406]
+                  - gridcell "Aug 29, 2025" [ref=e407]
+                  - gridcell "Active" [ref=e408]
+                - row [ref=e410] [cursor=pointer]:
+                  - gridcell "No data No thumbnail available" [ref=e411]:
+                    - generic [ref=e413]:
+                      - img "No data" [ref=e415]
+                      - generic [ref=e421]: No thumbnail available
+                  - gridcell "Ih" [ref=e422]
+                  - gridcell "Root" [ref=e423]
+                  - gridcell "Rattus norvegicus" [ref=e424]
+                  - gridcell "34 °C" [ref=e425]
+                  - gridcell "False" [ref=e426]
+                  - gridcell "False" [ref=e427]
+                  - gridcell "Aug 29, 2025" [ref=e428]
+                  - gridcell "Active" [ref=e429]
+                - row [ref=e431] [cursor=pointer]:
+                  - gridcell "No data No thumbnail available" [ref=e432]:
+                    - generic [ref=e434]:
+                      - img "No data" [ref=e436]
+                      - generic [ref=e442]: No thumbnail available
+                  - gridcell "Kv3.4" [ref=e443]
+                  - gridcell "Root" [ref=e444]
+                  - gridcell "Xenopus laevis" [ref=e445]
+                  - gridcell "23 °C" [ref=e446]
+                  - gridcell "False" [ref=e447]
+                  - gridcell "False" [ref=e448]
+                  - gridcell "Aug 29, 2025" [ref=e449]
+                  - gridcell "Active" [ref=e450]
+                - row [ref=e452] [cursor=pointer]:
+                  - gridcell "No data No thumbnail available" [ref=e453]:
+                    - generic [ref=e455]:
+                      - img "No data" [ref=e457]
+                      - generic [ref=e463]: No thumbnail available
+                  - gridcell "Km1" [ref=e464]
+                  - gridcell "Root" [ref=e465]
+                  - gridcell "Rattus norvegicus" [ref=e466]
+                  - gridcell "—" [ref=e467]
+                  - gridcell "False" [ref=e468]
+                  - gridcell "False" [ref=e469]
+                  - gridcell "Aug 29, 2025" [ref=e470]
+                  - gridcell "Active" [ref=e471]
+                - row [ref=e473] [cursor=pointer]:
+                  - gridcell "No data No thumbnail available" [ref=e474]:
+                    - generic [ref=e476]:
+                      - img "No data" [ref=e478]
+                      - generic [ref=e484]: No thumbnail available
+                  - gridcell "Generic Ca" [ref=e485]
+                  - gridcell "Root" [ref=e486]
+                  - gridcell "Rattus norvegicus" [ref=e487]
+                  - gridcell "35 °C" [ref=e488]
+                  - gridcell "False" [ref=e489]
+                  - gridcell "False" [ref=e490]
+                  - gridcell "Aug 29, 2025" [ref=e491]
+                  - gridcell "Active" [ref=e492]
+              - rowgroup
+              - rowgroup
+              - rowgroup
+              - rowgroup
+          - generic [ref=e497]:
+            - generic [ref=e498]:
+              - list [ref=e499]:
+                - listitem "Previous Page" [ref=e500]:
+                  - button [disabled] [ref=e501]:
+                    - img "left" [ref=e502]
+                - listitem "1" [ref=e505] [cursor=pointer]
+                - listitem "2" [ref=e507] [cursor=pointer]
+                - listitem "3" [ref=e509] [cursor=pointer]
+                - listitem "4" [ref=e511] [cursor=pointer]
+                - listitem "5" [ref=e513] [cursor=pointer]
+                - listitem "6" [ref=e515] [cursor=pointer]
+                - listitem "Next Page" [ref=e517] [cursor=pointer]:
+                  - button [ref=e518]:
+                    - img "right" [ref=e519]
+              - combobox [ref=e522] [cursor=pointer]:
+                - generic: 30 / page
+            - generic [ref=e523]: 176 results
+    - button "expand AI assistant" [ref=e526] [cursor=pointer]:
+      - generic [ref=e529]: OBI Assistant
+  - alert [ref=e530]
+  - generic [ref=e536]:
+    - generic [ref=e537]:
+      - heading "Data location" [level=1] [ref=e538]
+      - generic [ref=e539]:
+        - img "left" [ref=e540] [cursor=pointer]
+        - generic [ref=e543]: 1 of 5
+        - img "right" [ref=e544] [cursor=pointer]
+    - paragraph [ref=e547]: Browse public and project data.
+    - generic [ref=e548]:
+      - button "Skip" [ref=e549] [cursor=pointer]
+      - button "Next tip" [ref=e550] [cursor=pointer]
+```
+
+# Test source
+
+```ts
+  1   | import { checkFilter } from '@fixtures/checks/filter';
+  2   | import { expectListing } from '@fixtures/checks/listing';
+  3   | import { checkPagination } from '@fixtures/checks/pagination';
+  4   | import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
+  5   | import { routes } from '@fixtures/routes';
+  6   | import { toggleCount } from '@fixtures/steps/listing-columns';
+  7   | import { AUTHENTICATED } from '@fixtures/tags';
+  8   | import { expect, test } from '@fixtures/test';
+  9   | import { WIDE_VIEWPORT } from '@fixtures/viewport';
+  10  | import { entityListing } from '@locators/listing';
+  11  | 
+  12  | const COLUMNS = [
+  13  |   'Preview',
+  14  |   'Name',
+  15  |   'Brain region',
+  16  |   'Species',
+  17  |   'Temperature [°C]',
+  18  |   'Temperature dependent',
+  19  |   'LJP corrected',
+  20  |   'Registration date',
+  21  |   'Lifecycle status',
+  22  | ];
+  23  | 
+  24  | const SHOWN_COLUMNS = [
+  25  |   'Preview',
+  26  |   'Name',
+  27  |   'Brain region',
+  28  |   'Species',
+  29  |   'Temperature',
+  30  |   'Temperature dependent',
+  31  |   'LJP corrected',
+  32  |   'Registration date',
+  33  |   'Lifecycle status',
+  34  | ];
+  35  | 
+  36  | const HIDDEN_COLUMNS: string[] = [
+  37  |   'NMODL suffix',
+  38  |   'Conductance name',
+  39  |   'Max permeability name',
+  40  |   'Stochastic',
+  41  |   'Strain',
+  42  |   'Subject name',
+  43  |   'Contributors',
+  44  | ];
+  45  | 
+  46  | const FILTERS = [
+  47  |   'Name',
+  48  |   'Brain region',
+  49  |   'Species',
+  50  |   'Temperature',
+  51  |   'Temperature dependent',
+  52  |   'LJP corrected',
+  53  |   'Registration date',
+  54  |   'Lifecycle status',
+  55  | ];
+  56  | 
+  57  | test.use(WIDE_VIEWPORT);
+  58  | 
+  59  | test.describe('Ion channel model listing', () => {
+  60  |   test.beforeEach(async ({ page, workspace }) => {
+  61  |     await page.goto(
+  62  |       routes.dataEntity(workspace.labId, workspace.projectId, entitySlug(Type.IonChannelModel))
+  63  |     );
+  64  |     await expectListing(page);
+  65  |   });
+  66  | 
+  67  |   test('See the Ion channel model table', { tag: AUTHENTICATED }, async ({ page }) => {
+  68  |     const listing = entityListing(page);
+  69  | 
+  70  |     for (const column of COLUMNS) {
+  71  |       await expect(listing.columnHeader(column)).toBeVisible();
+  72  |     }
+  73  |   });
+  74  | 
+  75  |   test(
+  76  |     'The Ion channel model table offers no columns beyond these',
+  77  |     { tag: AUTHENTICATED },
+  78  |     async ({ page }) => {
+  79  |       const listing = entityListing(page);
+  80  | 
+> 81  |       await listing.columns.click();
+      |                            ^ TimeoutError: click: Timeout 30000ms exceeded.
+  82  |       await expect(listing.columnsMenu).toBeVisible();
+  83  | 
+  84  |       for (const column of SHOWN_COLUMNS) {
+  85  |         await expect(listing.columnToggle(column)).toBeChecked();
+  86  |       }
+  87  |       for (const column of HIDDEN_COLUMNS) {
+  88  |         await expect(listing.columnToggle(column)).not.toBeChecked();
+  89  |       }
+  90  | 
+  91  |       await expect(listing.columnToggles).toHaveCount(toggleCount(SHOWN_COLUMNS, HIDDEN_COLUMNS));
+  92  |     }
+  93  |   );
+  94  | 
+  95  |   test(
+  96  |     'Add a hidden column to the Ion channel model table',
+  97  |     { tag: AUTHENTICATED },
+  98  |     async ({ page }) => {
+  99  |       const listing = entityListing(page);
+  100 | 
+  101 |       await listing.columns.click();
+  102 |       await expect(listing.columnsMenu).toBeVisible();
+  103 | 
+  104 |       for (const column of SHOWN_COLUMNS.slice(2)) {
+  105 |         await listing.columnToggle(column).click();
+  106 |       }
+  107 | 
+  108 |       for (const column of HIDDEN_COLUMNS) {
+  109 |         const toggle = listing.columnToggle(column);
+  110 | 
+  111 |         await toggle.click();
+  112 |         await expect(toggle).toBeChecked();
+  113 |         await expect(listing.columnHeader(column)).toBeVisible();
+  114 | 
+  115 |         await toggle.click();
+  116 |         await expect(toggle).not.toBeChecked();
+  117 |       }
+  118 |     }
+  119 |   );
+  120 | 
+  121 |   test('See the Ion channel model results', { tag: AUTHENTICATED }, async ({ page }) => {
+  122 |     const listing = entityListing(page);
+  123 | 
+  124 |     await expect(listing.resultCount).toBeVisible();
+  125 |     await expect(listing.cells.first()).toBeVisible();
+  126 |   });
+  127 | 
+  128 |   test('Search the Ion channel model listing', { tag: AUTHENTICATED }, async ({ page }) => {
+  129 |     const listing = entityListing(page);
+  130 |     await expect(listing.cells.first()).toBeVisible();
+  131 |     const before = await listing.resultCount.innerText();
+  132 | 
+  133 |     await listing.search.fill('zzzz-no-such-entity');
+  134 |     await expect(listing.resultCount).toHaveText(/^0 results/);
+  135 | 
+  136 |     await listing.search.clear();
+  137 |     await expect(listing.resultCount).toHaveText(before);
+  138 |   });
+  139 | 
+  140 |   test(
+  141 |     'Every Ion channel model filter narrows the listing',
+  142 |     { tag: AUTHENTICATED },
+  143 |     async ({ page }) => {
+  144 |       test.slow();
+  145 |       await expectListing(page);
+  146 | 
+  147 |       for (const column of FILTERS) {
+  148 |         await test.step(column, () => checkFilter(page, column));
+  149 |       }
+  150 |     }
+  151 |   );
+  152 | 
+  153 |   test('Page through the Ion channel model listing', { tag: AUTHENTICATED }, async ({ page }) => {
+  154 |     await checkPagination(page);
+  155 |   });
+  156 | });
+  157 | 
+```

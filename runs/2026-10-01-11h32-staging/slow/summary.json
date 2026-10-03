@@ -1,0 +1,132 @@
+{
+  "passed": 6,
+  "failed": 1,
+  "flaky": 0,
+  "skipped": 3,
+  "durationMs": 804862,
+  "environment": "staging",
+  "baseUrl": "https://staging.openbraininstitute.org",
+  "browser": "chromium",
+  "commit": "c69c98b89c2991fcb2bd08874dafe44da997d054",
+  "runUrl": "https://github.com/openbraininstitute/obi-e2e/actions/runs/36854487469",
+  "reportUrl": "",
+  "trigger": "Scheduled",
+  "failures": [
+    {
+      "title": "scenarios/workflows/optimize-emodel/optimize-emodel.spec.ts › E-model optimization › Optimize an e-model against extracted e-features and launch it: a sodium and a potassium conductance at the soma, one short generation",
+      "file": "scenarios/workflows/optimize-emodel/optimize-emodel.spec.ts",
+      "line": 53,
+      "project": "slow",
+      "error": "Error: expect(locator).toHaveText(expected) failed"
+    }
+  ],
+  "totalFailures": 1,
+  "services": [
+    {
+      "key": "entitycore",
+      "label": "Entity core",
+      "version": "2026.9.2",
+      "status": "healthy"
+    },
+    {
+      "key": "virtual-lab",
+      "label": "Virtual lab manager",
+      "status": "healthy"
+    },
+    {
+      "key": "obi-one",
+      "label": "OBI One",
+      "version": "2026.9.23",
+      "status": "healthy"
+    },
+    {
+      "key": "circuit",
+      "label": "Circuit",
+      "version": "2026.9.2",
+      "status": "healthy"
+    },
+    {
+      "key": "notebook",
+      "label": "Notebook service",
+      "status": "healthy"
+    },
+    {
+      "key": "thumbnail",
+      "label": "Thumbnail generation",
+      "status": "healthy"
+    },
+    {
+      "key": "simulator",
+      "label": "Small scale simulator",
+      "status": "healthy"
+    },
+    {
+      "key": "ai-agent",
+      "label": "AI agent",
+      "version": "0.1.28",
+      "status": "healthy"
+    },
+    {
+      "key": "auth-manager",
+      "label": "Auth manager",
+      "version": "2026.08.05.1",
+      "status": "healthy"
+    },
+    {
+      "key": "launch-system",
+      "label": "Launch system",
+      "status": "skipped",
+      "problem": "reachable only inside the VPC"
+    }
+  ],
+  "features": [
+    {
+      "name": "Brain region simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    },
+    {
+      "name": "E-model optimization",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 1,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 487942
+    },
+    {
+      "name": "Microcircuit simulation",
+      "section": "workflows",
+      "passed": 1,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 793188
+    },
+    {
+      "name": "Whole brain simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    }
+  ],
+  "credits": {
+    "labBalance": 74980.65,
+    "required": 500,
+    "variable": "E2E_SLOW_PROJECT_CREDITS",
+    "projectId": "e7836277-843e-4af8-9d95-ccc6e3328077",
+    "assigned": 500,
+    "remaining": 196.85,
+    "spent": 303.15,
+    "reversed": "ok",
+    "returned": 196.85,
+    "removed": "ok"
+  }
+}
