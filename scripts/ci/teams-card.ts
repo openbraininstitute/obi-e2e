@@ -22,9 +22,9 @@ import {
   formatDuration,
   passRate,
   runUrl as workflowRunUrl,
-  type ServiceSummary,
-  type Feature,
+  type Failure,
   type Section,
+  type ServiceSummary,
   type Summary,
 } from './summarize-results';
 
@@ -183,16 +183,11 @@ export function fact(title: string, value: string) {
   return { title, value };
 }
 
-const FEATURE_COLUMNS = [3, 2, 2, 1, 2];
-
-const CHEVRON = { collapsed: '▸', expanded: '▾' } as const;
-
 function clamp(value: string, max: number): string {
   return value.length <= max ? value : `${value.slice(0, max - 1)}…`;
 }
 
 const MAX = {
-  featureName: 120,
   sectionName: 60,
   serviceLabel: 60,
   serviceVersion: 40,
@@ -203,94 +198,98 @@ const MAX = {
   baseUrl: 120,
 } as const;
 
-function featureTables(sections: Section[], expandable: boolean): unknown[] {
-  const elements: unknown[] = [
-    table(
-      [...FEATURE_COLUMNS],
-      [headerRow(['Feature', 'Section', 'Status', 'Pass rate', 'Duration'])]
-    ),
-  ];
+/** `data — failed: 5 · passed: 10 · skipped: 2`, flakes named only when there were some. */
+function counts(section: Pick<Section, 'passed' | 'failed' | 'flaky' | 'skipped'>): string {
+  return [
+    `failed: ${section.failed}`,
+    `passed: ${section.passed}`,
+    ...(section.flaky > 0 ? [`flaky: ${section.flaky}`] : []),
+    `skipped: ${section.skipped}`,
+  ].join(' · ');
+}
 
-  for (const [index, section] of sections.entries()) {
-    const rowsId = `features-${index}`;
-    const collapsedId = `collapsed-${index}`;
-    const expandedId = `expanded-${index}`;
+function failureLines(failures: Failure[]): unknown[] {
+  return failures.flatMap((failure) => [
+    text(`✗ ${clamp(failure.title, MAX.failureTitle)}`, {
+      size: 'Small',
+      weight: 'Bolder',
+      spacing: 'Small',
+    }),
+    text(clamp(failure.error, MAX.failureError), { size: 'Small', color: 'Attention' }),
+    text(`${clamp(failure.file, MAX.filePath)}:${failure.line}`, {
+      size: 'Small',
+      subtle: true,
+      targetWidth: 'atLeast:Narrow',
+    }),
+  ]);
+}
 
-    const toggle = {
-      type: 'Action.ToggleVisibility',
-      title: `Expand ${section.name}`,
-      targetElements: [rowsId, collapsedId, expandedId],
-    };
+/**
+ * One bordered block per section: its counts, then the failures it has.
+ *
+ * The summary carries the first few failures of each section, and the section's
+ * own `failed` count says how many there were, so the block can name the rest
+ * without carrying them.
+ */
+function sectionPanel(
+  name: string,
+  line: string,
+  status: ReturnType<typeof featureStatus>,
+  failures: Failure[],
+  failed: number
+): unknown {
+  const hidden = failed - failures.length;
 
-    const sectionCell = {
-      type: 'TableCell',
-      verticalContentAlignment: 'Center',
-      selectAction: toggle,
-      items: [
-        {
-          ...text(`${CHEVRON.collapsed} ${clamp(section.name, MAX.sectionName)}`, {
-            weight: 'Bolder',
-          }),
-          id: collapsedId,
-        },
-        {
-          ...text(`${CHEVRON.expanded} ${clamp(section.name, MAX.sectionName)}`, {
-            weight: 'Bolder',
-          }),
-          id: expandedId,
-          isVisible: false,
-        },
-      ],
-    };
+  return panel(
+    [
+      text(clamp(name, MAX.sectionName), { weight: 'Bolder', color: STATUS[status].color }),
+      text(line, { size: 'Small', subtle: true, spacing: 'Small' }),
+      ...failureLines(failures),
+      ...(hidden > 0
+        ? [text(`…and ${hidden} more here.`, { size: 'Small', subtle: true, spacing: 'Small' })]
+        : []),
+    ],
+    { spacing: 'Small' }
+  );
+}
 
-    elements.push(
-      table(
-        [...FEATURE_COLUMNS],
-        [
-          {
-            type: 'TableRow',
-            cells: [
-              expandable
-                ? sectionCell
-                : cell(clamp(section.name, MAX.sectionName), { weight: 'Bolder' }),
-              cell(
-                `${section.features.length} ${section.features.length === 1 ? 'feature' : 'features'}`,
-                {
-                  subtle: true,
-                  selectAction: toggle,
-                }
-              ),
-              statusCell(featureStatus(section)),
-              cell(passRate(section), { selectAction: toggle }),
-              cell(formatDuration(section.durationMs), { selectAction: toggle }),
-            ],
-          },
-        ],
-        { firstRowAsHeader: false }
-      )
-    );
+/** Failing sections first, so the thing to look at is at the top. */
+function sectionBlocks(summary: Summary, withFailures: boolean): unknown[] {
+  const sections = collectSections(summary.features ?? []).toSorted(
+    (left, right) =>
+      Number(right.failed > 0) - Number(left.failed > 0) || left.name.localeCompare(right.name)
+  );
 
-    if (!expandable) continue;
+  const placed = new Set(sections.map((section) => section.name));
+  const failuresOf = (name: string): Failure[] =>
+    withFailures ? summary.failures.filter((failure) => failure.section === name) : [];
 
-    elements.push(
-      table(
-        [...FEATURE_COLUMNS],
-        section.features.map((feature: Feature) => ({
-          type: 'TableRow',
-          cells: [
-            cell(`\u21b3 ${clamp(feature.name, MAX.featureName)}`),
-            cell(feature.section, { subtle: true }),
-            statusCell(featureStatus(feature)),
-            cell(passRate(feature)),
-            cell(formatDuration(feature.durationMs)),
-          ],
-        })),
-        { id: rowsId, isVisible: false, firstRowAsHeader: false }
+  const blocks = sections.map((section) =>
+    sectionPanel(
+      section.name,
+      counts(section),
+      featureStatus(section),
+      failuresOf(section.name),
+      section.failed
+    )
+  );
+
+  // A failure outside scenarios/ — a setup file, or a run with no feature rows
+  // at all — belongs to no section, and must not vanish with them.
+  const orphans = summary.failures.filter((failure) => !placed.has(failure.section));
+  if (orphans.length > 0 && withFailures) {
+    blocks.push(
+      sectionPanel(
+        'elsewhere',
+        `failed: ${orphans.length}`,
+        'failed',
+        orphans,
+        summary.failed > 0 && sections.length === 0 ? summary.failed : orphans.length
       )
     );
   }
 
-  return elements;
+  return blocks;
 }
 
 function outcomeChart(summary: Summary): unknown | null {
@@ -389,76 +388,20 @@ function message(body: unknown[], runUrl: string, extraActions: unknown[] = []) 
 export type Post = { label: string; message: ReturnType<typeof message>; bytes: number };
 
 function rootPost(summary: Summary): Post {
-  const { card, bytes } = buildCardWithinLimit({ ...summary, features: [] });
+  const { card, bytes } = buildCardWithinLimit(summary);
   return { label: 'summary', message: card, bytes };
 }
 
-function sectionBody(section: Section, features: Feature[], part: string): unknown[] {
-  return [
-    text(`${clamp(section.name, MAX.sectionName)}${part}`, { size: 'Medium', weight: 'Bolder' }),
-    text(
-      `${featureStatus(section)} · ${passRate(section)} · ${formatDuration(section.durationMs)}`,
-      { subtle: true, spacing: 'Small' }
-    ),
-    table(
-      [...FEATURE_COLUMNS],
-      [
-        headerRow(['Feature', 'Section', 'Status', 'Pass rate', 'Duration']),
-        ...features.map((feature) => ({
-          type: 'TableRow',
-          cells: [
-            cell(clamp(feature.name, MAX.featureName), { weight: 'Bolder' }),
-            cell(clamp(feature.section, MAX.sectionName), { subtle: true }),
-            statusCell(featureStatus(feature)),
-            cell(passRate(feature)),
-            cell(formatDuration(feature.durationMs)),
-          ],
-        })),
-      ]
-    ),
-  ];
-}
-
-function chunkFeatures(section: Section, runUrl: string): Feature[][] {
-  const chunks: Feature[][] = [];
-  let current: Feature[] = [];
-
-  for (const feature of section.features) {
-    const candidate = [...current, feature];
-    const bytes = JSON.stringify(message(sectionBody(section, candidate, ''), runUrl)).length;
-
-    if (bytes > TEAMS_PAYLOAD_LIMIT && current.length > 0) {
-      chunks.push(current);
-      current = [feature];
-    } else {
-      current = candidate;
-    }
-  }
-
-  if (current.length > 0) chunks.push(current);
-  return chunks;
-}
-
-function sectionPosts(section: Section, runUrl: string): Post[] {
-  const chunks = chunkFeatures(section, runUrl);
-
-  return chunks.map((features, index) => {
-    const part = chunks.length > 1 ? ` (${index + 1}/${chunks.length})` : '';
-    const built = message(sectionBody(section, features, part), runUrl);
-    return {
-      label: `${section.name}${part}`,
-      message: built,
-      bytes: JSON.stringify(built).length,
-    };
-  });
-}
-
+/**
+ * One card per run: the counts, and the tests that failed.
+ *
+ * It used to carry a table of every feature, threaded as one post per section.
+ * That is what the full report is for: the tables pushed the payload past what
+ * the flow accepts, and the channel then showed nothing at all. Teams gets the
+ * verdict; the run and the report are one click away.
+ */
 export function buildPosts(summary: Summary): Post[] {
-  const sections = collectSections(summary.features ?? []);
-  return [
-    rootPost(summary),
-    ...sections.flatMap((section) => sectionPosts(section, summary.runUrl)),
-  ];
+  return [rootPost(summary)];
 }
 
 /**
@@ -625,13 +568,18 @@ export function buildCardWithinLimit(summary: Summary): {
 
 export const TEAMS_PAYLOAD_LIMIT = 25_000;
 
+/**
+ * What a card gives up, in order, to fit.
+ *
+ * `sections` drops the service table; `summary` also drops the failures listed
+ * under each section, leaving its counts. The run's own counts never go.
+ */
 export type Detail = 'full' | 'sections' | 'summary';
 
 export function buildCard(summary: Summary, detail: Detail = 'full', mentions = parseMentions()) {
   // A run that wrote no report has not passed; it has not reported.
   const ok = !summary.noResults && summary.failed === 0 && summary.flaky === 0;
-  const services = detail === 'summary' ? [] : (summary.services ?? []);
-  const features = detail === 'summary' ? [] : (summary.features ?? []);
+  const services = detail === 'full' ? (summary.services ?? []) : [];
 
   const notice = creditNotice(summary.credits, summary.failed);
   const alert = notice && summary.credits?.problem ? mentionBlock(mentions) : null;
@@ -766,32 +714,18 @@ export function buildCard(summary: Summary, detail: Detail = 'full', mentions = 
     );
   }
 
-  if (features.length > 0) {
-    body.push(
-      text('Features', { size: 'Medium', weight: 'Bolder', spacing: 'Medium' }),
-      ...featureTables(collectSections(features), detail === 'full')
-    );
-  }
+  const blocks = sectionBlocks(summary, detail !== 'summary');
 
-  if (summary.failures.length > 0) {
+  if (blocks.length > 0) {
     body.push(
-      text(`Failing tests (showing ${summary.failures.length} of ${summary.totalFailures})`, {
+      text(`Sections${summary.totalFailures > 0 ? ` · ${summary.totalFailures} failed` : ''}`, {
+        size: 'Medium',
         weight: 'Bolder',
+        color: summary.totalFailures > 0 ? 'Attention' : 'Default',
         spacing: 'Medium',
-      })
+      }),
+      ...blocks
     );
-
-    for (const failure of summary.failures) {
-      body.push(
-        text(`**${clamp(failure.title, MAX.failureTitle)}**`, { spacing: 'Small' }),
-        text(clamp(failure.error, MAX.failureError), { size: 'Small', color: 'Attention' }),
-        text(`\`${clamp(failure.file, MAX.filePath)}:${failure.line}\``, {
-          size: 'Small',
-          subtle: true,
-          targetWidth: 'atLeast:Narrow',
-        })
-      );
-    }
   }
 
   return {
@@ -912,8 +846,7 @@ async function post(): Promise<void> {
 
   if (!(await send(webhook, card))) process.exit(1);
   report(
-    `Sent one message (${detail}, ${bytes} bytes). Set TEAMS_LAYOUT=thread for a ` +
-      'summary with the sections threaded under it.',
+    `Sent one message (${detail}, ${bytes} bytes).`,
     '{ "type": "message", "attachments": [ … ] }'
   );
 }
