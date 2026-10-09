@@ -350,8 +350,12 @@ async function expectAccepted(page: Page, call: Promise<CallOutcome>, what: stri
 }
 
 async function whatTheAppSaid(page: Page): Promise<string> {
+  // Next.js's route announcer is also role="alert" and holds the page title; the
+  // app's error notification is the alert carrying antd's close-circle icon.
   const notice = lowCredits(page)
-    .notice.or(page.getByRole('alert').filter({ hasText: /\S/ }))
+    .notice.or(
+      page.getByRole('alert').filter({ has: page.getByRole('img', { name: 'close-circle' }) })
+    )
     .first();
 
   const said = await notice
