@@ -45,7 +45,7 @@ function walk(node: unknown, found: string[]): void {
 }
 
 describe('buildCard', () => {
-  test('renders endpoint and feature tables on Adaptive Card 1.5', () => {
+  test('renders the counts and the services, and no per-test tables', () => {
     const summary = buildSummary(
       {
         suites: [
@@ -80,22 +80,30 @@ describe('buildCard', () => {
 
     expect(found).toContain('schema:1.5');
     expect(found).toContain('width:Full');
-    expect(found.filter((item) => item === 'Table')).toHaveLength(4);
+    // The services table is the only one left; the feature tables are gone.
+    expect(found.filter((item) => item === 'Table')).toHaveLength(1);
     expect(found).toContain('Services');
-    expect(found).toContain('Features');
     expect(found).toContain('Entity core');
     expect(found).toContain('1.2.3');
     expect(found).toContain('● Healthy');
     expect(found).toContain('● Skipped');
-    expect(found).toContain('● Passed');
-    expect(found).toContain('100%');
     expect(found).toContain('Open Brain Institute Platform e2e');
     expect(found).toContain('Passed');
-    expect(found).toContain('▸ site');
-    expect(found).toContain('▾ site');
-    expect(found).toContain('↳ Home page');
-    expect(found).toContain('1 feature');
     expect(found).toContain('reachable only inside the VPC');
+
+    // The counts live in the FactSet, whose values walk() does not reach.
+    expect(collect(card, (node) => node.type === 'FactSet')[0]?.facts).toEqual([
+      { title: 'Result', value: '1 passed · 0 failed · 0 flaky · 0 skipped' },
+      { title: 'Pass rate', value: '100%' },
+      { title: 'Duration', value: '3s' },
+      { title: 'App', value: expect.any(String) },
+      { title: 'Commit', value: 'n/a' },
+    ]);
+
+    expect(found).not.toContain('Features');
+    expect(found).not.toContain('↳ Home page');
+    expect(found).not.toContain('▸ site');
+    expect(collect(card, (node) => node.type === 'Action.ToggleVisibility')).toHaveLength(0);
   });
 
   test('marks the header failed when a test failed', () => {
@@ -115,7 +123,8 @@ describe('buildCard', () => {
       failures: [
         {
           title: 'Home page › boom',
-          file: 'home.spec.ts',
+          section: 'site',
+          file: 'scenarios/site/home/home.spec.ts',
           line: 4,
           project: 'public',
           error: 'timeout',
@@ -123,18 +132,133 @@ describe('buildCard', () => {
       ],
       totalFailures: 1,
       services: [],
-      features: [],
+      features: [
+        {
+          name: 'Home page',
+          section: 'site',
+          passed: 2,
+          failed: 1,
+          flaky: 0,
+          skipped: 0,
+          durationMs: 1000,
+        },
+      ],
     });
 
     const found: string[] = [];
     walk(card, found);
     expect(found).toContain('Failed');
-    expect(found).toContain('**Home page › boom**');
+    expect(found).toContain('Sections · 1 failed');
+    expect(found).toContain('site');
+    expect(found).toContain('failed: 1 · passed: 2 · skipped: 0');
+    expect(found).toContain('✗ Home page › boom');
     expect(found).toContain('timeout');
+    expect(found).toContain('scenarios/site/home/home.spec.ts:4');
     expect(found).not.toContain('Table');
   });
 
-  test('each section toggles its own hidden table', () => {
+  test('counts every section, and lists the failures of each', () => {
+    const summary: Summary = {
+      ...buildSummary({ suites: [], stats: {} }),
+      passed: 18,
+      failed: 8,
+      skipped: 2,
+      totalFailures: 8,
+      failures: [
+        ...Array.from({ length: 5 }, (_, index) => ({
+          title: `Data › boom ${index}`,
+          section: 'data',
+          file: 'scenarios/data/morphology/morphology.spec.ts',
+          line: index,
+          project: 'private',
+          error: 'timeout',
+        })),
+        {
+          title: 'Workflows › boom',
+          section: 'workflows',
+          file: 'scenarios/workflows/scan/scan.spec.ts',
+          line: 7,
+          project: 'private',
+          error: 'expected 201, got 500',
+        },
+      ],
+      features: [
+        {
+          name: 'Morphology',
+          section: 'data',
+          passed: 4,
+          failed: 7,
+          flaky: 0,
+          skipped: 1,
+          durationMs: 1,
+        },
+        {
+          name: 'Home',
+          section: 'site',
+          passed: 10,
+          failed: 0,
+          flaky: 1,
+          skipped: 1,
+          durationMs: 1,
+        },
+        {
+          name: 'Scan config',
+          section: 'workflows',
+          passed: 4,
+          failed: 1,
+          flaky: 0,
+          skipped: 0,
+          durationMs: 1,
+        },
+      ],
+    };
+
+    const found: string[] = [];
+    walk(buildCard(summary), found);
+
+    // Failing sections first, then the green ones, each with its own counts.
+    expect(found.filter((item) => ['data', 'site', 'workflows'].includes(item))).toEqual([
+      'data',
+      'workflows',
+      'site',
+    ]);
+    expect(found).toContain('failed: 7 · passed: 4 · skipped: 1');
+    expect(found).toContain('failed: 1 · passed: 4 · skipped: 0');
+    expect(found).toContain('failed: 0 · passed: 10 · flaky: 1 · skipped: 1');
+
+    // Five of data's seven, all of workflows' one, and data says what it held back.
+    expect(found.filter((item) => item.startsWith('✗ Data'))).toHaveLength(5);
+    expect(found).toContain('✗ Workflows › boom');
+    expect(found).toContain('…and 2 more here.');
+  });
+
+  test('keeps a failure that belongs to no section', () => {
+    const found: string[] = [];
+    walk(
+      buildCard({
+        ...buildSummary({ suites: [], stats: {} }),
+        failed: 1,
+        totalFailures: 1,
+        failures: [
+          {
+            title: 'global setup › signs in',
+            section: '',
+            file: 'setup/auth.setup.ts',
+            line: 12,
+            project: 'setup',
+            error: 'Error: 401 from the token endpoint',
+          },
+        ],
+      }),
+      found
+    );
+
+    expect(found).toContain('elsewhere');
+    expect(found).toContain('✗ global setup › signs in');
+    expect(found).toContain('Error: 401 from the token endpoint');
+  });
+
+  test('renders no feature tables, however many features ran', () => {
     const summary = buildSummary(
       {
         suites: [
@@ -166,19 +290,14 @@ describe('buildCard', () => {
     );
 
     const card = buildCard(summary);
-    const toggles = collect(card, (node) => node.type === 'Action.ToggleVisibility');
-    const hidden = collect(
-      card,
-      (node) => node.type === 'Table' && node.isVisible === false && typeof node.id === 'string'
-    );
 
-    expect(new Set(toggles.map((t) => JSON.stringify(t.targetElements))).size).toBe(2);
-    expect(hidden.map((t) => t.id)).toEqual(['features-0', 'features-1']);
+    expect(summary.features).toHaveLength(2);
+    expect(collect(card, (node) => node.type === 'Action.ToggleVisibility')).toEqual([]);
+    expect(collect(card, (node) => node.type === 'Table')).toEqual([]);
 
-    for (const toggle of toggles) {
-      const [rowsId] = toggle.targetElements as string[];
-      expect(hidden.some((table) => table.id === rowsId)).toBe(true);
-    }
+    const found: string[] = [];
+    walk(card, found);
+    for (const feature of summary.features) expect(found).not.toContain(feature.name);
   });
 });
 
@@ -226,57 +345,56 @@ describe('buildCardWithinLimit', () => {
     expect(bytes).toBeLessThanOrEqual(TEAMS_PAYLOAD_LIMIT);
   });
 
+  test('a run with every feature in it still fits, now the tables are gone', () => {
+    const { detail, bytes } = buildCardWithinLimit(summaryWith(30, 8));
+
+    expect(detail).toBe('full');
+    expect(bytes).toBeLessThanOrEqual(TEAMS_PAYLOAD_LIMIT);
+  });
+
   test('drops detail rather than exceeding the Teams limit', () => {
-    const big = summaryWith(30, 8);
+    const big: Summary = {
+      ...summaryWith(1, 1),
+      services: Array.from({ length: 20 }, (_, index) => ({
+        key: `service-${index}`,
+        label: `Service ${index}`,
+        version: '1.0.0',
+        status: 'down' as const,
+        problem: 'x'.repeat(3_000),
+      })),
+    };
 
     expect(JSON.stringify(buildCard(big, 'full')).length).toBeGreaterThan(TEAMS_PAYLOAD_LIMIT);
 
     const { detail, bytes } = buildCardWithinLimit(big);
-    expect(detail).not.toBe('full');
+    // The services table goes before the failures do.
+    expect(detail).toBe('sections');
     expect(bytes).toBeLessThanOrEqual(TEAMS_PAYLOAD_LIMIT);
   });
 });
 
 describe('buildPosts', () => {
-  test('leads with the summary and services, then one post per section', () => {
+  test('is one post: the counts, the services and the failures', () => {
     const posts = buildPosts(summaryWith(3, 2));
 
-    expect(posts.map((post) => post.label)).toEqual([
-      'summary',
-      'section-0',
-      'section-1',
-      'section-2',
-    ]);
+    expect(posts.map((post) => post.label)).toEqual(['summary']);
 
-    const first: string[] = [];
-    walk(posts[0]?.message, first);
-    expect(first).toContain('Services');
-    expect(first).not.toContain('Feature');
+    const found: string[] = [];
+    walk(posts[0]?.message, found);
+    expect(found).toContain('Services');
+    expect(found).not.toContain('Feature');
   });
 
-  test('splits one section across numbered posts when it is too big', () => {
-    const posts = buildPosts(summaryWith(1, 120));
-    const labels = posts.map((post) => post.label);
-
-    expect(labels[0]).toBe('summary');
-    expect(labels.length).toBeGreaterThan(2);
-    expect(labels[1]).toMatch(/^section-0 \(1\/\d+\)$/);
-
-    for (const post of posts) {
-      expect(post.bytes).toBeLessThanOrEqual(TEAMS_PAYLOAD_LIMIT);
-    }
-  });
-
-  test('every feature appears exactly once across the posts', () => {
+  test('names no feature, however many ran', () => {
     const summary = summaryWith(1, 120);
     const posts = buildPosts(summary);
 
-    const rendered: string[] = [];
-    for (const post of posts) walk(post.message, rendered);
+    expect(posts).toHaveLength(1);
+    expect(posts[0]?.bytes).toBeLessThanOrEqual(TEAMS_PAYLOAD_LIMIT);
 
-    for (const feature of summary.features) {
-      expect(rendered.filter((item) => item === feature.name)).toHaveLength(1);
-    }
+    const rendered: string[] = [];
+    walk(posts[0]?.message, rendered);
+    for (const feature of summary.features) expect(rendered).not.toContain(feature.name);
   });
 });
 
@@ -433,10 +551,10 @@ describe('buildBadge', () => {
 });
 
 describe('buildThreadPayload', () => {
-  test('sends bare adaptive cards, first one being the summary', () => {
+  test('sends one bare adaptive card, the summary', () => {
     const { cards } = buildThreadPayload(summaryWith(2, 2));
 
-    expect(cards).toHaveLength(3);
+    expect(cards).toHaveLength(1);
     for (const card of cards) {
       expect((card as { type?: string }).type).toBe('AdaptiveCard');
     }
@@ -452,7 +570,7 @@ describe('buildThreadPayload', () => {
     expect(payload.key).toBe('2026-09-18-schedule-1fe9550');
     expect(payload.parent).toContain(',"{{BADGES}}"');
     expect(JSON.parse(payload.badge)).toMatchObject({ type: 'Badge', text: 'Regular' });
-    expect(payload.cards).toHaveLength(3);
+    expect(payload.cards).toHaveLength(1);
   });
 
   test('an announce has the same shape with nothing to report yet', () => {
@@ -483,6 +601,7 @@ describe('payload limits', () => {
     trigger: 'Scheduled',
     failures: Array.from({ length: 5 }, (_, index) => ({
       title: huge(4_000, `title-${index}`),
+      section: 'data',
       file: huge(500, 'path/'),
       line: 1,
       project: 'private',

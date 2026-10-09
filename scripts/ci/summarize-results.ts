@@ -22,7 +22,15 @@ type Report = {
   config?: { metadata?: { environment?: string; baseUrl?: string; runId?: string } };
 };
 
-export type Failure = { title: string; file: string; line: number; project: string; error: string };
+export type Failure = {
+  title: string;
+  /** The scenario folder's parent, so a failure can be shown under its section. */
+  section: string;
+  file: string;
+  line: number;
+  project: string;
+  error: string;
+};
 
 export type ServiceSummary = {
   key: string;
@@ -166,6 +174,7 @@ export function collectFailures(suites: Suite[] = [], parents: string[] = []): F
 
         failures.push({
           title: [...trail, spec.title].filter(Boolean).join(' › '),
+          section: scenarioFromFile(spec.file ?? suite.file ?? '')?.section ?? '',
           file: spec.file ?? 'unknown',
           line: spec.line ?? 0,
           project: testCase.projectName ?? '',
@@ -264,6 +273,25 @@ export function runUrl(env: NodeJS.ProcessEnv = process.env): string {
     : '';
 }
 
+/** How many failures a section shows before it only counts the rest. */
+export const FAILURES_PER_SECTION = 5;
+
+/**
+ * The first few failures of each section, rather than the first few of the run.
+ *
+ * One broken section used to fill the whole list and hide that a second one was
+ * failing too. The counts beside each section still say how many there were.
+ */
+export function capPerSection(failures: Failure[], max = FAILURES_PER_SECTION): Failure[] {
+  const seen = new Map<string, number>();
+
+  return failures.filter((failure) => {
+    const count = seen.get(failure.section) ?? 0;
+    seen.set(failure.section, count + 1);
+    return count < max;
+  });
+}
+
 export function buildSummary(
   report: Report,
   services: ServiceSummary[] = [],
@@ -286,7 +314,7 @@ export function buildSummary(
     runUrl: runUrl(env),
     reportUrl: env.E2E_REPORT_URL ?? '',
     trigger: detectTrigger(env.GITHUB_EVENT_NAME),
-    failures: failures.slice(0, 5),
+    failures: capPerSection(failures),
     totalFailures: failures.length,
     services,
     features: collectFeatures(report.suites),
@@ -397,8 +425,9 @@ export function renderMarkdown(summary: Summary): string {
         `  > ${failure.error}`
       );
     }
-    if (summary.totalFailures > 5) {
-      lines.push('', `…and ${summary.totalFailures - 5} more. See the HTML report.`);
+    const hidden = summary.totalFailures - summary.failures.length;
+    if (hidden > 0) {
+      lines.push('', `…and ${hidden} more. See the HTML report.`);
     }
   }
 

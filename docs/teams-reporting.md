@@ -14,12 +14,20 @@ and post them
 │  Finished  [Regular ✓] [Slow ✗]                │  ← badges grow
 └────────────────────────────────────────────────┘
    └─ reply: the regular suite's summary card
-   └─ reply: one card per section
    └─ reply: the slow suite's summary card, hours later
 ```
 
 The parent appears when the run **starts**. Each suite replies when it
 **finishes**, and adds one badge to the parent. Green passed, red failed.
+
+A suite's reply is **one card**: the run's counts, the services, then one block
+per section — `data · failed: 7 · passed: 48 · flaky: 1 · skipped: 2` — with
+that section's failing tests under it, at most five, and a line counting the
+rest. Failing sections come first.
+
+It carries no table of individual passing tests. The flow refuses a payload that
+big, and the channel then showed nothing at all; the full list is in the report,
+one click away.
 
 A summary card carries two buttons: **Open the run** and **Download the full
 report**. The second is the one to hand someone — every test, its trace, its
@@ -63,7 +71,7 @@ One shape, two calls, `TEAMS_LAYOUT=thread`:
   "key": "2026-09-18-schedule-1fe9550-staging",
   "parent": "<the parent card, as one JSON string>",
   "badge": "<one Adaptive Card Badge, as one JSON string>",
-  "cards": [/* the summary and section cards */]
+  "cards": [/* the suite's summary card */]
 }
 ```
 
