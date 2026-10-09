@@ -1,5 +1,5 @@
 {
-  "name": "E-model optimization of a bAC interneuron",
+  "name": "E-model optimization of a cADpyr pyramidal cell",
   "activity": "optimize",
   "env": ["staging"],
   "workflow": {
@@ -12,24 +12,26 @@
   },
   "cases": [
     {
-      "name": "a sodium and a potassium conductance at the soma, one short generation",
+      "name": "sodium and potassium on the soma and the axon, one short generation",
       "slow": true,
       "config": {
         "info": {
           "type": "Info",
-          "campaign_name": "E2E e-model optimization",
-          "campaign_description": "A bAC basket cell fitted to the e-features of one recording."
+          "campaign_name": "E2E cADpyr e-model optimization",
+          "campaign_description": "A layer 5 pyramidal cell fitted to the e-features of one cADpyr recording."
         },
         "initialize": {
           "type": "OptimizationInitialize",
-          "emodel": "E2E_bAC",
-          "etype": { "name": "bAC" },
+          "emodel": "E2E_cADpyr",
+          "etype": {
+            "name": "cADpyr"
+          },
           "target_efeatures": {
-            "name": "EFeature Extraction Result — E2E e-model optimization targets",
+            "name": "EFeature Extraction Result — E2E cADpyr e-features",
             "scope": "project"
           },
           "morphology": {
-            "id_str": "b2ba2e96-aca6-4bfc-8844-24aef56ae775",
+            "id_str": "fa357fa4-d7d8-4230-8a1c-f0ed1d71eb40",
             "type": "CellMorphologyFromID",
             "scope": "public"
           }
@@ -37,28 +39,160 @@
         "emodel_optimisation_parameters": {
           "type": "EModelOptimisationParameters",
           "mechanisms": {
+            "type": "MechanismsBySectionList",
             "ion_channel_models": [
-              { "id_str": "13c947c3-cb76-4a9a-91f4-146e95bd25f3", "type": "IonChannelModelFromID" },
-              { "id_str": "a014a0f6-217a-4e18-935f-aa298e35c9d1", "type": "IonChannelModelFromID" }
+              {
+                "id_str": "13c947c3-cb76-4a9a-91f4-146e95bd25f3",
+                "type": "IonChannelModelFromID"
+              },
+              {
+                "id_str": "8c60dccf-8dfc-48a4-a2db-358b9643e3fb",
+                "type": "IonChannelModelFromID"
+              },
+              {
+                "id_str": "c073b724-e02a-41d6-816a-c5bd9149428d",
+                "type": "IonChannelModelFromID"
+              },
+              {
+                "id_str": "7decbf75-9414-4754-bf54-5fa787097206",
+                "type": "IonChannelModelFromID"
+              }
             ],
             "mechanism_regions": {
               "somatic": [
                 {
+                  "type": "MechanismRegionSelection",
                   "ion_channel_model": {
                     "id_str": "13c947c3-cb76-4a9a-91f4-146e95bd25f3",
                     "type": "IonChannelModelFromID"
                   },
                   "parameters": {
-                    "gNaTgbar": { "value": { "mode": "bounds", "bounds": [0, 0.3] } }
+                    "gNaTgbar": {
+                      "type": "ParameterSelection",
+                      "value": {
+                        "type": "OptimizationValue",
+                        "mode": "bounds",
+                        "value": null,
+                        "bounds": [0, 1]
+                      },
+                      "distribution": "uniform"
+                    }
                   }
                 },
                 {
+                  "type": "MechanismRegionSelection",
                   "ion_channel_model": {
-                    "id_str": "a014a0f6-217a-4e18-935f-aa298e35c9d1",
+                    "id_str": "8c60dccf-8dfc-48a4-a2db-358b9643e3fb",
                     "type": "IonChannelModelFromID"
                   },
                   "parameters": {
-                    "gSKv3_1bar": { "value": { "mode": "bounds", "bounds": [0, 1] } }
+                    "gK_Tstbar": {
+                      "type": "ParameterSelection",
+                      "value": {
+                        "type": "OptimizationValue",
+                        "mode": "bounds",
+                        "value": null,
+                        "bounds": [0, 1]
+                      },
+                      "distribution": "uniform"
+                    }
+                  }
+                },
+                {
+                  "type": "MechanismRegionSelection",
+                  "ion_channel_model": {
+                    "id_str": "c073b724-e02a-41d6-816a-c5bd9149428d",
+                    "type": "IonChannelModelFromID"
+                  },
+                  "parameters": {
+                    "gKbar": {
+                      "type": "ParameterSelection",
+                      "value": {
+                        "type": "OptimizationValue",
+                        "mode": "bounds",
+                        "value": null,
+                        "bounds": [0, 1]
+                      },
+                      "distribution": "uniform"
+                    }
+                  }
+                }
+              ],
+              "axonal": [
+                {
+                  "type": "MechanismRegionSelection",
+                  "ion_channel_model": {
+                    "id_str": "13c947c3-cb76-4a9a-91f4-146e95bd25f3",
+                    "type": "IonChannelModelFromID"
+                  },
+                  "parameters": {
+                    "gNaTgbar": {
+                      "type": "ParameterSelection",
+                      "value": {
+                        "type": "OptimizationValue",
+                        "mode": "bounds",
+                        "value": null,
+                        "bounds": [0, 1]
+                      },
+                      "distribution": "uniform"
+                    }
+                  }
+                },
+                {
+                  "type": "MechanismRegionSelection",
+                  "ion_channel_model": {
+                    "id_str": "8c60dccf-8dfc-48a4-a2db-358b9643e3fb",
+                    "type": "IonChannelModelFromID"
+                  },
+                  "parameters": {
+                    "gK_Tstbar": {
+                      "type": "ParameterSelection",
+                      "value": {
+                        "type": "OptimizationValue",
+                        "mode": "bounds",
+                        "value": null,
+                        "bounds": [0, 1]
+                      },
+                      "distribution": "uniform"
+                    }
+                  }
+                },
+                {
+                  "type": "MechanismRegionSelection",
+                  "ion_channel_model": {
+                    "id_str": "c073b724-e02a-41d6-816a-c5bd9149428d",
+                    "type": "IonChannelModelFromID"
+                  },
+                  "parameters": {
+                    "gKbar": {
+                      "type": "ParameterSelection",
+                      "value": {
+                        "type": "OptimizationValue",
+                        "mode": "bounds",
+                        "value": null,
+                        "bounds": [0, 1]
+                      },
+                      "distribution": "uniform"
+                    }
+                  }
+                },
+                {
+                  "type": "MechanismRegionSelection",
+                  "ion_channel_model": {
+                    "id_str": "7decbf75-9414-4754-bf54-5fa787097206",
+                    "type": "IonChannelModelFromID"
+                  },
+                  "parameters": {
+                    "gNap_Et2bar": {
+                      "type": "ParameterSelection",
+                      "value": {
+                        "type": "OptimizationValue",
+                        "mode": "bounds",
+                        "value": null,
+                        "bounds": [0, 0.2]
+                      },
+                      "distribution": "uniform"
+                    }
                   }
                 }
               ]
@@ -81,13 +215,14 @@
           "outputs": []
         },
         "completed": {
-          "within": 90,
+          "within": 30,
           "inputs": ["Task configuration", "obi_one_coordinate.json"],
           "outputs": [
             "Task logs",
-            "EModel Optimization Result — E2E_bAC",
-            "E2E_bAC",
-            "E2E_bAC MEModel"
+            "E2E_cADpyr",
+            "E2E_cADpyr MEModel",
+            "final.json",
+            "analysis_figures"
           ]
         }
       }
