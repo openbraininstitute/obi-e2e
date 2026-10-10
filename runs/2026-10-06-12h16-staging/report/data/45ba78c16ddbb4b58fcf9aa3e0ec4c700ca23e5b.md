@@ -1,0 +1,227 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: scenarios/workflows/build-synaptome/build-synaptome.spec.ts >> Synaptome build >> The viewer opens with a scale bar and a solid neuron
+- Location: scenarios/workflows/build-synaptome/build-synaptome.spec.ts:208:2
+
+# Error details
+
+```
+Error: expect(locator).toBeVisible() failed
+
+Locator: getByTestId('data-grid-result-count').or(getByText(/[\d,]+ results/))
+Expected: visible
+Timeout: 30000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "to.be.visible" with timeout 30000ms
+  - waiting for getByTestId('data-grid-result-count').or(getByText(/[\d,]+ results/))
+
+```
+
+```yaml
+- menubar "t1/e2e-37457401593-1":
+  - button "CI Test User":
+    - img "UserFilled"
+  - button "t1":
+    - heading "t1" [level=3]
+  - img
+  - button "e2e-37457401593-1"
+  - button "toggle-workspace-panel":
+    - img
+- link "Coins 1995.50":
+  - /url: /app/virtual-lab/0f1a91f7-e871-4780-8f94-79ae61d32d51/e6dc1cfe-024a-4958-93a4-d2476811156c/credits
+  - img "Coins"
+  - text: "1995.50"
+- link "Home":
+  - /url: /app/virtual-lab/0f1a91f7-e871-4780-8f94-79ae61d32d51/e6dc1cfe-024a-4958-93a4-d2476811156c
+  - img "Home"
+- link "Data Explore":
+  - /url: /app/virtual-lab/0f1a91f7-e871-4780-8f94-79ae61d32d51/e6dc1cfe-024a-4958-93a4-d2476811156c/data
+  - text: Data
+  - img "Explore"
+- link "Workflows Workflow":
+  - /url: /app/virtual-lab/0f1a91f7-e871-4780-8f94-79ae61d32d51/e6dc1cfe-024a-4958-93a4-d2476811156c/workflows
+  - text: Workflows
+  - img "Workflow"
+- link "Notebooks Notebook":
+  - /url: /app/virtual-lab/0f1a91f7-e871-4780-8f94-79ae61d32d51/e6dc1cfe-024a-4958-93a4-d2476811156c/notebooks
+  - text: Notebooks
+  - img "Notebook"
+- link "Reports":
+  - /url: /app/virtual-lab/0f1a91f7-e871-4780-8f94-79ae61d32d51/e6dc1cfe-024a-4958-93a4-d2476811156c/reports
+- link:
+  - /url: /app/virtual-lab/0f1a91f7-e871-4780-8f94-79ae61d32d51/e6dc1cfe-024a-4958-93a4-d2476811156c/help
+- text: Help
+- img "Feedback star"
+- text: Feedback
+- tablist:
+  - tab "Public" [selected]
+  - tab "Project"
+- navigation "breadcrumb":
+  - list:
+    - listitem:
+      - button "Go back":
+        - img
+    - listitem:
+      - link "Synaptome build":
+        - /url: /app/virtual-lab/0f1a91f7-e871-4780-8f94-79ae61d32d51/e6dc1cfe-024a-4958-93a4-d2476811156c/workflows?activity=build&type=build_synaptome_campaign
+    - listitem:
+      - link "Select an ME-model" [disabled]
+- img "warning"
+- paragraph: An error occurred while fetching "ME-model" data for this region. We are sorry about the inconvenience. Please contact support.
+- button "Contact Support"
+- button "expand AI assistant":
+  - img
+  - text: OBI Assistant
+- alert
+```
+
+# Test source
+
+```ts
+  48  |  */
+  49  | function selectionCheckbox(
+  50  |   listing: ReturnType<typeof entityListing>,
+  51  |   rowIndex: string | null
+  52  | ): Locator {
+  53  |   return listing.table
+  54  |     .locator(`[role="row"][row-index="${rowIndex ?? ''}"]`)
+  55  |     .getByRole('checkbox')
+  56  |     .first();
+  57  | }
+  58  | 
+  59  | /**
+  60  |  * Picks a row, and picks it again when the grid drops the click.
+  61  |  *
+  62  |  * The search is debounced, so a row that matched a moment ago can be a node the
+  63  |  * grid is about to replace; a click on it leaves no selection behind. Picking
+  64  |  * an already-picked row changes nothing, so the retry is safe.
+  65  |  */
+  66  | async function pickRow(
+  67  |   name: string,
+  68  |   pick: () => Promise<void>,
+  69  |   took: () => Promise<void>
+  70  | ): Promise<void> {
+  71  |   await expect(async () => {
+  72  |     await pick();
+  73  |     await took();
+  74  |   }, `Selecting "${name}" did not take: the listing kept it unselected.`).toPass({
+  75  |     timeout: 45_000,
+  76  |   });
+  77  | }
+  78  | 
+  79  | /** Why a step could not run, or null when it ran. */
+  80  | export type WorkflowUnavailable = string | null;
+  81  | 
+  82  | /** Opens a workflow from the hub. */
+  83  | export async function startWorkflow(
+  84  |   page: Page,
+  85  |   activity: string,
+  86  |   workflow: { label: string; type: string }
+  87  | ): Promise<void> {
+  88  |   const hub = workflowsHub(page);
+  89  | 
+  90  |   await expect(hub.category(activity), `The hub offers no ${activity} workflows.`).toBeVisible();
+  91  | 
+  92  |   await expect(async () => {
+  93  |     await hub.category(activity).click(NO_NAVIGATION);
+  94  |     await expect(hub.typeMenu(activity)).toBeVisible({ timeout: 2_000 });
+  95  |   }).toPass();
+  96  | 
+  97  |   const card = hub.type(activity, workflow.label);
+  98  |   await expect(card, `The ${activity} workflows do not include "${workflow.label}".`).toBeVisible();
+  99  | 
+  100 |   await expect(
+  101 |     card,
+  102 |     `"${workflow.label}" is disabled, so it cannot be started. A workflow behind a feature ` +
+  103 |       'flag needs that flag set before the page loads.'
+  104 |   ).not.toHaveAttribute('aria-disabled', 'true');
+  105 | 
+  106 |   /*
+  107 |    * Clicked once, never retried. The card opens a route of its own, and a
+  108 |    * retry that fires while that navigation is still in flight finds the hub
+  109 |    * gone and waits out the action timeout for a card that has left the page,
+  110 |    * over and over, until the test runs out of clock. A slow route compile
+  111 |    * turned four Synaptome tests into eight-minute timeouts that way. The
+  112 |    * hydration this used to guard against is already settled: the category
+  113 |    * click above only opened its menu because React was listening.
+  114 |    */
+  115 |   await card.click();
+  116 |   await page.waitForURL(new RegExp(`/workflows/${activity}/(new|configure)/`));
+  117 | }
+  118 | 
+  119 | /**
+  120 |  * Picks what the workflow works from. Returns a reason when the project has none.
+  121 |  *
+  122 |  * `rowId` is for an entity whose name others share, such as a circuit a build
+  123 |  * registered: every build of one circuit registers its copy under the same
+  124 |  * name, and a copy another test is still uploading is the newest row.
+  125 |  */
+  126 | export async function chooseEntities(
+  127 |   page: Page,
+  128 |   selection: ScanConfigSelection,
+  129 |   rowId?: string
+  130 | ): Promise<WorkflowUnavailable> {
+  131 |   const browse = workflowBrowse(page);
+  132 |   const listing = entityListing(page);
+  133 | 
+  134 |   if (selection.mode === 'none') return null;
+  135 | 
+  136 |   if (selection.scope) {
+  137 |     await browse.scope(selection.scope).click(NO_NAVIGATION);
+  138 |   }
+  139 | 
+  140 |   if (selection.mode === 'multiple' && selection.prerequisite) {
+  141 |     await browse.prerequisite(selection.prerequisite).click(NO_NAVIGATION);
+  142 |   }
+  143 | 
+  144 |   await expect(listing.table).toBeVisible();
+  145 | 
+  146 |   for (const name of selection.entities) {
+  147 |     await listing.search.fill(name);
+> 148 |     await expect(listing.resultCount).toBeVisible();
+      |                                      ^ Error: expect(locator).toBeVisible() failed
+  149 | 
+  150 |     const named = listing.rows.filter({ hasText: name });
+  151 |     // The name's first row, unless one id was asked for: the search matches by substring.
+  152 |     const row = (rowId ? named.and(page.locator(`[row-id="${rowId}"]`)) : named).first();
+  153 |     if (!(await appears(row))) {
+  154 |       return `This project holds no "${name}" to build from.`;
+  155 |     }
+  156 | 
+  157 |     if (selection.mode === 'multiple') {
+  158 |       const checkbox = selectionCheckbox(listing, await row.getAttribute('row-index'));
+  159 |       if ((await checkbox.count()) === 0) {
+  160 |         return `The "${name}" listing offers nothing to tick, so nothing can be selected.`;
+  161 |       }
+  162 |       await pickRow(
+  163 |         name,
+  164 |         () => checkbox.check(NO_NAVIGATION),
+  165 |         () => expect(checkbox).toBeChecked({ timeout: 5_000 })
+  166 |       );
+  167 |       continue;
+  168 |     }
+  169 | 
+  170 |     await pickRow(
+  171 |       name,
+  172 |       () => row.getByRole('gridcell').filter({ hasText: name }).first().click(NO_NAVIGATION),
+  173 |       () => expect(browse.useModel).toBeVisible({ timeout: 5_000 })
+  174 |     );
+  175 |   }
+  176 | 
+  177 |   await (selection.mode === 'single' ? browse.useModel : browse.useSelection).click();
+  178 | 
+  179 |   // The editor is a route, so this waits on the navigation clock rather than
+  180 |   // the shorter one an assertion gets.
+  181 |   await page.waitForURL(/\/configure\//);
+  182 |   return null;
+  183 | }
+  184 | 
+```
