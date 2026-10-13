@@ -47,7 +47,3 @@ export function activityTable(page: Page) {
     column: (name: string) => table.getByRole('columnheader', { name }),
   };
 }
-
-export function workflowType(page: Page, type: string) {
-  return page.getByTestId(`workflow-type-${type}`);
-}

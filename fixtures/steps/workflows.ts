@@ -94,7 +94,7 @@ export async function startWorkflow(
     await expect(hub.typeMenu(activity)).toBeVisible({ timeout: 2_000 });
   }).toPass();
 
-  const card = hub.type(activity, workflow.label);
+  const card = hub.type(workflow.type);
   await expect(card, `The ${activity} workflows do not include "${workflow.label}".`).toBeVisible();
 
   await expect(

@@ -40,13 +40,9 @@ export function workflowsHub(page: Page) {
 
     typeMenu: (activity: string): Locator => page.getByTestId(`workflow-types-menu-${activity}`),
 
-    type: (activity: string, label: string): Locator =>
-      page
-        .getByTestId(`workflow-types-menu-${activity}`)
-        .getByRole('button')
-        .filter({
-          hasText: new RegExp(`${label.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')}(Start|$)`),
-        }),
+    // By campaign type, never by label: a relabelled card keeps its id, and
+    // several cards read the same ("Single neuron" heads two of them).
+    type: (type: string): Locator => page.getByTestId(`workflow-type-${type}`),
   };
 }
 

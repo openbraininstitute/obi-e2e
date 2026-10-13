@@ -170,7 +170,21 @@ export class ScanConfigDriver {
           'circuit properties call failed.'
       ).toBeEnabled();
 
-      await variant.click(NO_NAVIGATION);
+      /*
+       * The chooser can close between being read and being clicked: once on CI
+       * the click then waited out its whole timeout for a card no longer on the
+       * page. A click that lands creates the entry, so only a card that has
+       * gone sends the driver back to "add".
+       */
+      await expect(
+        async () => {
+          if (!(await variant.isVisible())) await this.addAnEntry(rootElement);
+          await variant.click({ ...NO_NAVIGATION, timeout: 5_000 });
+        },
+        `The "${title ?? entry.type}" card left the chooser before it could be picked.`
+      ).toPass({
+        timeout: 60_000,
+      });
 
       const created = await this.selectedEntryName(rootElement);
       this.entryNames.set(`${rootElement}/${key}`, created);

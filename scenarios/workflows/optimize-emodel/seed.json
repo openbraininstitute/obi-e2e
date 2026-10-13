@@ -3,7 +3,7 @@
   "activity": "optimize",
   "env": ["staging"],
   "workflow": {
-    "label": "E-Model optimization",
+    "label": "E-model",
     "type": "emodel-optimization-campaign"
   },
   "schemaName": "EModelOptimizationScanConfig",
@@ -25,12 +25,18 @@
           "emodel": "E2E_cADpyr",
           "etype": {
             "name": "cADpyr"
-          },
-          "target_efeatures": {
+          }
+        },
+        "target_efeatures": {
+          "type": "TargetEFeaturesInput",
+          "task_result": {
             "name": "EFeature Extraction Result — E2E cADpyr e-features",
             "scope": "project"
-          },
-          "morphology": {
+          }
+        },
+        "morphology": {
+          "type": "CellMorphologyInput",
+          "cell_morphology": {
             "id_str": "fa357fa4-d7d8-4230-8a1c-f0ed1d71eb40",
             "type": "CellMorphologyFromID",
             "scope": "public"
@@ -201,10 +207,7 @@
         },
         "optimization_settings": {
           "type": "OptimizationSettings",
-          "max_ngen": 1
-        },
-        "optimization_params": {
-          "type": "OptimizationParams",
+          "max_ngen": 1,
           "offspring_size": 2
         }
       },

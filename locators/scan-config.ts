@@ -78,8 +78,11 @@ export function scanConfigEditor(page: Page) {
 
 export function scanConfigResults(page: Page) {
   const results = page.getByTestId('scan-config-results');
-  const mini = page.getByTestId('mini-viewer');
   const view = page.getByTestId('scan-config-file-view');
+  // The pane the selected file opens in. The configuration tab stays mounted,
+  // hidden, behind the results, and a workflow that previews its input there —
+  // the mesh a skeletonization starts from — carries a second mini-viewer.
+  const mini = view.getByTestId('mini-viewer');
 
   return {
     coordinates: page.getByTestId(/^scan-config-coordinate-/),
