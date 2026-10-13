@@ -3,7 +3,7 @@
   "activity": "extract",
   "env": ["staging"],
   "workflow": {
-    "label": "Intracellular EFeatures",
+    "label": "Intracellular E-features",
     "type": "efeature-extraction-campaign"
   },
   "schemaName": "EModelEFeatureExtractionScanConfig",

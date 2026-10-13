@@ -4,7 +4,7 @@ import { AUTHENTICATED } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { workflowsHub } from '@locators/workflows';
 
-import { ACTIVITY_COLUMNS, activityTable, CATEGORIES, TYPES, workflowType } from './locators';
+import { ACTIVITY_COLUMNS, activityTable, CATEGORIES, TYPES } from './locators';
 
 test.describe('Workflows page', () => {
   test.beforeEach(async ({ page, workspace }) => {
@@ -28,7 +28,7 @@ test.describe('Workflows page', () => {
     await expect(page).toHaveURL(/activity=build/);
 
     for (const { label, type } of TYPES.build) {
-      const card = workflowType(page, type);
+      const card = hub.type(type);
       await expect(card).toBeVisible();
       await expect(card).toContainText(label);
     }
@@ -41,7 +41,7 @@ test.describe('Workflows page', () => {
     await expect(page).toHaveURL(/activity=simulate/);
 
     for (const { label, type } of TYPES.simulate) {
-      const card = workflowType(page, type);
+      const card = hub.type(type);
       await expect(card).toBeVisible();
       await expect(card).toContainText(label);
     }

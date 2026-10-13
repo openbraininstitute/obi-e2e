@@ -1,6 +1,6 @@
 # E-model optimization
 
-The E-Model optimization workflow, under Optimize on the Workflows page. It fits
+The E-model optimization workflow, under Optimize on the Workflows page. It fits
 an e-model to the e-features extracted from a recording: the user names the
 e-model, picks its e-type, the extracted features and a morphology, chooses the
 ion channels, places each one on the sections it lives on, and says which of
@@ -10,7 +10,7 @@ built by hand in the app, as four tabs of its own.
 
 Nothing is browsed for first: every input is picked inside the form. The
 features have to exist before the form can be filled, and a new project holds
-none, so the test extracts them first, with the "Intracellular EFeatures"
+none, so the test extracts them first, with the "Intracellular E-features"
 workflow on recording "C060109A1-SR-C1", a cADpyr cell, as `targets.json` beside
 this file describes.
 
@@ -38,7 +38,7 @@ Precondition:
 Steps:
 
 1. Open "Optimize"
-2. Start "E-Model optimization"
+2. Start "E-model"
 
 Expected:
 
@@ -52,7 +52,7 @@ For each: configuration in the seed
 Precondition:
 
 1. My project holds the e-features `targets.json` describes: the extraction was run in it, and reached "done"
-2. The "E-Model optimization" form is open
+2. The "E-model" form is open
 
 Steps:
 

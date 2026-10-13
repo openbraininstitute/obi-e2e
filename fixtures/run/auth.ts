@@ -79,7 +79,13 @@ export async function signIn(page: Page, context: BrowserContext, role: Role): P
   await page.waitForURL((url) => !url.pathname.includes('/openid-connect/'));
   await failOnRejectedCredentials(page, role);
   await clearRequiredActions(page);
-  await page.waitForURL('**/app/**');
+  // Any app page but the log-in one. A callback NextAuth cannot complete sends
+  // the browser back to `/app/log-in?error=…`, which goes on to Keycloak and
+  // signs in again by itself; `**/app/**` took that stop for the landing, and
+  // the session read below came back empty: "No access token … Keys: none".
+  await page.waitForURL(
+    (url) => url.pathname.startsWith('/app/') && !url.pathname.startsWith('/app/log-in')
+  );
 
   await Bun.write(authStatePath(role), JSON.stringify(await context.storageState()));
   await Bun.write(tokenPath(role), await readAccessToken(page, role));

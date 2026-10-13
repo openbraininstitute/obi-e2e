@@ -1,6 +1,6 @@
 # Intracellular e-feature extraction
 
-The "Intracellular EFeatures" workflow, under Extract on the Workflows page.
+The "Intracellular E-features" workflow, under Extract on the Workflows page.
 obi-one describes the form and the seed fills it in. Nothing is browsed for
 first: the recording is chosen inside the form.
 
@@ -26,7 +26,7 @@ Precondition:
 Steps:
 
 1. Open "Extract"
-2. Start "Intracellular EFeatures"
+2. Start "Intracellular E-features"
 
 Expected:
 
@@ -40,7 +40,7 @@ For each: configuration in the seed
 Precondition:
 
 1. The feature the seed names is turned on
-2. The "Intracellular EFeatures" form is open
+2. The "Intracellular E-features" form is open
 
 Steps:
 
