@@ -11,8 +11,15 @@ import * as path from 'node:path';
 
 import type { CreditReport } from '@fixtures/run/credit-report';
 import { baseURL, deploymentEnv, RUN_DIR } from '@fixtures/run/env';
+import { causeOf, PAGE_PROBLEMS } from '@fixtures/run/page-problems';
 
-type Result = { status?: string; duration?: number; error?: { message?: string } };
+type Attachment = { name?: string; body?: string };
+type Result = {
+  status?: string;
+  duration?: number;
+  error?: { message?: string };
+  attachments?: Attachment[];
+};
 type TestCase = { status?: string; projectName?: string; results?: Result[] };
 type Spec = { title?: string; file?: string; line?: number; tests?: TestCase[] };
 type Suite = { title?: string; file?: string; specs?: Spec[]; suites?: Suite[] };
@@ -30,6 +37,8 @@ export type Failure = {
   line: number;
   project: string;
   error: string;
+  /** What the backend did meanwhile, when the page recorded something telling. */
+  cause?: string;
 };
 
 export type ServiceSummary = {
@@ -166,6 +175,21 @@ export function collectSections(features: Feature[]): Section[] {
   return [...sections.values()].toSorted((left, right) => left.name.localeCompare(right.name));
 }
 
+/**
+ * What the page recorded under a failed attempt, line by line.
+ *
+ * The JSON reporter writes an attachment's body as base64; a body that is
+ * already text is taken as it is.
+ */
+export function pageProblemLines(result: Result | undefined): string[] {
+  const body = result?.attachments?.find((attachment) => attachment.name === PAGE_PROBLEMS)?.body;
+  if (!body) return [];
+  const text = /^[A-Za-z0-9+/=\s]+$/.test(body)
+    ? Buffer.from(body, 'base64').toString('utf8')
+    : body;
+  return text.split('\n').filter(Boolean);
+}
+
 export function collectFailures(suites: Suite[] = [], parents: string[] = []): Failure[] {
   const failures: Failure[] = [];
 
@@ -177,6 +201,7 @@ export function collectFailures(suites: Suite[] = [], parents: string[] = []): F
         const failed = (testCase.results ?? []).filter((r) => FAILED.has(r.status ?? ''));
         if (testCase.status !== 'unexpected' && failed.length === 0) continue;
 
+        const cause = causeOf(pageProblemLines(failed.at(-1)));
         failures.push({
           title: [...trail, spec.title].filter(Boolean).join(' › '),
           section: scenarioFromFile(spec.file ?? suite.file ?? '')?.section ?? '',
@@ -184,6 +209,7 @@ export function collectFailures(suites: Suite[] = [], parents: string[] = []): F
           line: spec.line ?? 0,
           project: testCase.projectName ?? '',
           error: firstLine(failed.at(-1)?.error?.message ?? 'No error message'),
+          ...(cause ? { cause } : {}),
         });
       }
     }
@@ -427,6 +453,7 @@ export function renderMarkdown(summary: Summary): string {
     for (const failure of summary.failures) {
       lines.push(
         `- **${failure.title}** — \`${failure.file}:${failure.line}\``,
+        ...(failure.cause ? [`  > **Likely cause:** ${failure.cause}`] : []),
         `  > ${failure.error}`
       );
     }

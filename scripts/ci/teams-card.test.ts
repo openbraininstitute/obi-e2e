@@ -157,6 +157,45 @@ describe('buildCard', () => {
     expect(found).not.toContain('Table');
   });
 
+  test("puts a failure's likely cause above the test's own error", () => {
+    const card = buildCard({
+      passed: 0,
+      failed: 1,
+      flaky: 0,
+      skipped: 0,
+      durationMs: 1000,
+      environment: 'staging',
+      baseUrl: '',
+      browser: 'chromium',
+      commit: 'deadbeef',
+      runUrl: '',
+      reportUrl: '',
+      trigger: 'Manual',
+      failures: [
+        {
+          title: 'Synthesized morphology listing › See the results',
+          section: 'data',
+          file: 'scenarios/data/synthesized-cell-morphology/browse/browse.spec.ts',
+          line: 122,
+          project: 'private',
+          error: 'Error: expect(locator).toBeVisible() failed',
+          cause: 'entitycore did not answer GET /brain-atlas (net::ERR_FAILED)',
+        },
+      ],
+      totalFailures: 1,
+      services: [],
+      features: [],
+    });
+
+    const found: string[] = [];
+    walk(card, found);
+    const cause = found.indexOf(
+      'Likely cause: entitycore did not answer GET /brain-atlas (net::ERR_FAILED)'
+    );
+    expect(cause).toBeGreaterThan(-1);
+    expect(cause).toBeLessThan(found.indexOf('Error: expect(locator).toBeVisible() failed'));
+  });
+
   test('counts every section, and lists the failures of each', () => {
     const summary: Summary = {
       ...buildSummary({ suites: [], stats: {} }),

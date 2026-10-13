@@ -194,6 +194,7 @@ const MAX = {
   problem: 140,
   failureTitle: 160,
   failureError: 200,
+  failureCause: 240,
   filePath: 120,
   baseUrl: 120,
 } as const;
@@ -215,6 +216,17 @@ function failureLines(failures: Failure[]): unknown[] {
       weight: 'Bolder',
       spacing: 'Small',
     }),
+    // The backend's account comes first: the test's own error names only what
+    // it waited for, which is how a service outage read as a broken locator.
+    ...(failure.cause
+      ? [
+          text(`Likely cause: ${clamp(failure.cause, MAX.failureCause)}`, {
+            size: 'Small',
+            weight: 'Bolder',
+            color: 'Warning',
+          }),
+        ]
+      : []),
     text(clamp(failure.error, MAX.failureError), { size: 'Small', color: 'Attention' }),
     text(`${clamp(failure.file, MAX.filePath)}:${failure.line}`, {
       size: 'Small',
