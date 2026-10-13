@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import {
   buildSummary,
+  collectFailures,
   collectFeatures,
   creditNotice,
   detectTrigger,
@@ -212,4 +213,70 @@ test('the notice names the variable this suite reads', () => {
   );
 
   expect(notice).toContain('E2E_SLOW_PROJECT_CREDITS');
+});
+
+/** A failed attempt's page problems, as the JSON reporter writes them: base64. */
+const evidence = (lines: string[]) => [
+  { name: 'page-problems.txt', body: Buffer.from(lines.join('\n')).toString('base64') },
+];
+
+describe('the likely cause', () => {
+  test("reads it from the failed attempt's page problems, and prints it first", () => {
+    const [failure] = collectFailures([
+      {
+        title: 'browse.spec.ts',
+        file: 'scenarios/data/synthesized-cell-morphology/browse/browse.spec.ts',
+        specs: [
+          {
+            title: 'See the results',
+            file: 'scenarios/data/synthesized-cell-morphology/browse/browse.spec.ts',
+            tests: [
+              {
+                status: 'unexpected',
+                results: [
+                  {
+                    status: 'failed',
+                    error: { message: 'Error: expect(locator).toBeVisible() failed' },
+                    attachments: evidence([
+                      'uncaught: Minified React error #419',
+                      'GET https://x/api/entitycore/brain-atlas → net::ERR_FAILED',
+                    ]),
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+
+    expect(failure?.cause).toBe('entitycore did not answer GET /brain-atlas (net::ERR_FAILED)');
+
+    const markdown = renderMarkdown({
+      ...buildSummary({ suites: [] }, [], {}),
+      failures: [failure!],
+      totalFailures: 1,
+    });
+    expect(markdown).toContain(
+      '  > **Likely cause:** entitycore did not answer GET /brain-atlas (net::ERR_FAILED)\n  > Error: expect(locator).toBeVisible() failed'
+    );
+  });
+
+  test('leaves it out when the page recorded nothing telling', () => {
+    const [failure] = collectFailures([
+      {
+        title: 'home.spec.ts',
+        file: 'scenarios/site/home/home.spec.ts',
+        specs: [
+          {
+            title: 'boom',
+            file: 'scenarios/site/home/home.spec.ts',
+            tests: [{ status: 'unexpected', results: [{ status: 'failed', attachments: [] }] }],
+          },
+        ],
+      },
+    ]);
+
+    expect(failure).not.toHaveProperty('cause');
+  });
 });

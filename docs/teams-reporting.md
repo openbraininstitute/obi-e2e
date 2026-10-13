@@ -25,6 +25,14 @@ per section — `data · failed: 7 · passed: 48 · flaky: 1 · skipped: 2` — 
 that section's failing tests under it, at most five, and a line counting the
 rest. Failing sections come first.
 
+A failing test shows a **Likely cause** above its own error when the page
+recorded one while the test ran: a campaign task's own error, a backend 5xx, a
+call no service answered, a refusal, or a call slower than 15 s. The test's
+error says only what it waited for, so without this a service outage reads as a
+broken locator. The same line is in the job summary and on the dashboard; the
+full list of what the page recorded is the test's `page-problems.txt` in the
+HTML report.
+
 It carries no table of individual passing tests. The flow refuses a payload that
 big, and the channel then showed nothing at all; the full list is in the report,
 one click away.

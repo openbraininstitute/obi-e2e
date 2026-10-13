@@ -33,6 +33,21 @@ const STALE_BUNDLE = /ChunkLoadError|Loading (?:CSS )?chunk \S+ failed/;
 /** Bundles, fonts and images say nothing about why a test failed. */
 const NOT_WORTH_REPORTING = /\/(?:_next|__nextjs)\/|\.(?:png|jpe?g|svg|woff2?|css|js)(?:\?|$)/;
 
+/** A backend call. Anything else the page fetches is the app itself. */
+const BACKEND = /\/api\//;
+
+/**
+ * A backend call this slow is the likely reason a step ran out of clock: a
+ * listing whose count never changed, a results tab that never enabled.
+ */
+const SLOW_MS = 15_000;
+
+/** A campaign task's record or log stream, which says why a run ended in "error". */
+const TASK_LOG = /\/declared\/task\/[^/?]+(?:\/stream)?(?:\?|$)/;
+
+/** The attachment the report reads the evidence back from. */
+export const PAGE_PROBLEMS = 'page-problems.txt';
+
 type Problem = { line: string };
 
 const watched = new WeakMap<Page, Problem[]>();
@@ -59,6 +74,20 @@ export function watchPage(page: Page): void {
 
   page.on('response', (response) => {
     const status = response.status();
+
+    // A task answers 200 while reporting that it failed; its log says why.
+    if (status < 400 && TASK_LOG.test(response.url())) {
+      void response
+        .text()
+        .catch(() => '')
+        .then((body) => {
+          const error = taskError(body);
+          if (error) add(`task error: ${error}`);
+          return body;
+        });
+      return;
+    }
+
     if (status < 400 || NOT_WORTH_REPORTING.test(response.url())) return;
 
     const problem = add(`${response.request().method()} ${response.url()} → ${status}`);
@@ -72,6 +101,14 @@ export function watchPage(page: Page): void {
         problem.line += ` ${body.replaceAll(/\s+/g, ' ').trim().slice(0, REASON_LENGTH)}`;
         return body;
       });
+  });
+
+  page.on('requestfinished', (request) => {
+    if (!BACKEND.test(request.url())) return;
+    const took = request.timing().responseEnd;
+    if (took >= SLOW_MS) {
+      add(`slow: ${request.method()} ${request.url()} took ${(took / 1000).toFixed(1)} s`);
+    }
   });
 
   page.on('requestfailed', (request) => {
@@ -116,8 +153,110 @@ export async function attachPageProblems(page: Page, testInfo: TestInfo): Promis
   const lines = pageProblems(page);
   if (lines.length === 0) return;
 
-  await testInfo.attach('page-problems.txt', {
+  await testInfo.attach(PAGE_PROBLEMS, {
     body: lines.join('\n'),
     contentType: 'text/plain',
   });
+}
+
+/** The first error a task logged, from its stream (a JSON object a line) or its record. */
+export function taskError(body: string): string | undefined {
+  const entries: Record<string, unknown>[] = [];
+  const collect = (value: unknown): void => {
+    if (Array.isArray(value)) {
+      for (const item of value) collect(item);
+    } else if (value !== null && typeof value === 'object') {
+      entries.push(value as Record<string, unknown>);
+      for (const item of Object.values(value)) collect(item);
+    }
+  };
+
+  for (const chunk of [body, ...body.split('\n')]) {
+    try {
+      collect(JSON.parse(chunk.replace(/^data:\s*/, '')));
+    } catch {
+      // Not JSON on its own: a partial line, or the whole of a stream.
+    }
+  }
+
+  const failed = entries.find(
+    (entry) => entry.level === 'ERROR' && typeof entry.message === 'string'
+  );
+  const message = failed?.message as string | undefined;
+  // The first line only says how many things failed; the next ones say which.
+  return message
+    ?.split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line !== '' && !line.startsWith('For further information'))
+    .join(' · ')
+    .slice(0, REASON_LENGTH);
+}
+
+/** `entitycore` for `https://…/api/entitycore/brain-atlas?page=1`, and the rest. */
+function describeCall(url: string): { service: string; path: string } {
+  const [service = '', ...rest] = (new URL(url).pathname.split('/api/')[1] ?? '').split('/');
+  return { service: service || 'the app', path: `/${rest.join('/')}` };
+}
+
+const CALL = /^(GET|POST|PUT|PATCH|DELETE) (\S+) → (.*)$/;
+
+/**
+ * The one line most likely to explain a failure, in plain words, or nothing.
+ *
+ * The test's own error says what it waited for; this says what the backend did
+ * meanwhile. Ranked by how surely each kind explains a failure: a task's own
+ * error, a 5xx, a crashed tab, a call that got no answer, a refusal, a slow
+ * call. Left out on purpose: navigations the page cancelled (`ERR_ABORTED`),
+ * 404s and uncaught errors, which a healthy run has too, so naming them would
+ * mislead the way a bare locator timeout does.
+ */
+export function causeOf(lines: readonly string[]): string | undefined {
+  const blockedByCors = lines.some((line) => line.includes('blocked by CORS policy'));
+  const ranked: { rank: number; text: string }[] = [];
+
+  for (const line of lines) {
+    if (line.startsWith('task error: ')) {
+      ranked.push({ rank: 0, text: `The task failed: ${line.slice('task error: '.length)}` });
+      continue;
+    }
+    if (line === 'the browser tab crashed') {
+      ranked.push({ rank: 2, text: 'The browser tab crashed.' });
+      continue;
+    }
+
+    const slow = line.match(/^slow: (\S+) (\S+) took (.+)$/);
+    if (slow) {
+      const [, method = '', url = '', took = ''] = slow;
+      const { service, path } = describeCall(url);
+      ranked.push({ rank: 5, text: `${service} took ${took} to answer ${method} ${path}` });
+      continue;
+    }
+
+    const call = line.match(CALL);
+    if (!call) continue;
+    const [, method = '', url = '', outcome = ''] = call;
+    if (!BACKEND.test(url)) continue;
+    const { service, path } = describeCall(url);
+    const status = outcome.match(/^(\d{3})\s*(.*)$/);
+
+    if (status) {
+      const code = Number(status[1]);
+      if (code === 404) continue;
+      const reason = status[2] ? `: ${status[2]}` : '';
+      ranked.push({
+        rank: code >= 500 ? 1 : 4,
+        text: `${service} answered ${code} to ${method} ${path}${reason}`,
+      });
+    } else if (!outcome.includes('ERR_ABORTED')) {
+      const cors = blockedByCors
+        ? '; the browser blocked it (CORS), which is how a service that is down or failing looks from the page'
+        : '';
+      ranked.push({
+        rank: 3,
+        text: `${service} did not answer ${method} ${path} (${outcome}${cors})`,
+      });
+    }
+  }
+
+  return ranked.toSorted((left, right) => left.rank - right.rank)[0]?.text;
 }

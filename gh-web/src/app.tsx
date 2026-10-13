@@ -258,6 +258,11 @@ function Failures({
                 </button>
               ) : null}
             </div>
+            {failure.cause ? (
+              <p className="px-4 pt-3 text-xs font-medium">
+                <span className="text-flake">Likely cause:</span> {failure.cause}
+              </p>
+            ) : null}
             <pre className="overflow-x-auto px-4 py-3 text-xs whitespace-pre-wrap text-muted-foreground">
               {failure.error}
             </pre>

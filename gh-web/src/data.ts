@@ -42,6 +42,8 @@ export type Failure = {
   line: number;
   project: string;
   error: string;
+  /** What the backend did meanwhile, when the run recorded something telling. */
+  cause?: string;
 };
 
 export type Feature = {
