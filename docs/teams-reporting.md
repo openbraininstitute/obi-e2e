@@ -10,7 +10,7 @@ and post them
 │  Open Brain Institute Platform e2e             │
 │  Run       2026-09-18-schedule-1fe9550-staging │
 │  Suites    regular, slow                       │
-│  Started   05:00 UTC                           │
+│  Started   04:00 UTC                           │
 │  Finished  [Regular ✓] [Slow ✗]                │  ← badges grow
 └────────────────────────────────────────────────┘
    └─ reply: the regular suite's summary card
@@ -45,7 +45,8 @@ flow sees the id.
 
 The two suites are separate GitHub runs finishing hours apart. Both must land
 under one parent. The second run cannot be handed the id, so instead both
-compute the same **thread key** and send it:
+send the same **thread key** — computed once by `e2e.yml`, which hands it to the
+slow suite when it starts it:
 
 ```
 <UTC date>-<event>-<seed>-<environment>

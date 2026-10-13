@@ -1,43 +1,57 @@
-# Campaigns that are followed to the end but take longer than the nightly suite
-# can hold: a microcircuit simulation, a mesh skeletonisation. They are tagged
-# `@slow`, excluded from the nightly job, and run here on their own with hours
-# rather than minutes on the clock.
+# Campaigns that are followed to the end but take longer than the regular suite
+# can hold: a microcircuit simulation, an e-model optimisation. They are tagged
+# `@slow`, and only `--project=slow` defines the project that runs them, so they
+# run here on their own with hours rather than minutes on the clock.
 #
 # Each test's own budget comes from its seed — `expect.completed.within` where
 # the case names one, four hours where it does not — and this job only has to
 # outlast the slowest of them.
 #
-# It starts with the nightly suite, at 05:00 UTC, and runs beside it rather than
-# after: the two use different projects, so neither waits on the other. A push to
-# main runs it too, against the main preview like the regular suite, so a change
-# to a followed campaign is seen the day it lands instead of the morning after.
+# It has no trigger of its own. `e2e.yml` starts it for every run that includes
+# the slow suite — the 06:00 Zurich schedule, a merge to this repository's main,
+# a web-app release, a manual run with `slow` ticked — and hands it that run's
+# key, so both suites post into one Teams thread and publish into one report
+# folder. Started here by hand, with no key, it is a run of its own.
 name: E2E (slow)
 
 on:
-  schedule:
-    - cron: '0 5 * * *'
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       environment:
         description: Target environment
         type: choice
-        options: [staging, production]
+        options: [preview, staging, production]
         default: staging
-  repository_dispatch:
-    # The same release dispatch `e2e.yml` listens for, so a release gets both
-    # suites in one Teams thread. No input, so it runs against staging.
-    types: [core-web-app-release]
+      thread_key:
+        description: Set by e2e.yml. Leave empty for a run of its own.
+        type: string
+        default: ''
+      started:
+        description: Set by e2e.yml, with the key.
+        type: string
+        default: ''
+      event:
+        description: Set by e2e.yml — what started the run.
+        type: string
+        default: ''
+      release:
+        description: Set by e2e.yml for a web-app release.
+        type: string
+        default: ''
+      release_url:
+        description: Set by e2e.yml for a web-app release.
+        type: string
+        default: ''
+      release_commit:
+        description: Set by e2e.yml for a web-app merge.
+        type: string
+        default: ''
 
 concurrency:
-  # Runs queue rather than supersede, the same choice `e2e.yml` made and for the
-  # same reason: the run being replaced has already spent the project's credits on
-  # its launches, and a cancelled run uploads no artifact, so it reports nothing
-  # to Teams and nothing to the dashboard. Only a manual dispatch supersedes the
-  # one before it.
-  group: ${{ github.workflow }}-${{ inputs.environment || (github.event_name == 'push' && 'preview') || 'staging' }}
-  cancel-in-progress: ${{ github.event_name == 'workflow_dispatch' }}
+  # One group per run, so a slow run never waits on or cancels another. The same
+  # key twice is the same run started again, and that queues behind the first.
+  group: ${{ github.workflow }}-${{ inputs.thread_key || github.run_id }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -49,18 +63,17 @@ jobs:
     # it is not followed from a browser at all — see docs/workflow-tests.md.
     timeout-minutes: 360
     outputs:
-      # `publish` needs both of these, and job env does not cross jobs.
-      thread_key: ${{ steps.thread.outputs.key }}
-      environment: ${{ inputs.environment || (github.event_name == 'push' && 'preview') || 'staging' }}
+      # `publish` needs it, and job env does not cross jobs.
+      thread_key: ${{ steps.identity.outputs.key }}
     env:
       CI: 'true'
       E2E_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
-      E2E_ENVIRONMENT: ${{ inputs.environment || (github.event_name == 'push' && 'preview') || 'staging' }}
+      E2E_ENVIRONMENT: ${{ inputs.environment }}
       # The deployment behind the target: the preview is the staging backend.
       E2E_ENV: ${{ inputs.environment == 'production' && 'production' || 'staging' }}
       E2E_BASE_URL: >-
         ${{ inputs.environment == 'production' && vars.PRODUCTION_APP_URI
-            || github.event_name == 'push' && vars.PREVIEW_APP_URI
+            || inputs.environment == 'preview' && vars.PREVIEW_APP_URI
             || vars.STAGING_APP_URI }}
       E2E_TEST_USERNAME: >-
         ${{ inputs.environment == 'production' && secrets.OBI_USERNAME_PRODUCTION
@@ -73,48 +86,29 @@ jobs:
             || secrets.LAB_ID_STAGING }}
       E2E_SLOW_PROJECT_CREDITS: ${{ vars.E2E_SLOW_PROJECT_CREDITS }}
       PLAYWRIGHT_BROWSER: chromium
+      # Reported as what started the run, not as the dispatch that relayed it.
+      E2E_EVENT: ${{ inputs.event || github.event_name }}
+      E2E_RELEASE: ${{ inputs.release }}
+      E2E_RELEASE_URL: ${{ inputs.release_url }}
+      E2E_RELEASE_COMMIT: ${{ inputs.release_commit }}
     steps:
-      # The name of the Teams thread this run posts into. Both workflows compute
-      # it the same way and never compare notes: same day, same event, same seed
-      # is what puts the regular suite's card and the slow suite's card under one
-      # parent message. A release dispatch seeds it with the tag, a manual
-      # dispatch with its own run id, everything else with the sha. Seeded by the
-      # sha, every manual dispatch of the day landed on the first one's card, one
-      # badge each, and overwrote its report folder. A manual dispatch of each
-      # workflow now opens a thread of its own. Keep this step identical in both
-      # workflows — the two agreeing is the mechanism.
-      - name: Thread key
-        id: thread
+      # The key `e2e.yml` handed over, or, for a run started here by hand, one of
+      # its own in the same shape.
+      - name: Run identity
+        id: identity
         env:
-          EVENT: ${{ github.event_name }}
-          RELEASE: ${{ github.event.client_payload.release }}
-          RELEASE_URL: ${{ github.event.client_payload.release_url }}
-          RELEASE_COMMIT: ${{ github.event.client_payload.commit }}
-          SHA: ${{ github.sha }}
+          KEY: ${{ inputs.thread_key }}
+          STARTED: ${{ inputs.started }}
           RUN: ${{ github.run_id }}
         run: |
-          # One `date` call, not two: the key's day and the stamp below must not
-          # straddle midnight. The stamp is frozen here because the parent card is
-          # rebuilt at the end of every suite, and reading the clock there would
-          # move "Started" to whichever suite finished last.
-          now="$(date -u +'%F %H:%M')"
-          # The environment is part of the identity. Dispatch the regular suite at
-          # production and the slow one at staging and everything else about them
-          # matches, so without this they would share a Teams thread and a report
-          # folder while testing two different deployments.
-          # A merge dispatch seeds it with core-web-app's commit: two merges the
-          # same day are two runs, and the sha here is obi-e2e's own.
-          seed="${RELEASE:-${RELEASE_COMMIT:-$SHA}}"
-          [[ -n "$RELEASE" ]] || seed="${seed:0:7}"
-          [[ "$EVENT" != workflow_dispatch ]] || seed="$RUN"
-          key="${now%% *}-$EVENT-$seed-$E2E_ENVIRONMENT"
-          echo "key=$key" >> "$GITHUB_OUTPUT"
+          if [[ -z "$KEY" ]]; then
+            STARTED="$(date -u +'%F %H:%M')"
+            KEY="${STARTED%% *}-workflow_dispatch-$RUN-$E2E_ENVIRONMENT"
+          fi
+          echo "key=$KEY" >> "$GITHUB_OUTPUT"
           {
-            echo "TEAMS_THREAD_KEY=$key"
-            echo "E2E_RELEASE=$RELEASE"
-            echo "E2E_RELEASE_URL=$RELEASE_URL"
-            echo "E2E_RELEASE_COMMIT=$RELEASE_COMMIT"
-            echo "E2E_STARTED=$now UTC"
+            echo "TEAMS_THREAD_KEY=$KEY"
+            echo "E2E_STARTED=$STARTED UTC"
           } >> "$GITHUB_ENV"
 
       - uses: actions/checkout@v5
@@ -177,10 +171,10 @@ jobs:
           MS_TEAMS_WEBHOOK_URI: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
           TEAMS_LAYOUT: thread
           E2E_REPORT_URL: ${{ steps.report.outputs.artifact-url }}
-          # TEAMS_THREAD_KEY, E2E_RELEASE and E2E_STARTED are already in the job's
-          # environment, written by the first step. E2E_SUITE names the badge this
-          # call adds. No announce here, so dispatched on its own this call opens
-          # the thread — hence the suite list, used only in that case.
+          # TEAMS_THREAD_KEY and E2E_STARTED were written by the first step,
+          # E2E_RELEASE is in the job's environment. E2E_SUITE names the badge
+          # this call adds. No announce here, so started on its own this call
+          # opens the thread — hence the suite list, used only in that case.
           E2E_SUITE: Slow
           E2E_SUITES: slow
           TEAMS_ALERT_MENTIONS: ${{ vars.TEAMS_ALERT_MENTIONS }}
@@ -191,20 +185,12 @@ jobs:
     # `always()` has to be in here. An `if:` with no status function is silently
     # ANDed with `success()`, so this job skipped itself on the first failing run
     # it saw — exactly the run whose report people wanted. The rest filters out a
-    # cancellation: this workflow sets `cancel-in-progress: true`, the 05:00 cron
-    # evicts a push run in flight, and a cancelled run uploads no artifact for the
-    # download step to find. A run that finished, pass or fail, has one.
+    # cancellation: a cancelled run uploads no artifact for the download step to
+    # find. A run that finished, pass or fail, has one.
     if: always() && (needs.run.result == 'success' || needs.run.result == 'failure')
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    concurrency:
-      # Concurrency group names are repository-wide, so this is the same lock the
-      # regular suite's publish job takes. Both end in a force-push of the whole
-      # branch: without the lock the two clones overlap and whichever pushes
-      # second erases the other run's report.
-      group: gh-pages
-      cancel-in-progress: false
     # No checkout and no bun: this job clones the published branch itself and
     # runs nothing from the repository.
     steps:
@@ -217,48 +203,67 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           THREAD_KEY: ${{ needs.run.outputs.thread_key }}
-          ENVIRONMENT: ${{ needs.run.outputs.environment }}
+          ENVIRONMENT: ${{ inputs.environment }}
         run: |
           set -euo pipefail
           remote="https://x-access-token:$GH_TOKEN@github.com/${{ github.repository }}"
+          root=$PWD
 
-          git clone --depth 1 --branch gh-pages "$remote" _site || mkdir -p _site
-          mkdir -p _site/runs
+          fold() {
+            cd "$root"
+            rm -rf _site
+            if git clone -q --depth 1 --branch gh-pages "$remote" _site; then
+              base=$(git -C _site rev-parse HEAD)
+            else
+              mkdir -p _site && git -C _site init -q && base=''
+            fi
+            mkdir -p _site/runs
 
-          # The regular suite named this run's folder hours ago and there is no
-          # way to hand a name between two workflows, so find it by the key both
-          # of them computed. Newest first, for the case where a re-run of the
-          # regular suite left two folders under the same key.
-          folder=$(grep -lx "$THREAD_KEY" _site/runs/*/thread-key 2>/dev/null |
-            sort -r | head -1 | cut -d/ -f3 || true)
+            # The folder this run's key names. Whichever suite publishes first
+            # opens it; newest first, for a key a re-run left on two folders.
+            folder=$(grep -lx "$THREAD_KEY" _site/runs/*/thread-key 2>/dev/null |
+              sort -r | head -1 | cut -d/ -f3 || true)
 
-          # Dispatched on its own, or the regular suite never got as far as
-          # publishing: open the folder here, named the way it would have been.
-          if [ -z "$folder" ]; then
-            stamp="$(date -u +%F-%Hh%M)-$ENVIRONMENT"
-            folder=$stamp
-            n=0
-            while [ -d "_site/runs/$folder" ]; do n=$((n + 1)); folder=$stamp-$n; done
-            mkdir -p "_site/runs/$folder"
-            echo "$THREAD_KEY" > "_site/runs/$folder/thread-key"
-          fi
+            # Started on its own, or the regular suite has not published yet: open
+            # the folder here, named the way it would have been.
+            if [ -z "$folder" ]; then
+              stamp="$(date -u +%F-%Hh%M)-$ENVIRONMENT"
+              folder=$stamp
+              n=0
+              while [ -d "_site/runs/$folder" ]; do n=$((n + 1)); folder=$stamp-$n; done
+              mkdir -p "_site/runs/$folder"
+              echo "$THREAD_KEY" > "_site/runs/$folder/thread-key"
+            fi
 
-          rm -rf "_site/runs/$folder/slow"
-          mkdir -p "_site/runs/$folder/slow"
-          cp -r artifact/playwright-report "_site/runs/$folder/slow/report"
-          cp artifact/test-results/summary.json "_site/runs/$folder/slow/summary.json"
-          touch _site/.nojekyll
+            rm -rf "_site/runs/$folder/slow"
+            mkdir -p "_site/runs/$folder/slow"
+            cp -r artifact/playwright-report "_site/runs/$folder/slow/report"
+            cp artifact/test-results/summary.json "_site/runs/$folder/slow/summary.json"
+            touch _site/.nojekyll
 
-          # No sweep and no history here: this job only adds to a folder, and the
-          # regular suite's publish owns both. runs.json is rewritten because the
-          # fallback above can have created a folder nothing else knows about.
-          ls -1 _site/runs | sort -r | jq -Rn '[inputs]' > _site/runs.json
+            # No sweep and no history here: this job only adds to a folder, and the
+            # regular suite's publish owns both. runs.json is rewritten because the
+            # fallback above can have created a folder nothing else knows about.
+            ls -1 _site/runs | sort -r | jq -Rn '[inputs]' > _site/runs.json
 
-          cd _site
-          rm -rf .git
-          git init -q -b gh-pages
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git add -A
-          git commit -qm "E2E slow results — $folder"
-          git push -qf "$remote" gh-pages
+            cd _site
+            git checkout -q --orphan publish
+            git add -A
+            git -c user.name=github-actions -c user.email=github-actions@github.com \
+              commit -qm "E2E slow results — $folder"
+          }
+
+          # No lock, the same as the regular suite's publish: the lease refuses a
+          # push onto a branch that moved since the clone, and the fold starts
+          # again from a fresh one.
+          for attempt in 1 2 3 4 5 6 7 8; do
+            fold
+            if git push -q --force-with-lease="gh-pages:$base" "$remote" HEAD:refs/heads/gh-pages; then
+              echo "Published into runs/$folder/slow."
+              exit 0
+            fi
+            echo "::notice::gh-pages moved while publishing (attempt $attempt); folding again."
+            sleep $((attempt * 5))
+          done
+          echo "::error::Could not publish runs/$folder/slow after 8 attempts."
+          exit 1

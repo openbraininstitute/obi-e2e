@@ -2,6 +2,11 @@ name: E2E
 
 on:
   schedule:
+    # 06:00 in Zurich. GitHub reads cron in UTC and knows no time zones, so both
+    # offsets are listed and `matrix` keeps the one that is 06:00 there today:
+    # 04:00 UTC in summer (CEST), 05:00 UTC in winter (CET). The other plans
+    # nothing. The string must match `github.event.schedule` exactly.
+    - cron: '0 4 * * *'
     - cron: '0 5 * * *'
   push:
     branches: [main]
@@ -16,6 +21,10 @@ on:
         description: Only run tests matching this tag or title (e.g. @credits)
         type: string
         default: ''
+      slow:
+        description: Also run the slow suite, in the same Teams thread and report folder
+        type: boolean
+        default: false
   repository_dispatch:
     # `core-web-app` fires this when it releases, with the tag in
     # `client_payload.release`. The release goes to staging, like every other
@@ -39,61 +48,113 @@ on:
 # `@production` marks.
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.action }}
-  # A push and the nightly cron share this group on main: `github.event.action` is
-  # empty for both. Cancelling in progress let the cron evict a run that was
-  # eighteen minutes into the suite, and Playwright writes results.json only at the
-  # end — so the Teams card posted an empty run. Runs on main queue instead; only a
-  # manual re-dispatch supersedes the one before it.
+  # One group per run, so no run waits on or cancels another: each creates its
+  # own project, posts its own Teams thread and publishes its own folder. A
+  # shared group did both — GitHub keeps one waiting run per group and cancels it
+  # when a third arrives, and a manual dispatch cancelled the nightly run in
+  # flight. Only a manual re-dispatch at the same target supersedes the manual
+  # run before it.
+  group: >-
+    ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch'
+        && format('manual-{0}', inputs.environment) || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'workflow_dispatch' }}
 
 permissions:
   contents: read
 
 jobs:
+  # Decides what this run is, once, for every job and for the slow suite: its
+  # targets, whether the slow suite runs, and the key that names its Teams thread
+  # and its report folder. Computed in one place, the two suites cannot disagree
+  # about it — when each workflow worked it out for itself, a merge landing
+  # between two delayed schedules, or a run starting at midnight, gave the two
+  # halves of one run two threads and two folders.
   matrix:
     runs-on: ubuntu-latest
     outputs:
       runs: ${{ steps.plan.outputs.runs }}
+      slow: ${{ steps.plan.outputs.slow }}
+      started: ${{ steps.plan.outputs.started }}
     steps:
       - id: plan
         env:
           EVENT: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
           INPUT_ENV: ${{ inputs.environment }}
           INPUT_GREP: ${{ inputs.grep }}
+          INPUT_SLOW: ${{ inputs.slow }}
           ACTION: ${{ github.event.action }}
+          RELEASE: ${{ github.event.client_payload.release }}
+          RELEASE_COMMIT: ${{ github.event.client_payload.commit }}
+          SHA: ${{ github.sha }}
+          RUN: ${{ github.run_id }}
           PREVIEW_APP_URI: ${{ vars.PREVIEW_APP_URI }}
           STAGING_APP_URI: ${{ vars.STAGING_APP_URI }}
           PRODUCTION_APP_URI: ${{ vars.PRODUCTION_APP_URI }}
         run: |
+          if [[ "$EVENT" == schedule ]]; then
+            # Zurich's offset now is its offset at 06:00 today: clocks change at
+            # 01:00 UTC, before either cron fires.
+            offset=$(TZ=Europe/Zurich date +%z)
+            want="0 $((6 - 10#${offset:1:2})) * * *"
+            if [[ "$SCHEDULE" != "$want" ]]; then
+              echo "::notice::'$SCHEDULE' is not 06:00 in Zurich today ('$want' is); nothing to run."
+              echo "runs=[]" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+
           case "$EVENT" in
             schedule)
               # Production is off until its credentials exist. To bring it back, add
               # {name:"production",environment:"production",grep:""} to this list.
-              runs=$(jq -cn '[{name:"staging",environment:"staging",grep:""}]') ;;
+              runs=$(jq -cn '[{name:"staging",environment:"staging",grep:""}]')
+              slow=true ;;
             repository_dispatch)
               env=$([[ "$ACTION" == core-web-app-main ]] && echo preview || echo staging)
-              runs=$(jq -cn --arg env "$env" '[{name:$env,environment:$env,grep:""}]') ;;
+              runs=$(jq -cn --arg env "$env" '[{name:$env,environment:$env,grep:""}]')
+              # A core-web-app merge runs the regular suite only: hours of campaigns
+              # on every merge.
+              slow=$([[ "$ACTION" == core-web-app-main ]] && echo false || echo true) ;;
             workflow_dispatch)
               runs=$(jq -cn --arg env "$INPUT_ENV" --arg grep "$INPUT_GREP" \
-                '[{name:$env,environment:$env,grep:$grep}]') ;;
+                '[{name:$env,environment:$env,grep:$grep}]')
+              slow=$([[ "$INPUT_SLOW" == true ]] && echo true || echo false) ;;
             *)
               # A push to this repository: a merged PR is tested against the main
               # preview. Only the manual arm reads an input, and only a manual
               # dispatch can set one, so production stays unreachable from
               # anything automatic.
-              runs=$(jq -cn '[{name:"preview",environment:"preview",grep:""}]') ;;
+              runs=$(jq -cn '[{name:"preview",environment:"preview",grep:""}]')
+              slow=true ;;
           esac
+
+          # The key names the Teams thread and the report folder. A release seeds
+          # it with its tag, a core-web-app merge with that repository's commit, a
+          # manual run with its own run id, everything else with this sha. The
+          # environment is in it, so two targets of one run never share either.
+          now="$(date -u +'%F %H:%M')"
+          seed="${RELEASE:-${RELEASE_COMMIT:-$SHA}}"
+          [[ -n "$RELEASE" ]] || seed="${seed:0:7}"
+          [[ "$EVENT" != workflow_dispatch ]] || seed="$RUN"
+          prefix="${now%% *}-$EVENT-$seed"
+
           # The host each target serves, for the job title: "staging" alone does
           # not say which URL the run hit.
           runs=$(jq -c --arg preview "$PREVIEW_APP_URI" --arg staging "$STAGING_APP_URI" \
-            --arg production "$PRODUCTION_APP_URI" \
-            'map(.host = ({$preview, $staging, $production}[.environment] // "" | sub("^https?://"; "")))' \
+            --arg production "$PRODUCTION_APP_URI" --arg prefix "$prefix" \
+            'map(.host = ({$preview, $staging, $production}[.environment] // "" | sub("^https?://"; ""))
+                 | .key = "\($prefix)-\(.environment)")' \
             <<< "$runs")
-          echo "runs=$runs" >> "$GITHUB_OUTPUT"
+          {
+            echo "runs=$runs"
+            echo "slow=$slow"
+            echo "started=$now"
+          } >> "$GITHUB_OUTPUT"
 
   run:
     needs: matrix
+    if: needs.matrix.outputs.runs != '[]'
     runs-on: ubuntu-latest
     # A 2-core runner gives workersFor() two workers, so the whole suite walks
     # through 248 tests two at a time. Forty-five minutes cut it off mid-run.
@@ -107,10 +168,6 @@ jobs:
     name: >-
       ${{ matrix.run.host && format('{0} · {1}', matrix.run.name, matrix.run.host)
           || matrix.run.name }}
-    outputs:
-      # `publish` needs both of these, and job env does not cross jobs.
-      thread_key: ${{ steps.thread.outputs.key }}
-      environment: ${{ matrix.run.environment }}
     env:
       CI: 'true'
       E2E_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
@@ -138,50 +195,17 @@ jobs:
             || secrets.LAB_ID_STAGING }}
       E2E_PROJECT_CREDITS: ${{ vars.E2E_PROJECT_CREDITS }}
       PLAYWRIGHT_BROWSER: chromium
+      # The run's identity, decided by `matrix` and handed to the slow suite as
+      # is. The started stamp is frozen there because the parent card is rebuilt
+      # at the end of every suite, and reading the clock then would move
+      # "Started" to whichever suite finished last.
+      TEAMS_THREAD_KEY: ${{ matrix.run.key }}
+      E2E_STARTED: ${{ needs.matrix.outputs.started }} UTC
+      E2E_EVENT: ${{ github.event_name }}
+      E2E_RELEASE: ${{ github.event.client_payload.release }}
+      E2E_RELEASE_URL: ${{ github.event.client_payload.release_url }}
+      E2E_RELEASE_COMMIT: ${{ github.event.client_payload.commit }}
     steps:
-      # The name of the Teams thread this run posts into. Both workflows compute
-      # it the same way and never compare notes: same day, same event, same seed
-      # is what puts the regular suite's card and the slow suite's card under one
-      # parent message. A release dispatch seeds it with the tag, a manual
-      # dispatch with its own run id, everything else with the sha. Seeded by the
-      # sha, every manual dispatch of the day landed on the first one's card, one
-      # badge each, and overwrote its report folder. A manual dispatch of each
-      # workflow now opens a thread of its own. Keep this step identical in both
-      # workflows — the two agreeing is the mechanism.
-      - name: Thread key
-        id: thread
-        env:
-          EVENT: ${{ github.event_name }}
-          RELEASE: ${{ github.event.client_payload.release }}
-          RELEASE_URL: ${{ github.event.client_payload.release_url }}
-          RELEASE_COMMIT: ${{ github.event.client_payload.commit }}
-          SHA: ${{ github.sha }}
-          RUN: ${{ github.run_id }}
-        run: |
-          # One `date` call, not two: the key's day and the stamp below must not
-          # straddle midnight. The stamp is frozen here because the parent card is
-          # rebuilt at the end of every suite, and reading the clock there would
-          # move "Started" to whichever suite finished last.
-          now="$(date -u +'%F %H:%M')"
-          # The environment is part of the identity. Dispatch the regular suite at
-          # production and the slow one at staging and everything else about them
-          # matches, so without this they would share a Teams thread and a report
-          # folder while testing two different deployments.
-          # A merge dispatch seeds it with core-web-app's commit: two merges the
-          # same day are two runs, and the sha here is obi-e2e's own.
-          seed="${RELEASE:-${RELEASE_COMMIT:-$SHA}}"
-          [[ -n "$RELEASE" ]] || seed="${seed:0:7}"
-          [[ "$EVENT" != workflow_dispatch ]] || seed="$RUN"
-          key="${now%% *}-$EVENT-$seed-$E2E_ENVIRONMENT"
-          echo "key=$key" >> "$GITHUB_OUTPUT"
-          {
-            echo "TEAMS_THREAD_KEY=$key"
-            echo "E2E_RELEASE=$RELEASE"
-            echo "E2E_RELEASE_URL=$RELEASE_URL"
-            echo "E2E_RELEASE_COMMIT=$RELEASE_COMMIT"
-            echo "E2E_STARTED=$now UTC"
-          } >> "$GITHUB_ENV"
-
       - uses: actions/checkout@v5
 
       - uses: oven-sh/setup-bun@v2
@@ -199,11 +223,7 @@ jobs:
         env:
           MS_TEAMS_WEBHOOK_URI: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
           TEAMS_LAYOUT: thread
-          # The slow suite skips a core-web-app merge: hours of campaigns on every
-          # merge. A push here runs it too, against the same preview.
-          E2E_SUITES: >-
-            ${{ (github.event_name == 'workflow_dispatch' || github.event.action == 'core-web-app-main')
-                && 'regular' || 'regular, slow' }}
+          E2E_SUITES: ${{ needs.matrix.outputs.slow == 'true' && 'regular, slow' || 'regular' }}
         run: bun scripts/ci/teams-card.ts --start
 
       - name: Cache Playwright browsers
@@ -223,6 +243,8 @@ jobs:
           : "${E2E_BASE_URL:?No URL for ${E2E_ENVIRONMENT}: set the repository variable}"
           bun run preflight
 
+      # Without `--project=slow` the config defines no slow project, so the slow
+      # campaigns stay in their own job.
       - name: Run tests
         id: tests
         env:
@@ -276,10 +298,10 @@ jobs:
           MS_TEAMS_WEBHOOK_URI: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
           TEAMS_LAYOUT: thread
           E2E_REPORT_URL: ${{ steps.report.outputs.artifact-url }}
-          # TEAMS_THREAD_KEY, E2E_RELEASE and E2E_STARTED are already in the job's
-          # environment, written by the first step. E2E_SUITE names the badge this
-          # call adds to the parent; the rest of that card was stored when the
-          # announce opened the thread and is not rebuilt from here.
+          # TEAMS_THREAD_KEY, E2E_RELEASE and E2E_STARTED are in the job's
+          # environment. E2E_SUITE names the badge this call adds to the parent;
+          # the rest of that card was stored when the announce opened the thread
+          # and is not rebuilt from here.
           E2E_SUITE: Regular
           # Names to tag when the lab itself cannot pay for the run. A repository
           # variable, not a secret: it is work addresses, and being able to read
@@ -287,12 +309,46 @@ jobs:
           TEAMS_ALERT_MENTIONS: ${{ vars.TEAMS_ALERT_MENTIONS }}
         run: bun scripts/ci/teams-card.ts test-results/summary.json
 
+  # The slow suite is its own workflow, for its six-hour clock, but never its own
+  # run: this job starts it with this run's key, so the two suites post into one
+  # Teams thread and publish into one report folder whatever started them. It
+  # starts with the regular suite and runs beside it, so neither waits.
+  slow:
+    needs: matrix
+    if: needs.matrix.outputs.runs != '[]' && needs.matrix.outputs.slow == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    strategy:
+      fail-fast: false
+      matrix:
+        run: ${{ fromJSON(needs.matrix.outputs.runs) }}
+    name: slow · ${{ matrix.run.name }}
+    steps:
+      - name: Start the slow suite
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ENVIRONMENT: ${{ matrix.run.environment }}
+          KEY: ${{ matrix.run.key }}
+          STARTED: ${{ needs.matrix.outputs.started }}
+          RELEASE: ${{ github.event.client_payload.release }}
+          RELEASE_URL: ${{ github.event.client_payload.release_url }}
+          RELEASE_COMMIT: ${{ github.event.client_payload.commit }}
+        run: |
+          gh workflow run e2e-slow.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" \
+            -f environment="$ENVIRONMENT" -f thread_key="$KEY" -f started="$STARTED" \
+            -f event="$GITHUB_EVENT_NAME" -f release="$RELEASE" \
+            -f release_url="$RELEASE_URL" -f release_commit="$RELEASE_COMMIT"
+          echo "Started the slow suite for $KEY." >> "$GITHUB_STEP_SUMMARY"
+
   # The dashboard is built here rather than in `publish`, and on purpose. `publish`
   # runs `if: always()`, so it is the job that still reports a night the suite
   # failed — which is the night people open the page. A bundler error in this job
   # costs the new dashboard and nothing else: `publish` keeps serving the one
   # already on the branch.
   site:
+    needs: matrix
+    if: needs.matrix.outputs.runs != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -312,19 +368,18 @@ jobs:
           path: gh-web/dist/
           retention-days: 5
 
+  # One publish per target, each into the folder its own key names, so a run
+  # that tests two deployments never folds one into the other.
   publish:
-    needs: [run, site]
-    if: always()
+    needs: [matrix, run, site]
+    if: always() && needs.matrix.outputs.runs != '[]' && needs.run.result != 'skipped'
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    concurrency:
-      # Concurrency group names are repository-wide, so this is the same lock the
-      # slow suite's publish job takes. Both end in a force-push of the whole
-      # branch: without the lock the two clones overlap and whichever pushes
-      # second erases the other run's report.
-      group: gh-pages
-      cancel-in-progress: false
+    strategy:
+      fail-fast: false
+      matrix:
+        run: ${{ fromJSON(needs.matrix.outputs.runs) }}
     steps:
       - uses: actions/checkout@v5
 
@@ -334,8 +389,7 @@ jobs:
 
       - uses: actions/download-artifact@v5
         with:
-          pattern: playwright-report-*
-          merge-multiple: true
+          name: playwright-report-${{ matrix.run.name }}
           path: artifact
 
       - uses: actions/download-artifact@v5
@@ -349,75 +403,98 @@ jobs:
       - name: Fold this run into the last five days
         env:
           GH_TOKEN: ${{ github.token }}
-          THREAD_KEY: ${{ needs.run.outputs.thread_key }}
-          ENVIRONMENT: ${{ needs.run.outputs.environment }}
+          THREAD_KEY: ${{ matrix.run.key }}
+          ENVIRONMENT: ${{ matrix.run.environment }}
         run: |
           set -euo pipefail
           day=$(date -u +%F)
           remote="https://x-access-token:$GH_TOKEN@github.com/${{ github.repository }}"
+          root=$PWD
 
-          # The published branch carries no history: it is force-pushed as a single
-          # commit every night, so five days of reports never grow the repository.
-          git clone --depth 1 --branch gh-pages "$remote" _site || mkdir -p _site
+          # Builds the branch from a fresh clone: this run's folder, the history,
+          # the bundle and the five-day sweep. Run again from scratch on a retry.
+          fold() {
+            cd "$root"
+            rm -rf _site
+            if git clone -q --depth 1 --branch gh-pages "$remote" _site; then
+              base=$(git -C _site rev-parse HEAD)
+            else
+              mkdir -p _site && git -C _site init -q && base=''
+            fi
+            mkdir -p _site/runs
 
-          # Whichever suite publishes first opens the folder; the other one folds
-          # into it, found by the thread key both computed from the same event.
-          # The slow suite is usually first — its campaigns can fail in two minutes
-          # while this suite is still half an hour from finishing — and starting a
-          # second folder here split the two halves of one run across two entries,
-          # so the day's newest run showed no Slow switch at all.
-          folder=$(grep -lx "$THREAD_KEY" _site/runs/*/thread-key 2>/dev/null |
-            sort -r | head -1 | cut -d/ -f3 || true)
+            # Whichever suite publishes first opens the folder; the other one folds
+            # into it, found by the key both were handed.
+            folder=$(grep -lx "$THREAD_KEY" _site/runs/*/thread-key 2>/dev/null |
+              sort -r | head -1 | cut -d/ -f3 || true)
 
-          # A folder per run, not per day: a push at 10:00 used to overwrite the
-          # night's report. The name reads `<date>-<HHhMM>-<environment>`, so the
-          # page can offer one deployment at a time without opening every summary
-          # to find out which is which. The counter is only for a second run
-          # inside the same minute, and every form still sorts into time order.
-          if [ -z "$folder" ]; then
-            stamp="$(date -u +%F-%Hh%M)-$ENVIRONMENT"
-            folder=$stamp
-            n=0
-            while [ -d "_site/runs/$folder" ]; do n=$((n + 1)); folder=$stamp-$n; done
-          fi
+            # A folder per run, not per day: a push at 10:00 used to overwrite the
+            # night's report. The name reads `<date>-<HHhMM>-<environment>`, so the
+            # page can offer one deployment at a time without opening every summary
+            # to find out which is which. The counter is only for a second run
+            # inside the same minute, and every form still sorts into time order.
+            if [ -z "$folder" ]; then
+              stamp="$(date -u +%F-%Hh%M)-$ENVIRONMENT"
+              folder=$stamp
+              n=0
+              while [ -d "_site/runs/$folder" ]; do n=$((n + 1)); folder=$stamp-$n; done
+            fi
 
-          mkdir -p "_site/runs/$folder"
-          # `cp -r` into an existing directory nests rather than replaces, which a
-          # re-run under the same key would otherwise do.
-          rm -rf "_site/runs/$folder/report"
-          cp -r artifact/playwright-report "_site/runs/$folder/report"
-          cp artifact/test-results/summary.json "_site/runs/$folder/summary.json"
-          echo "$THREAD_KEY" > "_site/runs/$folder/thread-key"
-          touch _site/.nojekyll
+            mkdir -p "_site/runs/$folder"
+            # `cp -r` into an existing directory nests rather than replaces, which a
+            # re-run under the same key would otherwise do.
+            rm -rf "_site/runs/$folder/report"
+            cp -r artifact/playwright-report "_site/runs/$folder/report"
+            cp artifact/test-results/summary.json "_site/runs/$folder/summary.json"
+            echo "$THREAD_KEY" > "_site/runs/$folder/thread-key"
+            touch _site/.nojekyll
 
-          # The day sweep below takes the reports with it, so the numbers the trend
-          # charts read are kept separately. This is the only file on the branch
-          # that outlives five days.
-          bun scripts/ci/history.ts \
-            artifact/test-results/summary.json _site/history.json "$day"
+            # The day sweep below takes the reports with it, so the numbers the trend
+            # charts read are kept separately. This is the only file on the branch
+            # that outlives five days.
+            bun scripts/ci/history.ts \
+              artifact/test-results/summary.json _site/history.json "$day"
 
-          if [ -d site-dist ]; then
-            # Clear the paths the bundle owns before copying, or last week's hashed
-            # assets stay on the branch forever. Only those: `runs/`, `runs.json`
-            # and `history.json` sit beside the bundle and are not its to delete.
-            find site-dist -mindepth 1 -maxdepth 1 -printf '%P\n' |
-              while read -r owned; do rm -rf "_site/$owned"; done
-            cp -r site-dist/. _site/
-          else
-            echo "::warning::The site job produced no bundle; keeping the published one."
-          fi
+            if [ -d site-dist ]; then
+              # Clear the paths the bundle owns before copying, or last week's hashed
+              # assets stay on the branch forever. Only those: `runs/`, `runs.json`
+              # and `history.json` sit beside the bundle and are not its to delete.
+              find site-dist -mindepth 1 -maxdepth 1 -printf '%P\n' |
+                while read -r owned; do rm -rf "_site/$owned"; done
+              cp -r site-dist/. _site/
+            else
+              echo "::warning::The site job produced no bundle; keeping the published one."
+            fi
 
-          # Every run of the five newest days stays; older days go, runs and all.
-          # A folder's day is its first ten characters.
-          ls -1 _site/runs | cut -c1-10 | sort -ru | tail -n +6 |
-            while read -r old; do rm -rf "_site/runs/$old"*; done
-          ls -1 _site/runs | sort -r | jq -Rn '[inputs]' > _site/runs.json
+            # Every run of the five newest days stays; older days go, runs and all.
+            # A folder's day is its first ten characters.
+            ls -1 _site/runs | cut -c1-10 | sort -ru | tail -n +6 |
+              while read -r old; do rm -rf "_site/runs/$old"*; done
+            ls -1 _site/runs | sort -r | jq -Rn '[inputs]' > _site/runs.json
 
-          cd _site
-          rm -rf .git
-          git init -q -b gh-pages
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git add -A
-          git commit -qm "E2E results — $folder"
-          git push -qf "$remote" gh-pages
+            # One commit with no history, so five days of reports never grow the
+            # repository.
+            cd _site
+            git checkout -q --orphan publish
+            git add -A
+            git -c user.name=github-actions -c user.email=github-actions@github.com \
+              commit -qm "E2E results — $folder"
+          }
+
+          # No lock: every run publishes as soon as it finishes, and the push only
+          # lands on the branch it was built from. When another run pushed in
+          # between, the lease refuses it and the fold starts again from a fresh
+          # clone, so a conflict costs a retry rather than a report. A concurrency
+          # group cannot promise that: GitHub keeps one waiting job per group and
+          # cancels it when a third arrives.
+          for attempt in 1 2 3 4 5 6 7 8; do
+            fold
+            if git push -q --force-with-lease="gh-pages:$base" "$remote" HEAD:refs/heads/gh-pages; then
+              echo "Published into runs/$folder."
+              exit 0
+            fi
+            echo "::notice::gh-pages moved while publishing (attempt $attempt); folding again."
+            sleep $((attempt * 5))
+          done
+          echo "::error::Could not publish runs/$folder after 8 attempts."
+          exit 1

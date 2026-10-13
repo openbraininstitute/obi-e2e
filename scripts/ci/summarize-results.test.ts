@@ -111,13 +111,16 @@ describe('feature helpers', () => {
    * variable has to actually be gone for this to mean anything.
    */
   test('detectTrigger falls back to Local when no event name is set', () => {
-    const before = process.env.GITHUB_EVENT_NAME;
+    const before = { github: process.env.GITHUB_EVENT_NAME, e2e: process.env.E2E_EVENT };
     delete process.env.GITHUB_EVENT_NAME;
+    delete process.env.E2E_EVENT;
     try {
       expect(detectTrigger()).toBe('Local');
     } finally {
-      if (before === undefined) delete process.env.GITHUB_EVENT_NAME;
-      else process.env.GITHUB_EVENT_NAME = before;
+      if (before.github === undefined) delete process.env.GITHUB_EVENT_NAME;
+      else process.env.GITHUB_EVENT_NAME = before.github;
+      if (before.e2e === undefined) delete process.env.E2E_EVENT;
+      else process.env.E2E_EVENT = before.e2e;
     }
   });
 });
@@ -141,6 +144,16 @@ describe('buildSummary', () => {
     expect(summary.features).toHaveLength(2);
     expect(summary.failed).toBe(1);
     expect(summary.commit).toBe('abcdef123456');
+  });
+
+  test('reports the event the regular suite handed over, not the relaying dispatch', () => {
+    const summary = buildSummary(
+      { suites, stats: { expected: 2, unexpected: 1, flaky: 0, skipped: 0, duration: 24_000 } },
+      [],
+      { GITHUB_EVENT_NAME: 'workflow_dispatch', E2E_EVENT: 'schedule' }
+    );
+
+    expect(summary.trigger).toBe('Scheduled');
   });
 });
 

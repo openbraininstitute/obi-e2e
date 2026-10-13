@@ -98,8 +98,13 @@ export function formatDuration(ms: number): string {
   return `${minutes}m ${seconds}s`;
 }
 
+/**
+ * `E2E_EVENT` first: the slow suite is started by a dispatch from `e2e.yml`, so
+ * its own event name is always `workflow_dispatch`, and the regular suite hands
+ * over what really started the run.
+ */
 export function detectTrigger(
-  eventName = process.env.GITHUB_EVENT_NAME,
+  eventName = process.env.E2E_EVENT || process.env.GITHUB_EVENT_NAME,
   release = process.env.E2E_RELEASE
 ): string {
   switch (eventName) {
@@ -313,7 +318,7 @@ export function buildSummary(
     commit: env.GITHUB_SHA ?? '',
     runUrl: runUrl(env),
     reportUrl: env.E2E_REPORT_URL ?? '',
-    trigger: detectTrigger(env.GITHUB_EVENT_NAME),
+    trigger: detectTrigger(env.E2E_EVENT || env.GITHUB_EVENT_NAME),
     failures: capPerSection(failures),
     totalFailures: failures.length,
     services,

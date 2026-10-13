@@ -428,7 +428,7 @@ export function buildParentCard(env: NodeJS.ProcessEnv = process.env) {
   // last suite finished, so the workflows stamp it once beside the thread key.
   const started =
     env.E2E_STARTED?.trim() || `${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC`;
-  const trigger = detectTrigger(env.GITHUB_EVENT_NAME, release);
+  const trigger = detectTrigger(env.E2E_EVENT || env.GITHUB_EVENT_NAME, release);
   const environment = env.E2E_ENVIRONMENT || 'unknown';
 
   const body = [

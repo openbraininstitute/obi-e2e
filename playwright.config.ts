@@ -15,6 +15,7 @@ import {
   resolveBrowser,
   resolveWorkers,
   RUN_ID,
+  SUITE,
 } from './fixtures/run/env';
 import { excludedEnvironmentTag } from './fixtures/tags';
 
@@ -130,16 +131,24 @@ export default defineConfig({
      * `.github/workflows/e2e-slow.yml`. Each test's own timeout comes from its
      * seed: `expect.completed.within` when the case names one, four hours when
      * it does not.
+     *
+     * Defined only for `--project=slow`. Playwright runs every project it is
+     * given, so with this one always present a plain `bun run test` — the
+     * regular CI job, a local run — launched the slow campaigns as well.
      */
-    {
-      name: 'slow',
-      testDir: './scenarios',
-      grep: /@slow/,
-      grepInvert: excluding(),
-      dependencies: ['funding'],
-      retries: 0,
-      use: { ...SCENARIO_USE, storageState: authStatePath('primary') },
-    },
+    ...(SUITE === 'slow'
+      ? [
+          {
+            name: 'slow',
+            testDir: './scenarios',
+            grep: /@slow/,
+            grepInvert: excluding(),
+            dependencies: ['funding'],
+            retries: 0,
+            use: { ...SCENARIO_USE, storageState: authStatePath('primary') },
+          },
+        ]
+      : []),
     {
       name: 'onboarding',
       testDir: './scenarios',
