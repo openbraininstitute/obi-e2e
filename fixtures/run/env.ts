@@ -229,7 +229,8 @@ export function creditsFor(suite: Suite, raw: string | undefined): number {
   return parsed;
 }
 
-const SUITE = resolveSuite(process.argv, process.env);
+/** Which suite this run is: `slow` only under `--project=slow`. */
+export const SUITE = resolveSuite(process.argv, process.env);
 
 // Imported first while the config loads, so the workers inherit this.
 process.env[SUITE_VARIABLE] = SUITE;

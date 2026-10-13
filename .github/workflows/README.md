@@ -5,25 +5,36 @@ here: GitHub runs every YAML file in this folder, whatever its name.
 
 `e2e.yml` runs the tests. It decides what to run from the trigger:
 
-| Trigger                         | Target      | What runs   | Result     |
-| ------------------------------- | ----------- | ----------- | ---------- |
-| Schedule, 05:00 UTC             | staging     | full suite  | Teams card |
-| Push to `main` (merged PR)      | preview     | full suite  | Teams card |
-| `core-web-app-release` dispatch | staging     | full suite  | Teams card |
-| `core-web-app-main` dispatch    | preview     | full suite  | Teams card |
-| Manual run                      | your choice | your choice | Teams card |
+| Trigger                         | Target      | What runs                   | Result     |
+| ------------------------------- | ----------- | --------------------------- | ---------- |
+| Schedule, 06:00 Zurich time     | staging     | regular and slow            | Teams card |
+| Push to `main` (merged PR)      | preview     | regular and slow            | Teams card |
+| `core-web-app-release` dispatch | staging     | regular and slow            | Teams card |
+| `core-web-app-main` dispatch    | preview     | regular                     | Teams card |
+| Manual run                      | your choice | regular, and slow if ticked | Teams card |
+
+GitHub reads cron in UTC and has no time zones, so the schedule lists both
+04:00 and 05:00 UTC, and the run that is not 06:00 in Zurich that day plans
+nothing and stops in seconds. GitHub may still start a scheduled run late under
+load; the cron sets when it is queued, not when a runner picks it up.
+
+Every run is one identity, decided once by the first job of `e2e.yml`: its
+targets, whether the slow suite runs, and the key that names its Teams thread and
+its report folder. Runs never wait on or cancel one another — each has a
+concurrency group of its own — except that a manual re-dispatch at the same
+target supersedes the manual run before it.
 
 `core-web-app` fires the dispatch when it releases, with the tag in
-`client_payload.release`. Both suites listen for it, and the tag seeds the
-thread key so the release gets a thread of its own.
+`client_payload.release`. It runs both suites, and the tag seeds the thread
+key so the release gets a thread of its own.
 
 `core-web-app` fires `core-web-app-main` after a merge to its main, with the
 merge commit in `client_payload.commit` — see `../examples/core-web-app-main.example.yml`.
 Amplify builds main on its own, so that workflow polls the preview's
 `/app/version` until its `git describe` ends in the merged commit, and only then
 dispatches: a build that never goes live starts no run. A newer merge cancels
-the wait for an older one. Only the
-regular suite listens: the slow campaigns would take hours on every merge.
+the wait for an older one. It runs the regular suite only: the slow campaigns
+would take hours on every merge.
 
 The preview is the main branch on the staging backend: it signs in with the
 staging secrets, and `@production` tests skip there as they do on staging.
@@ -49,11 +60,16 @@ lab, move credits into it, and delete it at the end, the same as staging.
 
 ## `e2e-slow.yml`
 
-The campaigns that are followed to the end but take longer than the nightly
-suite can hold — a microcircuit simulation, a mesh skeletonisation. They carry
-`@slow`, `e2e.yml` leaves them out, and this job gives them six hours on the
-clock instead of forty-five minutes. It starts with the nightly suite at 05:00
-UTC and runs beside it, and can be dispatched by hand as well.
+The campaigns that are followed to the end but take longer than the regular
+suite can hold — a microcircuit simulation, an e-model optimisation. They carry
+`@slow`, and only `--project=slow` defines the project that runs them, so a plain
+`bun run test` — the regular job, a local run — never launches one. This job
+gives them six hours on the clock.
+
+It has no trigger of its own. The `slow` job of `e2e.yml` starts it with
+`gh workflow run`, handing over the run's thread key, start time, target and
+event, so it starts beside the regular suite and reports as part of the same
+run. Dispatched by hand with no key, it is a run of its own.
 
 A case opts in with one word in its seed — `"slow": true` — and gets four hours
 instead of five minutes. See
@@ -66,13 +82,15 @@ and posts into the same Teams thread hours later.
 
 The two suites are separate workflow runs that finish hours apart, and both
 land under one parent message. The webhook never returns a message id, so
-neither run can reply to anything; instead each computes the same **thread key**
-in its first step — `<UTC date>-<event>-<seed>-<environment>`, the seed being
-the release tag, the run id of a manual dispatch, or the short sha of the
-merged `core-web-app` commit or of this repository — and the Power Automate
-flow keeps the key-to-message-id map. The environment is in there because dispatching the
-regular suite at production and the slow one at staging matches on everything
-else, and the two would otherwise share a thread while testing two deployments.
+neither run can reply to anything; instead both send the same **thread key** —
+`<UTC date>-<event>-<seed>-<environment>`, the seed being the release tag, the
+run id of a manual dispatch, or the short sha of the merged `core-web-app`
+commit or of this repository — and the Power Automate flow keeps the
+key-to-message-id map. The key is computed once, by the first job of `e2e.yml`,
+and handed to the slow suite: when each workflow worked it out for itself, a
+merge landing between two delayed schedules, or a run starting at midnight, gave
+the two halves of one run two keys. The environment is in it, so two targets of
+one run never share a thread.
 
 `e2e.yml` announces the run as soon as it starts, which is what creates the
 thread; `e2e-slow.yml` never announces and only posts its result. A slow run
@@ -108,11 +126,15 @@ the night's report. `runs.json` lists the full folder names, newest first, and
 the page reads all three parts out of each name: the environment filters, the
 date picks the day, and the time picks the version within it.
 
-Both publish jobs take the repository-wide `gh-pages` concurrency group, so the
-two workflows queue rather than force-push over each other. Neither can be
-handed the folder name across workflows, so **both** look the folder up by the
-thread key, written into it as `thread-key`: whichever publishes first opens the
-folder and the other folds into it. Only one of them did that at first, and
+Publishing takes no lock. Each publish job clones the branch, adds its own
+folder, and force-pushes with a lease on the commit it cloned; when another run
+pushed in between, the lease refuses the push and the job folds again from a
+fresh clone, up to eight times. A concurrency group could not promise this:
+GitHub keeps one waiting job per group and cancels it when a third arrives, so a
+busy morning could drop a report. Each target of a run publishes on its own, into
+the folder its own key names. Both suites look the folder up by the thread key,
+written into it as `thread-key`: whichever publishes first opens the folder and
+the other folds into it. Only one of them did that at first, and
 since the slow suite usually gets there first — a campaign can fail in two
 minutes while the regular suite is still half an hour from finishing — the two
 halves of one run kept landing in two folders, leaving the day's newest run with
