@@ -47,7 +47,7 @@ side and the link is gone.
   `data-view.ts`, `scan-config.ts`, `viewer.ts`, `workflows.ts`, `atlas.ts`,
   `column-filter.ts`, `navigation.ts`, and `helpers.ts` underneath them all.
   A locator this scenario alone needs goes in its own `locators.ts`; it moves
-  to `locators/` when a second scenario needs it. Read `locators/README.md`.
+  to `locators/` when a second scenario needs it.
 - The neighbouring specs in the same section. Copy their shape.
 - `CLAUDE.md`, for the rules every spec keeps.
 
