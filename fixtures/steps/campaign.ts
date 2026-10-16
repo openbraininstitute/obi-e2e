@@ -9,7 +9,7 @@ import { Result } from 'better-result';
 
 import { checkCompletedOutput, checkGeneratedFiles } from '../checks/campaign-output';
 import { NO_NAVIGATION } from '../interactions';
-import { pageProblems } from '../run/page-problems';
+import { CAMPAIGN_REOPENED, notePageProblem, pageProblems } from '../run/page-problems';
 import type { ScanConfigCase, ScanConfigFixture } from '../scan-config';
 import { scanConfigWords } from '../scan-config/activities';
 import { ScanConfigDriver } from '../scan-config/driver';
@@ -303,6 +303,8 @@ async function keepCampaign(
           `The page loaded again mid-campaign, and campaign ${campaign} did not reopen.`
         ).toBeVisible({ timeout: CALL_TIMEOUT })
       )
+      // So the report blames what fails next, not the deploy (see `causeOf`).
+      .then(() => notePageProblem(page, CAMPAIGN_REOPENED))
       .finally(() => {
         navigating = false;
       });
