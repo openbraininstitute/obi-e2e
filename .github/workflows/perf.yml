@@ -2,7 +2,12 @@ name: Perf
 
 on:
   schedule:
+    # 08:00 in Zurich, after the 06:00 test run. GitHub reads cron in UTC only,
+    # so both offsets are listed and `when` keeps the one that is 08:00 there
+    # today: 06:00 UTC in summer (CEST), 07:00 UTC in winter (CET). The string
+    # must match `github.event.schedule` exactly.
     - cron: '0 6 * * *'
+    - cron: '0 7 * * *'
   workflow_dispatch:
     inputs:
       environment:
@@ -12,14 +17,40 @@ on:
         default: staging
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # One group per run, as in e2e.yml: the schedule's second cron must not cancel
+  # the audit the first one started. A manual re-dispatch at the same target
+  # still supersedes the one before it.
+  group: >-
+    ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch'
+        && format('manual-{0}', inputs.environment) || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'workflow_dispatch' }}
 
 permissions:
   contents: read
 
 jobs:
+  when:
+    runs-on: ubuntu-latest
+    outputs:
+      go: ${{ steps.zurich.outputs.go }}
+    steps:
+      - id: zurich
+        env:
+          EVENT: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          go=true
+          if [[ "$EVENT" == schedule ]]; then
+            # Zurich's offset now is its offset at 08:00 today: clocks change at
+            # 01:00 UTC, before either cron fires.
+            offset=$(TZ=Europe/Zurich date +%z)
+            [[ "$SCHEDULE" == "0 $((8 - 10#${offset:1:2})) * * *" ]] || go=false
+          fi
+          echo "go=$go" >> "$GITHUB_OUTPUT"
+
   audit:
+    needs: when
+    if: needs.when.outputs.go == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:

@@ -13,11 +13,17 @@ supported. Never use `bunx playwright`: the tests need Bun, not Node.
 ## Setup
 
 ```bash
-bun install
-bun run browsers
-cp .env.local.example .env.staging.local   # fill in the users, LAB_ID, webhook
-bun run test
+git clone git@github.com:openbraininstitute/obi-e2e && cd obi-e2e
+make setup        # Bun, packages, Chromium, the agent skill, .env.staging.local
+# fill in the QA user and LAB_ID in .env.staging.local, then:
+make auth
+make test scenarios/site
 ```
+
+`make setup` installs what is missing and leaves what is there, so it is safe to
+run again. It needs only git (and, on a Mac, the command line tools that bring
+git and make). It creates `.env.staging.local` from the example when there is
+none, and once the users and `LAB_ID` are filled in it signs in to check them.
 
 `make install` also writes the `playwright-cli` skill (`.claude/skills/` for
 Claude Code, `.agents/skills/` for everything else): the AI opens the app
@@ -206,18 +212,18 @@ The Teams card: [docs/teams-reporting.md](docs/teams-reporting.md).
 
 ## Layout
 
-| Path              | What lives there                                                      |
-| ----------------- | --------------------------------------------------------------------- |
-| `scenarios/`      | one folder per scenario: text, seed, locators, test                   |
-| `locators/`       | locators used by more than one scenario                               |
-| `fixtures/`       | what a test writes with: tags, steps, checks, run setup               |
-| `setup/`          | health check, sign-in, project creation and teardown                  |
-| `api/`            | HTTP helpers for the backend                                          |
-| `tools/casebook/` | the scenario checker and skeleton writer                              |
-| `prompts/`        | what the AI follows for `/e2e-generate` and `/e2e-heal`               |
-| `scripts/ci/`     | preflight, teardown, reclaim, result summary, Teams card              |
-| `perf/`           | Lighthouse on the marketing pages every night, and its own Teams card |
-| `docs/`           | tags, workflow tests, Teams reporting                                 |
+| Path              | What lives there                                                        |
+| ----------------- | ----------------------------------------------------------------------- |
+| `scenarios/`      | one folder per scenario: text, seed, locators, test                     |
+| `locators/`       | locators used by more than one scenario                                 |
+| `fixtures/`       | what a test writes with: tags, steps, checks, run setup                 |
+| `setup/`          | health check, sign-in, project creation and teardown                    |
+| `api/`            | HTTP helpers for the backend                                            |
+| `tools/casebook/` | the scenario checker and skeleton writer                                |
+| `prompts/`        | what the AI follows for `/e2e-generate` and `/e2e-heal`                 |
+| `scripts/ci/`     | preflight, teardown, reclaim, result summary, Teams card                |
+| `perf/`           | Lighthouse on the marketing pages every morning, and its own Teams card |
+| `docs/`           | tags, workflow tests, Teams reporting                                   |
 
 ## Environment variables
 
