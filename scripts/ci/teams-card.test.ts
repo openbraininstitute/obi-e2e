@@ -665,6 +665,22 @@ describe('buildStoppedPayload', () => {
     expect(collect(payload.cards[0], (node) => node.title === 'Open the new run')).toHaveLength(0);
   });
 
+  test('a run a newer push to main replaced says so, and links that run', () => {
+    const payload = buildStoppedPayload('', newRun, {
+      ...stagingEnv,
+      E2E_ENVIRONMENT: 'preview',
+      E2E_STOPPED_WHY: 'pushed',
+    });
+
+    expect(JSON.parse(payload.badge).tooltip).toBe(
+      'Stopped: replaced by a newer push to obi-e2e main'
+    );
+    const words: string[] = [];
+    walk(payload.cards[0], words);
+    expect(words).toContain('That run reports in a thread of its own.');
+    expect(collect(payload.cards[0], (node) => node.url === newRun)).toHaveLength(1);
+  });
+
   test('the parent card names the build the run started on', () => {
     expect(JSON.stringify(buildParentCard(stagingEnv))).toContain(
       '"title":"Build","value":"2026.10.16.1, built 2026-10-16 07:55 UTC"'
