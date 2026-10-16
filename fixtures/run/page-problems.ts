@@ -33,6 +33,12 @@ const STALE_BUNDLE = /ChunkLoadError|Loading (?:CSS )?chunk \S+ failed/;
 /** The line that says the page was reloaded onto a new deploy. */
 export const BUNDLE_CHANGED = 'the bundle changed under the page; reloading once';
 
+/**
+ * The line that says a campaign test picked its run back up after a reload
+ * (see `keepCampaign`). Past it, the deploy no longer explains a failure.
+ */
+export const CAMPAIGN_REOPENED = 'the campaign was reopened after the reload';
+
 /** Bundles, fonts and images say nothing about why a test failed. */
 const NOT_WORTH_REPORTING = /\/(?:_next|__nextjs)\/|\.(?:png|jpe?g|svg|woff2?|css|js)(?:\?|$)/;
 
@@ -58,6 +64,15 @@ const watched = new WeakMap<Page, Problem[]>();
 /** Everything this page has complained about so far, oldest first. */
 export function pageProblems(page: Page): string[] {
   return (watched.get(page) ?? []).map((problem) => problem.line);
+}
+
+/**
+ * Adds a line the test itself knows and the page cannot tell. Past the cap and
+ * never folded into an earlier copy: it can change the verdict on a line
+ * already in, and a second reopen after a second reload is news.
+ */
+export function notePageProblem(page: Page, line: string): void {
+  watched.get(page)?.push({ line });
 }
 
 /** Starts recording. One call per page, before the test uses it. */
@@ -209,16 +224,21 @@ const CALL = /^(GET|POST|PUT|PATCH|DELETE) (\S+) → (.*)$/;
  * The test's own error says what it waited for; this says what the backend did
  * meanwhile. Ranked by how surely each kind explains a failure: a deploy
  * under the open page, a task's own error, a 5xx, a crashed tab, a call that
- * got no answer, a refusal, a slow call. Left out on purpose: navigations the page cancelled (`ERR_ABORTED`),
+ * got no answer, a refusal, a slow call. A deploy the test recovered from (a
+ * campaign reopened after it) is no cause, so the next one down is named.
+ * Left out on purpose: navigations the page cancelled (`ERR_ABORTED`),
  * 404s and uncaught errors, which a healthy run has too, so naming them would
  * mislead the way a bare locator timeout does.
  */
 export function causeOf(lines: readonly string[]): string | undefined {
   const blockedByCors = lines.some((line) => line.includes('blocked by CORS policy'));
+  // The deploy line is written once (see `reloadOnce`), so its first index is its only one.
+  const recovered = lines.lastIndexOf(CAMPAIGN_REOPENED) > lines.indexOf(BUNDLE_CHANGED);
   const ranked: { rank: number; text: string }[] = [];
 
   for (const line of lines) {
     if (line === BUNDLE_CHANGED) {
+      if (recovered) continue;
       ranked.push({
         rank: 0,
         text: 'The app was redeployed during the test: the page asked for a bundle chunk that is no longer served, and was reloaded.',

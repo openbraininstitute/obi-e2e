@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { BUNDLE_CHANGED, causeOf, taskError } from './page-problems';
+import { BUNDLE_CHANGED, CAMPAIGN_REOPENED, causeOf, taskError } from './page-problems';
 
 const ENTITYCORE = 'https://staging.cell-a.openbraininstitute.org/api/entitycore';
 const APP = 'https://main.preview.openbraininstitute.org/app/virtual-lab/lab/project';
@@ -25,6 +25,27 @@ describe('causeOf', () => {
       'console: Failed to load resource: the server responded with a status of 404 ()',
       'console: ChunkLoadError: Failed to load chunk /_next/static/chunks/0qv201tqcb7rf.js',
       BUNDLE_CHANGED,
+    ]);
+
+    expect(cause).toStartWith('The app was redeployed during the test');
+  });
+
+  test('names what failed after a campaign was reopened, not the deploy before it', () => {
+    const cause = causeOf([
+      'console: ChunkLoadError: Failed to load chunk /_next/static/chunks/0qv201tqcb7rf.js',
+      BUNDLE_CHANGED,
+      CAMPAIGN_REOPENED,
+      'POST https://x/api/obi-one/declared/task/estimate → 500 {"detail":"boom"}',
+    ]);
+
+    expect(cause).toBe('obi-one answered 500 to POST /declared/task/estimate: {"detail":"boom"}');
+  });
+
+  test('still names the deploy when the reopen came before it', () => {
+    const cause = causeOf([
+      CAMPAIGN_REOPENED,
+      BUNDLE_CHANGED,
+      'POST https://x/api/obi-one/declared/task/estimate → 500 {"detail":"boom"}',
     ]);
 
     expect(cause).toStartWith('The app was redeployed during the test');
