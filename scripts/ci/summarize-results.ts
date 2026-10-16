@@ -120,7 +120,8 @@ export function detectTrigger(
     case 'schedule':
       return 'Scheduled';
     case 'workflow_dispatch':
-      return 'Manual';
+      // A run restarted on a new build carries its version; one started by hand does not.
+      return release?.trim() ? 'Release' : 'Manual';
     case 'push':
       return 'On deploy';
     case 'repository_dispatch':

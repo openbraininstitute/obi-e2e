@@ -30,6 +30,7 @@ perf/report/
 
 # ai tooling local state
 .claude/settings.local.json
+.kiro/settings/
 # agent skills written by `make install`
 .claude/skills/playwright-cli/
 .agents/
