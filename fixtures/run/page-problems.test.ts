@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { causeOf, taskError } from './page-problems';
+import { BUNDLE_CHANGED, causeOf, taskError } from './page-problems';
 
 const ENTITYCORE = 'https://staging.cell-a.openbraininstitute.org/api/entitycore';
 const APP = 'https://main.preview.openbraininstitute.org/app/virtual-lab/lab/project';
@@ -17,6 +17,17 @@ describe('causeOf', () => {
     expect(cause).toStartWith(
       'entitycore did not answer GET /brain-region-hierarchy (net::ERR_FAILED; the browser blocked it (CORS)'
     );
+  });
+
+  test('names a deploy under the page before the slow calls, from the 16 Oct campaigns', () => {
+    const cause = causeOf([
+      'slow: POST https://x/api/small-scale-simulator/circuit/simulation/run-batch took 27.5 s',
+      'console: Failed to load resource: the server responded with a status of 404 ()',
+      'console: ChunkLoadError: Failed to load chunk /_next/static/chunks/0qv201tqcb7rf.js',
+      BUNDLE_CHANGED,
+    ]);
+
+    expect(cause).toStartWith('The app was redeployed during the test');
   });
 
   test("puts a task's own error first", () => {

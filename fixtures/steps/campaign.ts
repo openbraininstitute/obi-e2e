@@ -111,8 +111,8 @@ export function campaignTimeout(fixture: ScanConfigFixture): number {
  *
  * A configuration that says what the finished run holds is followed to "done"
  * and read; one that says nothing only has to start; one marked `launch: false`
- * stops before it starts at all. See `waitForCampaign` for why the wait is a
- * stare at one page rather than a reload.
+ * stops before it starts at all. See `keepCampaign` for how it survives a
+ * reload.
  */
 export async function runCampaign(
   page: Page,
@@ -123,49 +123,60 @@ export async function runCampaign(
   const results = scanConfigResults(page);
   const words = scanConfigWords[fixture.activity];
 
-  await new ScanConfigDriver(page).apply(configuration);
+  const campaign = await onOnePage(page, async () => {
+    await new ScanConfigDriver(page).apply(configuration);
 
-  await expect(editor.submit).toHaveText(words.generate);
-  await expect(editor.submit).toBeEnabled();
+    await expect(editor.submit).toHaveText(words.generate);
+    await expect(editor.submit).toBeEnabled();
 
-  await generateCampaign(page, editor.submit);
-
-  // The completed response carries the campaign ID, but the editor enables the
-  // tab only once it has read the grid back: server work, so the call's clock.
-  await expect(editor.tab(words.resultsTab)).toBeEnabled({ timeout: CALL_TIMEOUT });
-
-  await expect(results.coordinates).toHaveCount(configuration.expect.coordinateCount);
+    return await generateCampaign(page, editor.submit);
+  });
 
   // The scenario reads the first coordinate, whatever the campaign holds.
   const status = results.coordinates.first().getByTestId('scan-config-status');
-  await expect(status).toHaveText(/^created$/i);
 
-  await checkGeneratedFiles(page, configuration);
+  await keepCampaign(page, campaign, words.resultsTab, async (step) => {
+    await step(async () => {
+      // The completed response carries the campaign ID, but the editor enables the
+      // tab only once it has read the grid back: server work, so the call's clock.
+      await expect(editor.tab(words.resultsTab)).toBeEnabled({ timeout: CALL_TIMEOUT });
 
-  // Back on the form, the button offers a new campaign rather than the same one again.
-  await openTab(page, editor, CONFIGURATION_TAB);
-  await expect(editor.submit).toHaveText(words.newCampaign);
+      await expect(results.coordinates).toHaveCount(configuration.expect.coordinateCount);
+      await expect(status).toHaveText(/^created$/i);
 
-  await openTab(page, editor, words.resultsTab);
+      await checkGeneratedFiles(page, configuration);
+    });
 
-  await expect(results.launch).toContainText(words.launch);
+    await step(async () => {
+      // Back on the form, the button offers a new campaign rather than the same one again.
+      await openTab(page, editor, CONFIGURATION_TAB);
+      await expect(editor.submit).toHaveText(words.newCampaign);
 
-  // A case the lab cannot afford to run stops with the button offered, unpressed.
-  if (configuration.launch === false) return;
+      await openTab(page, editor, words.resultsTab);
+      await expect(results.launch).toContainText(words.launch);
+    });
 
-  await launchCampaign(page, fixture);
+    // A case the lab cannot afford to run stops with the button offered, unpressed.
+    if (configuration.launch === false) return;
 
-  await expect(
-    status,
-    'The launch was accepted, but the coordinate never left "created".'
-  ).not.toHaveText(/^created$/i);
+    await launchOnce(page, fixture, step);
 
-  if (!isFollowed(configuration)) return;
+    await step(() =>
+      expect(
+        status,
+        'The launch was accepted, but the coordinate never left "created".'
+      ).not.toHaveText(/^created$/i)
+    );
 
-  await waitForCampaign(status, runMinutes(configuration));
-  await expect(status).toHaveText(/^done$/i);
+    if (!isFollowed(configuration)) return;
 
-  await checkCompletedOutput(page, configuration);
+    await waitForCampaign(status, runMinutes(configuration));
+
+    await step(async () => {
+      await expect(status).toHaveText(/^done$/i);
+      await checkCompletedOutput(page, configuration);
+    });
+  });
 }
 
 /**
@@ -185,18 +196,164 @@ export async function runForItsOutput(
   const results = scanConfigResults(page);
   const words = scanConfigWords[fixture.activity];
 
-  await new ScanConfigDriver(page).apply(configuration);
-  await expect(editor.submit, `${fixture.name}: the form is still incomplete.`).toBeEnabled();
+  const campaign = await onOnePage(page, async () => {
+    await new ScanConfigDriver(page).apply(configuration);
+    await expect(editor.submit, `${fixture.name}: the form is still incomplete.`).toBeEnabled();
 
-  await generateCampaign(page, editor.submit);
-  await expect(editor.tab(words.resultsTab)).toBeEnabled({ timeout: CALL_TIMEOUT });
-
-  await openTab(page, editor, words.resultsTab);
-  await launchCampaign(page, fixture);
+    return await generateCampaign(page, editor.submit);
+  });
 
   const status = results.coordinates.first().getByTestId('scan-config-status');
-  await waitForCampaign(status, runMinutes(configuration));
-  await expect(status, `${fixture.name} ran, but did not finish.`).toHaveText(/^done$/i);
+
+  await keepCampaign(page, campaign, words.resultsTab, async (step) => {
+    await step(async () => {
+      await expect(editor.tab(words.resultsTab)).toBeEnabled({ timeout: CALL_TIMEOUT });
+      await openTab(page, editor, words.resultsTab);
+    });
+
+    await launchOnce(page, fixture, step);
+
+    await waitForCampaign(status, runMinutes(configuration));
+    await step(() =>
+      expect(status, `${fixture.name} ran, but did not finish.`).toHaveText(/^done$/i)
+    );
+  });
+}
+
+/**
+ * Runs `steps`, failing with `lost` the moment the page loads a new document.
+ *
+ * Until the campaign is generated, the form is all there is, and it lives in
+ * the editor's state, so a reload takes it away. The step in flight would then
+ * wait out its whole clock on a form that will never fill. A deploy mid-test is
+ * what reloads it (see `watchPage`).
+ */
+async function onOnePage<T>(
+  page: Page,
+  steps: () => Promise<T>,
+  lost = 'The page loaded again before the campaign was generated, and the form went with it.'
+): Promise<T> {
+  // The executor runs at once, so this is set before anything can call it.
+  let reloaded!: () => void;
+  const gone = new Promise<never>((_, reject) => {
+    reloaded = () => reject(new Error(`${lost}${alsoSeen(page)}`));
+  });
+
+  page.once('domcontentloaded', reloaded);
+  try {
+    return await Promise.race([steps(), gone]);
+  } finally {
+    page.off('domcontentloaded', reloaded);
+  }
+}
+
+/** One part of following a campaign, run again whenever the page reloaded under it. */
+type Step = (run: () => Promise<void>) => Promise<void>;
+
+/**
+ * Follows a generated campaign, reopening it whenever the page loads a new
+ * document.
+ *
+ * A deploy mid-run reloads the page (see `watchPage`), and the editor comes
+ * back empty, because the campaign lived in its state. Two campaigns on 16 Oct
+ * were lost that way. The campaign itself is on the server, so the page is sent
+ * where the activity table's "View results" sends it, `?origin=<campaign>&tab=
+ * <results tab>`, which shows the same coordinates, files, views and Launch
+ * button (checked against staging on 16 Oct). Credits tests run without
+ * retries, since a retry would pay for a second run, so picking the run back up
+ * is the only way to keep it.
+ *
+ * The step in flight fails on its own clock and runs again on the reopened
+ * page. The status wait needs no second run: it reads whatever page is there.
+ */
+async function keepCampaign(
+  page: Page,
+  campaign: string,
+  resultsTab: string,
+  steps: (step: Step) => Promise<void>
+): Promise<void> {
+  const results = new URL(page.url());
+  results.searchParams.set('origin', campaign);
+  results.searchParams.set('tab', resultsTab);
+
+  let reloads = 0;
+  let reopening: Promise<void> = Promise.resolve();
+  let navigating = false;
+
+  // Rejects when the campaign does not come back, so nothing waits out its
+  // clock on an empty editor: the status wait would sit there for hours.
+  let lost!: (error: unknown) => void;
+  const gone = new Promise<never>((_, reject) => {
+    lost = reject;
+  });
+
+  const reopen = (): void => {
+    // Our own navigation loads a document too.
+    if (navigating) return;
+    navigating = true;
+    reloads += 1;
+
+    reopening = page
+      .goto(results.href)
+      // The coordinates come from a query only the browser runs, so once they
+      // show, the page has hydrated and the next click will take.
+      .then(() =>
+        expect(
+          scanConfigResults(page).coordinates.first(),
+          `The page loaded again mid-campaign, and campaign ${campaign} did not reopen.`
+        ).toBeVisible({ timeout: CALL_TIMEOUT })
+      )
+      .finally(() => {
+        navigating = false;
+      });
+    reopening.catch(lost);
+  };
+
+  const step: Step = async (run) => {
+    // Ends when a run passes, or fails with no reload under it.
+    for (;;) {
+      await reopening;
+      const before = reloads;
+      try {
+        return await run();
+      } catch (error) {
+        if (reloads === before) throw error;
+      }
+    }
+  };
+
+  page.on('domcontentloaded', reopen);
+  try {
+    await Promise.race([steps(step), gone]);
+  } finally {
+    page.off('domcontentloaded', reopen);
+  }
+}
+
+/**
+ * Launches the campaign, pressing Launch again after a reload only when the
+ * first press sent nothing.
+ *
+ * Pricing the run and launching it take seconds each, time enough for a deploy
+ * to land, and forced reloads in a local run landed in both. A launch that
+ * reached the service may be paid for, and a second press would pay twice, so
+ * it is not pressed again: the coordinate leaving "created" says whether it
+ * took.
+ */
+async function launchOnce(page: Page, fixture: ScanConfigFixture, step: Step): Promise<void> {
+  let sent = false;
+  const sends = (request: Request): void => {
+    if (request.method() === 'POST' && LAUNCHES_THE_CAMPAIGN.test(request.url())) sent = true;
+  };
+
+  page.on('request', sends);
+  try {
+    await step(async () => {
+      if (!sent) await launchCampaign(page, fixture);
+    });
+  } finally {
+    page.off('request', sends);
+  }
 }
 
 /** Presses Launch, confirms the cost where the workflow asks, and waits for the call. */
@@ -227,15 +384,18 @@ async function launchCampaign(page: Page, fixture: ScanConfigFixture): Promise<v
  * with, and the button is pressed once more; one that refuses is reported with
  * the status the browser could not show. Counting a grid changes nothing on the
  * server, which is what makes both the replay and the second press safe.
+ *
+ * Returns the campaign's ID, which the generating call answers with.
  */
-async function generateCampaign(page: Page, submit: Locator): Promise<void> {
+async function generateCampaign(page: Page, submit: Locator): Promise<string> {
   const generated = callSent(page, GENERATES_THE_CAMPAIGN, COUNTS_THE_GRID);
   await submit.click(NO_NAVIGATION);
   const outcome = await generated;
 
   if (outcome === null || !('dropped' in outcome) || !COUNTS_THE_GRID.test(outcome.request.url())) {
-    await expectAccepted(page, Promise.resolve(outcome), 'Generating the campaign');
-    return;
+    return campaignId(
+      await expectAccepted(page, Promise.resolve(outcome), 'Generating the campaign')
+    );
   }
 
   const replayed = await send(outcome.request.url(), {
@@ -254,11 +414,22 @@ async function generateCampaign(page: Page, submit: Locator): Promise<void> {
 
   const again = callSent(page, GENERATES_THE_CAMPAIGN, COUNTS_THE_GRID);
   await submit.click(NO_NAVIGATION);
-  await expectAccepted(
-    page,
-    again,
-    `Generating the campaign a second time, after the browser dropped the grid count (${outcome.dropped}),`
+  return campaignId(
+    await expectAccepted(
+      page,
+      again,
+      `Generating the campaign a second time, after the browser dropped the grid count (${outcome.dropped}),`
+    )
   );
+}
+
+/** The ID a generating call answers with: a JSON string, the bare UUID. */
+async function campaignId(response: Response): Promise<string> {
+  const id: unknown = await response.json();
+  if (typeof id !== 'string' || id === '') {
+    throw new Error(`Generating the campaign answered ${JSON.stringify(id)}, not its ID.`);
+  }
+  return id;
 }
 
 /** Only what the app itself set, so a call can be sent again from outside the browser. */
@@ -313,8 +484,12 @@ function callSent(page: Page, url: RegExp, first?: RegExp): Promise<CallOutcome>
 /** What a call did: answered, dropped by the browser, or never sent. */
 type CallOutcome = { response: Response } | { dropped: string; request: Request } | null;
 
-/** Fails naming what the service said, rather than what the editor did not do. */
-async function expectAccepted(page: Page, call: Promise<CallOutcome>, what: string): Promise<void> {
+/** Fails naming what the service said, rather than what the editor did not do. Returns the answer. */
+async function expectAccepted(
+  page: Page,
+  call: Promise<CallOutcome>,
+  what: string
+): Promise<Response> {
   const outcome = await call;
 
   if (outcome === null) {
@@ -332,7 +507,13 @@ async function expectAccepted(page: Page, call: Promise<CallOutcome>, what: stri
 
   // waitForResponse observes headers. The core API client decodes the body before
   // resolving api.post<string>(), so wait for that body before checking UI state.
-  const completionError = await outcome.response.finished();
+  // A reload abandons the body, and `finished()` then never settles: a launch
+  // waited out the rest of its test on one in a local run.
+  const completionError = await onOnePage(
+    page,
+    () => outcome.response.finished(),
+    `${what} was cut off: the page loaded again before the answer arrived.`
+  );
 
   if (completionError) {
     throw new Error(`${what} response did not finish: ${completionError}`);
@@ -347,6 +528,8 @@ async function expectAccepted(page: Page, call: Promise<CallOutcome>, what: stri
       `${what} was refused: ${outcome.response.status()} ${outcome.response.url()} ${said}`
     );
   }
+
+  return outcome.response;
 }
 
 async function whatTheAppSaid(page: Page): Promise<string> {
@@ -393,12 +576,11 @@ async function openTab(
 /**
  * Waits for a coordinate to stop moving.
  *
- * The wait stays on the page it launched from. A campaign is held in the
- * editor's own state rather than in the URL, so reloading loses it: the page
- * comes back on the configuration tab with no coordinates to read. That rules
- * out the usual trick of polling a fresh page, and it is why a run longer than
- * the `@slow` job can hold has to be picked up from the Workflows activity
- * table instead of followed from here.
+ * The wait reads whatever the page shows; the editor asks the server itself.
+ * A reload mid-wait sends the page back to the campaign (see `keepCampaign`),
+ * and the locator then reads the reopened page. A run longer than the `@slow`
+ * job can hold has to be picked up from the Workflows activity table instead
+ * of followed from here.
  *
  * `toPass` rather than a single long `toHaveText`, so a run that ends in
  * "error" is reported as that instead of as a timeout with nothing to say.

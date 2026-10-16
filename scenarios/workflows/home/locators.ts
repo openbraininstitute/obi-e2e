@@ -11,10 +11,21 @@ export type Category = (typeof CATEGORIES)[number];
  *
  * Matched by type rather than by label, because several cards read the same —
  * "Single neuron" heads both the ME-model and the ME-model circuit.
+ *
+ * `formerly` is the type a deployment that has not caught up still offers.
  */
-export const TYPES = {
+export const TYPES: Record<
+  'build' | 'simulate',
+  readonly { label: string; type: string; formerly?: string }[]
+> = {
   build: [
-    { label: 'Ion channel', type: 'ion-channel-modeling-campaign' },
+    // core-web-app #1993 gave the ion channel build a campaign type of its own.
+    // Drop `formerly` once production has it.
+    {
+      label: 'Ion channel',
+      type: 'ion-channel-build-campaign',
+      formerly: 'ion-channel-modeling-campaign',
+    },
     { label: 'Single neuron', type: 'memodel' },
     {
       label: 'Electron microscopy circuit',
@@ -25,7 +36,7 @@ export const TYPES = {
     { label: 'Single neuron', type: 'single-neuron-simulation' },
     { label: 'Synaptome', type: 'single-neuron-synaptome-simulation' },
   ],
-} as const;
+};
 
 /** The columns the activity table shows, in order. */
 export const ACTIVITY_COLUMNS = [
