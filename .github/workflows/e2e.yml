@@ -64,7 +64,10 @@ concurrency:
   # shared group did both — GitHub keeps one waiting run per group and cancels it
   # when a third arrives, and a manual dispatch cancelled the nightly run in
   # flight. Only a manual re-dispatch at the same target supersedes the manual
-  # run before it, and a core-web-app merge the run for the merge before it.
+  # run before it, a core-web-app merge the run for the merge before it, and a
+  # push to this repository's main the push run before it: one run of main at
+  # a time, testing the newest tests. Its slow suite goes with it (see
+  # e2e-slow.yml).
   #
   # core-web-app dispatches a merge only once the preview serves it, so by then
   # the older run is testing a build the preview no longer has: its pages fail
@@ -76,9 +79,11 @@ concurrency:
     ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch'
         && format('manual-{0}', inputs.environment)
         || github.event.action == 'core-web-app-main' && 'core-web-app-main'
+        || github.event_name == 'push' && 'push-main'
         || github.run_id }}
   cancel-in-progress: >-
-    ${{ github.event_name == 'workflow_dispatch' || github.event.action == 'core-web-app-main' }}
+    ${{ github.event_name == 'workflow_dispatch' || github.event.action == 'core-web-app-main'
+        || github.event_name == 'push' }}
 
 permissions:
   contents: read
@@ -339,13 +344,14 @@ jobs:
           E2E_REPORT_URL: ${{ steps.report.outputs.artifact-url }}
         run: bun scripts/ci/summarize-results.ts test-results/results.json test-results
 
-      # Cancelled because the build under test changed: by the watcher above, or
-      # by a newer merge (see `concurrency`). Its results would describe a build
-      # that is gone, so the thread gets that instead, with the run that tests
-      # the new build. A run cancelled for any other reason writes nothing here
-      # and posts its card as before. `continue-on-error`, because a lookup that
-      # fails must not cost the thread its card.
-      - name: Check whether the build moved
+      # Cancelled on purpose: the build under test changed (the watcher above, or
+      # a newer merge), or a newer push to main replaced the run (see
+      # `concurrency`). Its results would mislead, so the thread gets why
+      # instead, with the run that replaced it. A run cancelled for any other
+      # reason writes nothing here and posts its card as before.
+      # `continue-on-error`, because a lookup that fails must not cost the thread
+      # its card.
+      - name: Check why the run stopped
         id: stopped
         if: cancelled()
         continue-on-error: true
@@ -354,17 +360,18 @@ jobs:
         run: bun scripts/ci/app-version.ts stopped
 
       - name: Say the run was stopped
-        if: cancelled() && steps.stopped.outputs.to != ''
+        if: cancelled() && steps.stopped.outputs.why != ''
         env:
           MS_TEAMS_WEBHOOK_URI: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
           TEAMS_LAYOUT: thread
           E2E_SUITE: Regular
+          E2E_STOPPED_WHY: ${{ steps.stopped.outputs.why }}
           E2E_STOPPED_TO: ${{ steps.stopped.outputs.to }}
           E2E_REPLACED_BY: ${{ steps.stopped.outputs.by }}
         run: bun scripts/ci/teams-card.ts --stopped
 
       - name: Post Teams card
-        if: ${{ !cancelled() || steps.stopped.outputs.to == '' }}
+        if: ${{ !cancelled() || steps.stopped.outputs.why == '' }}
         env:
           MS_TEAMS_WEBHOOK_URI: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
           TEAMS_LAYOUT: thread

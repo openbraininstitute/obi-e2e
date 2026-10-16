@@ -15,6 +15,10 @@
  *   bun scripts/ci/app-version.ts watch    cancels this run once that changes
  *   bun scripts/ci/app-version.ts stopped  after a cancel: did the build move,
  *                                          and which run tests the new one
+ *
+ * `stopped` also names the other reason a run is cancelled on purpose: a newer
+ * push to this repository's main, which replaces the run before it (see
+ * `concurrency` in e2e.yml).
  */
 
 import { appendFileSync } from 'node:fs';
@@ -78,23 +82,27 @@ async function served(baseUrl: string): Promise<Build | null> {
   return Result.isError(answer) ? null : describeBuild(answer.value);
 }
 
-type Run = { databaseId: number; displayTitle: string; url: string };
+export type Run = { databaseId: number; displayTitle: string; event: string; url: string };
+
+/** The newest run after `mine` that `matches`: the run that replaced it. Ids only grow. */
+export function newestAfter(runs: Run[], mine: number, matches: (run: Run) => boolean): string {
+  const newer = runs
+    .filter((run) => matches(run) && run.databaseId > mine)
+    .toSorted((left, right) => right.databaseId - left.databaseId);
+  return newer[0]?.url ?? '';
+}
 
 async function recentRuns(env: NodeJS.ProcessEnv): Promise<Run[]> {
   const listed =
-    await $`gh run list --repo ${env.GITHUB_REPOSITORY ?? ''} --workflow e2e.yml --limit 30 --json databaseId,displayTitle,url`
+    await $`gh run list --repo ${env.GITHUB_REPOSITORY ?? ''} --workflow e2e.yml --limit 30 --json databaseId,displayTitle,event,url`
       .nothrow()
       .quiet();
   return listed.exitCode === 0 ? (listed.json() as Run[]) : [];
 }
 
-/** The newest merge run started after this one: the run that replaced it on the preview. */
-async function newerMergeRun(env: NodeJS.ProcessEnv): Promise<string> {
-  const mine = Number(env.GITHUB_RUN_ID);
-  const newer = (await recentRuns(env))
-    .filter((run) => run.displayTitle === MERGE_RUN && run.databaseId > mine)
-    .toSorted((left, right) => right.databaseId - left.databaseId);
-  return newer[0]?.url ?? '';
+/** The newest e2e.yml run after this one that `matches`. */
+async function newerRun(env: NodeJS.ProcessEnv, matches: (run: Run) => boolean): Promise<string> {
+  return newestAfter(await recentRuns(env), Number(env.GITHUB_RUN_ID), matches);
 }
 
 /**
@@ -146,32 +154,45 @@ async function watch(env: NodeJS.ProcessEnv, baseUrl: string): Promise<void> {
 }
 
 /**
- * Writes `to` (the new build) and `by` (the run testing it) when the build
- * moved, and nothing when it did not: a run cancelled for another reason posts
- * its usual card.
+ * Says why a cancelled run stopped, in step outputs: `why` is `moved` (the
+ * build changed: `to` names the new one) or `pushed` (a newer push to main),
+ * and `by` is the run that replaced it, when there is one. Nothing is written
+ * for a run cancelled for another reason, which then posts its usual card.
  */
 async function stopped(env: NodeJS.ProcessEnv, baseUrl: string): Promise<void> {
+  const write = (lines: string): void => {
+    if (env.GITHUB_OUTPUT) appendFileSync(env.GITHUB_OUTPUT, lines);
+  };
   const from = env.E2E_APP_VERSION?.trim();
   const now = await served(baseUrl);
+
   if (!from || !now || now.label === from) {
-    console.log(`The build did not move (${from || 'not noted'}).`);
+    // The build is the same, so the other reason: a newer push to main.
+    const pushed = (env.E2E_EVENT || env.GITHUB_EVENT_NAME) === 'push';
+    const by = pushed ? await newerRun(env, (run) => run.event === 'push') : '';
+    if (by) {
+      console.log(`A newer push to main replaced this run: ${by}.`);
+      write(`why=pushed\nby=${by}\n`);
+    } else {
+      console.log(`The build did not move (${from || 'not noted'}).`);
+    }
     return;
   }
 
   // Written first: the thread still learns why the run stopped if what follows fails.
   console.log(`Moved from ${from} to ${now.label}.`);
-  if (env.GITHUB_OUTPUT) appendFileSync(env.GITHUB_OUTPUT, `to=${now.label}\n`);
+  write(`why=moved\nto=${now.label}\n`);
 
   const next = successor(env);
   const by =
     next === 'merge'
-      ? await newerMergeRun(env)
+      ? await newerRun(env, (run) => run.displayTitle === MERGE_RUN)
       : next === 'restart'
         ? await restart(env, now.version)
         : '';
 
   if (by) console.log(`The new build is tested by ${by}.`);
-  if (env.GITHUB_OUTPUT) appendFileSync(env.GITHUB_OUTPUT, `by=${by}\n`);
+  write(`by=${by}\n`);
 }
 
 async function main(): Promise<void> {

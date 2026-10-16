@@ -9,9 +9,10 @@
  *        MS_TEAMS_WEBHOOK_URI=... bun scripts/ci/teams-card.ts --stopped
  *
  * `--start` announces the thread at job start, before any suite has a result.
- * `--stopped` says the build under test changed and the run was cancelled; it
- * reads the new build from E2E_STOPPED_TO and the run testing it, if any, from
- * E2E_REPLACED_BY.
+ * `--stopped` says why a run was cancelled on purpose: the build under test
+ * changed, or a newer push to main replaced it. It reads the reason from
+ * E2E_STOPPED_WHY, the new build from E2E_STOPPED_TO and the run that replaced
+ * it, if any, from E2E_REPLACED_BY.
  */
 
 /** Loads the .env files. The webhook URL lives in the deployment's local one. */
@@ -568,9 +569,10 @@ export function buildThreadPayload(summary: Summary | null, env: NodeJS.ProcessE
 }
 
 /**
- * What a run posts in its thread when the build under it changed and it was
- * cancelled: a grey badge on the parent, and one card saying which build it
- * started on, which one replaced it, and the run that tests the new one.
+ * What a run posts in its thread when it was cancelled on purpose: a grey
+ * badge on the parent, and one card saying why, with the run that replaced it.
+ * Either the build under it changed (which build it started on, which one
+ * replaced it), or a newer push to this repository's main replaced it.
  */
 export function buildStoppedPayload(
   to: string,
@@ -579,24 +581,27 @@ export function buildStoppedPayload(
 ) {
   const environment = env.E2E_ENVIRONMENT || 'The deployment';
   const from = env.E2E_APP_VERSION?.trim() || 'one build';
-  const title =
-    env.E2E_ENVIRONMENT === 'preview'
+  const pushed = env.E2E_STOPPED_WHY === 'pushed';
+  const title = pushed
+    ? 'Stopped: replaced by a newer push to obi-e2e main'
+    : env.E2E_ENVIRONMENT === 'preview'
       ? 'Stopped: replaced by a newer main'
       : `Stopped: ${environment} moved to a new build`;
 
+  const why = pushed
+    ? 'A newer merge to obi-e2e main started a run of its own. Only the newest run of main keeps going.'
+    : `This run started on ${from}. ${environment} now serves ${to}, so the rest of ` +
+      'its results would describe a build that is gone.';
+  const next = replacedBy
+    ? pushed
+      ? 'That run reports in a thread of its own.'
+      : 'The new build is tested in a thread of its own.'
+    : 'No run was started for the new build. Start one by hand to test it.';
+
   const body = [
     text(title, { size: 'Medium', weight: 'Bolder' }),
-    text(
-      `This run started on ${from}. ${environment} now serves ${to}, so the rest of ` +
-        'its results would describe a build that is gone.',
-      { spacing: 'Small' }
-    ),
-    text(
-      replacedBy
-        ? 'The new build is tested in a thread of its own.'
-        : 'No run was started for the new build. Start one by hand to test it.',
-      { spacing: 'Small' }
-    ),
+    text(why, { spacing: 'Small' }),
+    text(next, { spacing: 'Small' }),
   ];
 
   return {
@@ -876,7 +881,7 @@ async function post(): Promise<void> {
     const to = process.env.E2E_STOPPED_TO ?? '';
     if (!(await send(webhook, buildStoppedPayload(to, replacedBy)))) process.exit(1);
     report(
-      `Said the build moved to ${to}${replacedBy ? `, tested by ${replacedBy}` : ''}.`,
+      `Said the run stopped (${process.env.E2E_STOPPED_WHY ?? 'moved'})${replacedBy ? `, replaced by ${replacedBy}` : ''}.`,
       '{ "key", "parent", "badge", "cards": [ 1 ] }'
     );
     return;

@@ -22,8 +22,11 @@ Every run is one identity, decided once by the first job of `e2e.yml`: its
 targets, whether the slow suite runs, and the key that names its Teams thread and
 its report folder. Runs never wait on or cancel one another — each has a
 concurrency group of its own — except that a manual re-dispatch at the same
-target supersedes the manual run before it, and a `core-web-app-main` dispatch
-supersedes the merge run before it.
+target supersedes the manual run before it, a `core-web-app-main` dispatch
+supersedes the merge run before it, and a push to `main` supersedes the push
+run before it, slow suite included: one run of main at a time. A run replaced by
+a newer push says so in its thread ("Stopped: replaced by a newer push to
+obi-e2e main"), links the new run, and publishes nothing.
 
 `core-web-app` fires the dispatch when it releases, with the tag in
 `client_payload.release`. It runs both suites, and the tag seeds the thread

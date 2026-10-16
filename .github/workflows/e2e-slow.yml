@@ -50,8 +50,13 @@ on:
 concurrency:
   # One group per run, so a slow run never waits on or cancels another. The same
   # key twice is the same run started again, and that queues behind the first.
-  group: ${{ github.workflow }}-${{ inputs.thread_key || github.run_id }}
-  cancel-in-progress: false
+  # Except a push to main: its runs share one group, and the newest cancels the
+  # one before it, as e2e.yml does for the regular suite. Hours of campaigns
+  # testing tests that main has replaced would hold a runner for nothing.
+  group: >-
+    ${{ github.workflow }}-${{ inputs.event == 'push' && 'push-main'
+        || inputs.thread_key || github.run_id }}
+  cancel-in-progress: ${{ inputs.event == 'push' }}
 
 permissions:
   contents: read
@@ -192,7 +197,7 @@ jobs:
 
       # The same as the regular suite. Both suites of a run see a move and both
       # stop; the run for the new build is started once, by whichever is first.
-      - name: Check whether the build moved
+      - name: Check why the run stopped
         id: stopped
         if: cancelled()
         continue-on-error: true
@@ -201,18 +206,19 @@ jobs:
         run: bun scripts/ci/app-version.ts stopped
 
       - name: Say the run was stopped
-        if: cancelled() && steps.stopped.outputs.to != ''
+        if: cancelled() && steps.stopped.outputs.why != ''
         env:
           MS_TEAMS_WEBHOOK_URI: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
           TEAMS_LAYOUT: thread
           E2E_SUITE: Slow
           E2E_SUITES: slow
+          E2E_STOPPED_WHY: ${{ steps.stopped.outputs.why }}
           E2E_STOPPED_TO: ${{ steps.stopped.outputs.to }}
           E2E_REPLACED_BY: ${{ steps.stopped.outputs.by }}
         run: bun scripts/ci/teams-card.ts --stopped
 
       - name: Post Teams card
-        if: ${{ !cancelled() || steps.stopped.outputs.to == '' }}
+        if: ${{ !cancelled() || steps.stopped.outputs.why == '' }}
         env:
           MS_TEAMS_WEBHOOK_URI: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
           TEAMS_LAYOUT: thread
