@@ -1,6 +1,6 @@
 # Website performance
 
-Lighthouse CI audits the marketing site every night: the home page and every
+Lighthouse CI audits the marketing site every morning at 08:00 Zurich time: the home page and every
 page it links to on the same host, outside `/app`. Each page runs three times
 and the median counts. The result reaches the Teams channel as its own card,
 separate from the test run.

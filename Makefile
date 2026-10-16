@@ -19,7 +19,7 @@ CYAN := $(ESC)[36m
 endif
 endif
 
-KNOWN_TARGETS := help install browsers scenario casebook test test-local auth preflight reclaim \
+KNOWN_TARGETS := help setup install browsers scenario casebook test test-local auth preflight reclaim \
 	test-ui test-headed test-debug report codegen summarize notify test-unit lint \
 	lint-fix typecheck format format-check check perf
 POSITIONAL_GOALS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
@@ -51,6 +51,7 @@ help:
 	@printf "\n$(BOLD)$(CYAN)obi-e2e$(RESET) $(DIM)developer commands$(RESET)\n"
 	@printf "$(DIM)────────────────────────────────────────────────────────────$(RESET)\n\n"
 	@printf "$(BOLD)setup$(RESET)\n"
+	@printf "  $(GREEN)make setup$(RESET)                      everything a new machine needs, once\n"
 	@printf "  $(GREEN)make install$(RESET)                    install dependencies and the agent skill\n"
 	@printf "  $(GREEN)make browsers$(RESET)                   install chromium\n"
 	@printf "\n$(BOLD)scenarios$(RESET)\n"
@@ -84,6 +85,9 @@ help:
 	@printf "  $(YELLOW)make test -- --grep @credits$(RESET)\n"
 	@printf "\n$(DIM)positional arguments are forwarded. use -- before playwright flags.\n"
 	@printf "ARGS=\"...\" and TITLE=\"...\" remain supported. set NO_COLOR=1 for plain output.$(RESET)\n\n"
+
+setup:
+	@bash scripts/setup.sh
 
 install:
 	$(call run_step,install dependencies,bun install)

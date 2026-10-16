@@ -106,7 +106,7 @@ and the SharePoint list behind it, are set up in
 
 ## `perf.yml`
 
-Lighthouse on the marketing pages, at 06:00 UTC on both deployments, or on the
+Lighthouse on the marketing pages, at 08:00 Zurich time on both deployments, or on the
 deployment chosen for a manual run. It uploads the reports as an artifact and
 posts its own Teams card through the same webhook. See
 [perf/README.md](../../perf/README.md).
