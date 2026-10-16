@@ -22,7 +22,8 @@ Every run is one identity, decided once by the first job of `e2e.yml`: its
 targets, whether the slow suite runs, and the key that names its Teams thread and
 its report folder. Runs never wait on or cancel one another — each has a
 concurrency group of its own — except that a manual re-dispatch at the same
-target supersedes the manual run before it.
+target supersedes the manual run before it, and a `core-web-app-main` dispatch
+supersedes the merge run before it.
 
 `core-web-app` fires the dispatch when it releases, with the tag in
 `client_payload.release`. It runs both suites, and the tag seeds the thread
@@ -35,6 +36,32 @@ Amplify builds main on its own, so that workflow polls the preview's
 dispatches: a build that never goes live starts no run. A newer merge cancels
 the wait for an older one. It runs the regular suite only: the slow campaigns
 would take hours on every merge.
+
+Once a newer merge is dispatched, the run for the older one is cancelled: the
+preview already serves the newer build, so the older run's pages would fail on
+chunks that 404. Schedules, releases and pushes are never cancelled by a merge.
+
+## A build that changes under a run
+
+Every run, regular and slow, notes the build its target serves (`/app/version`:
+the version and when it was built) and checks it once a minute while the tests
+run (`scripts/ci/app-version.ts`). When it changes, the run cancels itself.
+Nothing tells this repository when a release reaches staging, so this is how a
+run notices it. On 16 Oct a release landed partway through the nightly and
+failed two campaigns that were not broken.
+
+A run cancelled this way, or by a newer merge:
+
+- gives its project back and publishes nothing;
+- posts in its own thread which build it started on and which replaced it
+  ("Stopped: replaced by a newer main" on the preview);
+- links the run that tests the new build. On the preview that is the merge
+  run. On staging, a run that started on its own (schedule, release, restart)
+  starts one, with both suites, named `E2E · staging · <version>`; both suites
+  see the move, and the second finds that run by its name instead of starting
+  another. A run started by hand is not restarted.
+
+A run cancelled for any other reason posts its usual card.
 
 The preview is the main branch on the staging backend: it signs in with the
 staging secrets, and `@production` tests skip there as they do on staging.

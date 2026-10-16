@@ -101,6 +101,8 @@ describe('feature helpers', () => {
     expect(formatDuration(471_000)).toBe('7m 51s');
     expect(detectTrigger('schedule')).toBe('Scheduled');
     expect(detectTrigger('workflow_dispatch')).toBe('Manual');
+    // A run restarted on a new build carries the version it restarted for.
+    expect(detectTrigger('workflow_dispatch', '2026.10.16.2')).toBe('Release');
     expect(detectTrigger('push')).toBe('On deploy');
   });
 

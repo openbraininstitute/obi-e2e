@@ -6,8 +6,12 @@
  *
  * Usage: MS_TEAMS_WEBHOOK_URI=... bun scripts/ci/teams-card.ts test-results/summary.json
  *        MS_TEAMS_WEBHOOK_URI=... bun scripts/ci/teams-card.ts --start
+ *        MS_TEAMS_WEBHOOK_URI=... bun scripts/ci/teams-card.ts --stopped
  *
  * `--start` announces the thread at job start, before any suite has a result.
+ * `--stopped` says the build under test changed and the run was cancelled; it
+ * reads the new build from E2E_STOPPED_TO and the run testing it, if any, from
+ * E2E_REPLACED_BY.
  */
 
 /** Loads the .env files. The webhook URL lives in the deployment's local one. */
@@ -480,6 +484,8 @@ export function buildParentCard(env: NodeJS.ProcessEnv = process.env) {
             // Seven characters, like the seed half of the thread key.
             ...(releaseCommit ? [fact('Commit', releaseCommit.slice(0, 7))] : []),
             fact('e2e-commit', (env.GITHUB_SHA ?? '').slice(0, 7) || 'n/a'),
+            // The build the run started on. A build that changes under the run stops it.
+            ...(env.E2E_APP_VERSION?.trim() ? [fact('Build', env.E2E_APP_VERSION.trim())] : []),
             fact('Suites', env.E2E_SUITES || '—'),
             fact('Started', started),
           ],
@@ -558,6 +564,54 @@ export function buildThreadPayload(summary: Summary | null, env: NodeJS.ProcessE
     parent: JSON.stringify(buildParentCard(env)),
     badge: summary ? buildBadge(summary, env.E2E_SUITE || 'Results') : '',
     cards: summary ? buildPosts(summary).map((item) => item.message.attachments[0]?.content) : [],
+  };
+}
+
+/**
+ * What a run posts in its thread when the build under it changed and it was
+ * cancelled: a grey badge on the parent, and one card saying which build it
+ * started on, which one replaced it, and the run that tests the new one.
+ */
+export function buildStoppedPayload(
+  to: string,
+  replacedBy: string,
+  env: NodeJS.ProcessEnv = process.env
+) {
+  const environment = env.E2E_ENVIRONMENT || 'The deployment';
+  const from = env.E2E_APP_VERSION?.trim() || 'one build';
+  const title =
+    env.E2E_ENVIRONMENT === 'preview'
+      ? 'Stopped: replaced by a newer main'
+      : `Stopped: ${environment} moved to a new build`;
+
+  const body = [
+    text(title, { size: 'Medium', weight: 'Bolder' }),
+    text(
+      `This run started on ${from}. ${environment} now serves ${to}, so the rest of ` +
+        'its results would describe a build that is gone.',
+      { spacing: 'Small' }
+    ),
+    text(
+      replacedBy
+        ? 'The new build is tested in a thread of its own.'
+        : 'No run was started for the new build. Start one by hand to test it.',
+      { spacing: 'Small' }
+    ),
+  ];
+
+  return {
+    key: env.TEAMS_THREAD_KEY ?? '',
+    parent: JSON.stringify(buildParentCard(env)),
+    badge: JSON.stringify(
+      badge(env.E2E_SUITE || 'Results', { style: 'Subtle', appearance: 'Filled', tooltip: title })
+    ),
+    cards: [
+      message(
+        body,
+        workflowRunUrl(env),
+        replacedBy ? [{ type: 'Action.OpenUrl', title: 'Open the new run', url: replacedBy }] : []
+      ).attachments[0]?.content,
+    ],
   };
 }
 
@@ -813,6 +867,17 @@ async function post(): Promise<void> {
     report(
       `Announced the thread ${payload.key || '(no key set)'}.`,
       '{ "key", "parent", "badge": "", "cards": [] }'
+    );
+    return;
+  }
+
+  if (summaryPath === '--stopped') {
+    const replacedBy = process.env.E2E_REPLACED_BY ?? '';
+    const to = process.env.E2E_STOPPED_TO ?? '';
+    if (!(await send(webhook, buildStoppedPayload(to, replacedBy)))) process.exit(1);
+    report(
+      `Said the build moved to ${to}${replacedBy ? `, tested by ${replacedBy}` : ''}.`,
+      '{ "key", "parent", "badge", "cards": [ 1 ] }'
     );
     return;
   }
