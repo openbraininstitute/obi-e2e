@@ -7,7 +7,7 @@ import {
   buildBadge,
   buildParentCard,
   buildPosts,
-  buildReplacedPayload,
+  buildStoppedPayload,
   buildThreadPayload,
   parseMentions,
   TEAMS_PAYLOAD_LIMIT,
@@ -623,25 +623,52 @@ describe('buildThreadPayload', () => {
   });
 });
 
-describe('buildReplacedPayload', () => {
+describe('buildStoppedPayload', () => {
   const newRun = 'https://github.com/openbraininstitute/obi-e2e/actions/runs/43';
+  const stagingEnv = { ...threadEnv, E2E_APP_VERSION: '2026.10.16.1, built 2026-10-16 07:55 UTC' };
+  const moved = '2026.10.16.2, built 2026-10-16 13:10 UTC';
 
-  test('says the run was replaced, in the same thread, and links the new run', () => {
-    const payload = buildReplacedPayload(newRun, threadEnv);
+  test('says which build the run started on, which replaced it, and links the new run', () => {
+    const payload = buildStoppedPayload(moved, newRun, stagingEnv);
 
     expect(payload.key).toBe('2026-09-18-schedule-1fe9550');
     expect(payload.parent).toContain(',"{{BADGES}}"');
     expect(JSON.parse(payload.badge)).toMatchObject({
       type: 'Badge',
       text: 'Regular',
-      tooltip: 'Stopped: replaced by a newer main',
+      tooltip: 'Stopped: staging moved to a new build',
     });
     expect(payload.cards).toHaveLength(1);
 
     const words: string[] = [];
     walk(payload.cards[0], words);
-    expect(words).toContain('Stopped: replaced by a newer main');
+    expect(words).toContain('Stopped: staging moved to a new build');
+    expect(words.join(' ')).toContain(`started on ${stagingEnv.E2E_APP_VERSION}`);
+    expect(words.join(' ')).toContain(`now serves ${moved}`);
     expect(collect(payload.cards[0], (node) => node.url === newRun)).toHaveLength(1);
+  });
+
+  test('a preview run says a newer main replaced it', () => {
+    const payload = buildStoppedPayload(moved, newRun, {
+      ...stagingEnv,
+      E2E_ENVIRONMENT: 'preview',
+    });
+    expect(JSON.parse(payload.badge).tooltip).toBe('Stopped: replaced by a newer main');
+  });
+
+  test('with no new run, it says so and links nothing new', () => {
+    const payload = buildStoppedPayload(moved, '', stagingEnv);
+
+    const words: string[] = [];
+    walk(payload.cards[0], words);
+    expect(words).toContain('No run was started for the new build. Start one by hand to test it.');
+    expect(collect(payload.cards[0], (node) => node.title === 'Open the new run')).toHaveLength(0);
+  });
+
+  test('the parent card names the build the run started on', () => {
+    expect(JSON.stringify(buildParentCard(stagingEnv))).toContain(
+      '"title":"Build","value":"2026.10.16.1, built 2026-10-16 07:55 UTC"'
+    );
   });
 });
 

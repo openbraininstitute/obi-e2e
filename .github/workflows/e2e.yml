@@ -1,5 +1,12 @@
 name: E2E
 
+# A run that restarts on a new build is named for it, so a second suite that
+# saw the same move finds it rather than starting another (see
+# scripts/ci/app-version.ts). Empty for every other run, which GitHub then names
+# as usual.
+run-name: >-
+  ${{ inputs.release && format('E2E · {0} · {1}', inputs.environment, inputs.release) || '' }}
+
 on:
   schedule:
     # 06:00 in Zurich. GitHub reads cron in UTC and knows no time zones, so both
@@ -25,6 +32,10 @@ on:
         description: Also run the slow suite, in the same Teams thread and report folder
         type: boolean
         default: false
+      release:
+        description: Set when a run restarts on a new build. Leave empty.
+        type: string
+        default: ''
   repository_dispatch:
     # `core-web-app` fires this when it releases, with the tag in
     # `client_payload.release`. The release goes to staging, like every other
@@ -56,10 +67,11 @@ concurrency:
   # run before it, and a core-web-app merge the run for the merge before it.
   #
   # core-web-app dispatches a merge only once the preview serves it, so by then
-  # the older run is testing a bundle the preview no longer has: its pages fail
-  # on chunks that 404. The older run says so in its thread (see "Say the run was
-  # replaced") and publishes nothing. Schedules, releases and pushes stay in
-  # groups of their own and are never cancelled by a merge.
+  # the older run is testing a build the preview no longer has: its pages fail
+  # on chunks that 404. Schedules, releases and pushes stay in groups of their
+  # own and are never cancelled by a merge. A build that changes under any run
+  # is caught by the run itself ("Watch the build under test"), which says so
+  # in its thread and publishes nothing.
   group: >-
     ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch'
         && format('manual-{0}', inputs.environment)
@@ -167,8 +179,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      # `gh run list`, to name the run that replaced a cancelled one.
-      actions: read
+      # To cancel this run when the build under it changes, to start the run
+      # for the new build, and to find the run that tests it.
+      actions: write
     # A 2-core runner gives workersFor() two workers, so the whole suite walks
     # through 248 tests two at a time. Forty-five minutes cut it off mid-run.
     timeout-minutes: 120
@@ -215,9 +228,11 @@ jobs:
       TEAMS_THREAD_KEY: ${{ matrix.run.key }}
       E2E_STARTED: ${{ needs.matrix.outputs.started }} UTC
       E2E_EVENT: ${{ github.event_name }}
-      E2E_RELEASE: ${{ github.event.client_payload.release }}
+      E2E_RELEASE: ${{ github.event.client_payload.release || inputs.release }}
       E2E_RELEASE_URL: ${{ github.event.client_payload.release_url }}
       E2E_RELEASE_COMMIT: ${{ github.event.client_payload.commit }}
+      # What a restart on a new build runs: the suites this run runs.
+      E2E_RESTART_SLOW: ${{ needs.matrix.outputs.slow }}
     steps:
       - uses: actions/checkout@v5
 
@@ -226,6 +241,11 @@ jobs:
           bun-version: 1.4.0
 
       - run: bun install --frozen-lockfile
+
+      # Before the announce, so the thread names the build it tests. Empty when
+      # the target does not answer, and then nothing is watched.
+      - name: Note the build under test
+        run: echo "E2E_APP_VERSION=$(bun scripts/ci/app-version.ts note)" >> "$GITHUB_ENV"
 
       # Only this workflow announces. It opens the thread in the first minute of
       # the job, hours before any result, so the flow always has a parent message
@@ -256,6 +276,13 @@ jobs:
           : "${E2E_BASE_URL:?No URL for ${E2E_ENVIRONMENT}: set the repository variable}"
           bun run preflight
 
+      # In the background, for as long as the tests run: a new build under them
+      # cancels the run, and the steps below say why.
+      - name: Watch the build under test
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: nohup bun scripts/ci/app-version.ts watch > app-version-watch.log 2>&1 &
+
       # Without `--project=slow` the config defines no slow project, so the slow
       # campaigns stay in their own job.
       - name: Run tests
@@ -268,6 +295,13 @@ jobs:
           else
             bun run test
           fi
+
+      # The results are in. A build that changes from here on changed after them.
+      - name: Stop watching
+        if: always()
+        run: |
+          pkill -f 'app-version.ts watch' || true
+          cat app-version-watch.log 2>/dev/null || true
 
       - name: Give the project back
         if: always()
@@ -305,36 +339,32 @@ jobs:
           E2E_REPORT_URL: ${{ steps.report.outputs.artifact-url }}
         run: bun scripts/ci/summarize-results.ts test-results/results.json test-results
 
-      # A newer core-web-app merge cancels this run (see `concurrency`). Its
-      # results would describe a bundle the preview no longer serves, so the
-      # thread gets what replaced it instead. A run cancelled for any other
-      # reason finds nothing here and posts its card as before. `continue-on-error`
-      # because a lookup that fails must not cost the thread its card.
-      - name: Find the run that replaced this one
-        id: replaced
-        if: cancelled() && github.event.action == 'core-web-app-main'
+      # Cancelled because the build under test changed: by the watcher above, or
+      # by a newer merge (see `concurrency`). Its results would describe a build
+      # that is gone, so the thread gets that instead, with the run that tests
+      # the new build. A run cancelled for any other reason writes nothing here
+      # and posts its card as before. `continue-on-error`, because a lookup that
+      # fails must not cost the thread its card.
+      - name: Check whether the build moved
+        id: stopped
+        if: cancelled()
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          # Run ids only grow, so a larger one is a later merge.
-          by=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow e2e.yml \
-            --event repository_dispatch --limit 20 --json databaseId,displayTitle,url \
-            --jq "map(select(.displayTitle == \"core-web-app-main\" and .databaseId > $GITHUB_RUN_ID))
-                  | max_by(.databaseId) | .url // \"\"")
-          echo "by=$by" >> "$GITHUB_OUTPUT"
+        run: bun scripts/ci/app-version.ts stopped
 
-      - name: Say the run was replaced
-        if: cancelled() && steps.replaced.outputs.by != ''
+      - name: Say the run was stopped
+        if: cancelled() && steps.stopped.outputs.to != ''
         env:
           MS_TEAMS_WEBHOOK_URI: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
           TEAMS_LAYOUT: thread
           E2E_SUITE: Regular
-          E2E_REPLACED_BY: ${{ steps.replaced.outputs.by }}
-        run: bun scripts/ci/teams-card.ts --replaced
+          E2E_STOPPED_TO: ${{ steps.stopped.outputs.to }}
+          E2E_REPLACED_BY: ${{ steps.stopped.outputs.by }}
+        run: bun scripts/ci/teams-card.ts --stopped
 
       - name: Post Teams card
-        if: ${{ !cancelled() || steps.replaced.outputs.by == '' }}
+        if: ${{ !cancelled() || steps.stopped.outputs.to == '' }}
         env:
           MS_TEAMS_WEBHOOK_URI: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
           TEAMS_LAYOUT: thread
@@ -372,7 +402,7 @@ jobs:
           ENVIRONMENT: ${{ matrix.run.environment }}
           KEY: ${{ matrix.run.key }}
           STARTED: ${{ needs.matrix.outputs.started }}
-          RELEASE: ${{ github.event.client_payload.release }}
+          RELEASE: ${{ github.event.client_payload.release || inputs.release }}
           RELEASE_URL: ${{ github.event.client_payload.release_url }}
           RELEASE_COMMIT: ${{ github.event.client_payload.commit }}
         run: |
@@ -413,8 +443,8 @@ jobs:
   # that tests two deployments never folds one into the other.
   publish:
     needs: [matrix, run, site]
-    # Not for a cancelled run: a newer one is on its way, and a half-run report
-    # would sit on the dashboard beside it.
+    # Not for a cancelled run: its build changed under it, or someone stopped
+    # it, and a half-run report would sit on the dashboard as if it were a result.
     if: ${{ !cancelled() && needs.matrix.outputs.runs != '[]' && needs.run.result != 'skipped' }}
     runs-on: ubuntu-latest
     permissions:

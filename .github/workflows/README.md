@@ -38,10 +38,30 @@ the wait for an older one. It runs the regular suite only: the slow campaigns
 would take hours on every merge.
 
 Once a newer merge is dispatched, the run for the older one is cancelled: the
-preview already serves the newer bundle, so the older run's pages would fail on
-chunks that 404. The cancelled run gives its project back, posts "Stopped:
-replaced by a newer main" in its own thread with a link to the new run, and
-publishes nothing. Schedules, releases and pushes are never cancelled this way.
+preview already serves the newer build, so the older run's pages would fail on
+chunks that 404. Schedules, releases and pushes are never cancelled by a merge.
+
+## A build that changes under a run
+
+Every run, regular and slow, notes the build its target serves (`/app/version`:
+the version and when it was built) and checks it once a minute while the tests
+run (`scripts/ci/app-version.ts`). When it changes, the run cancels itself.
+Nothing tells this repository when a release reaches staging, so this is how a
+run notices it. On 16 Oct a release landed partway through the nightly and
+failed two campaigns that were not broken.
+
+A run cancelled this way, or by a newer merge:
+
+- gives its project back and publishes nothing;
+- posts in its own thread which build it started on and which replaced it
+  ("Stopped: replaced by a newer main" on the preview);
+- links the run that tests the new build. On the preview that is the merge
+  run. On staging, a run that started on its own (schedule, release, restart)
+  starts one, with both suites, named `E2E · staging · <version>`; both suites
+  see the move, and the second finds that run by its name instead of starting
+  another. A run started by hand is not restarted.
+
+A run cancelled for any other reason posts its usual card.
 
 The preview is the main branch on the staging backend: it signs in with the
 staging secrets, and `@production` tests skip there as they do on staging.
