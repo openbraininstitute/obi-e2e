@@ -27,8 +27,8 @@ test.describe('Workflows page', () => {
     await clickUntil(hub.category('build'), hub.typeMenu('build'));
     await expect(page).toHaveURL(/activity=build/);
 
-    for (const { label, type } of TYPES.build) {
-      const card = hub.type(type);
+    for (const { label, type, formerly } of TYPES.build) {
+      const card = formerly ? hub.type(type).or(hub.type(formerly)) : hub.type(type);
       await expect(card).toBeVisible();
       await expect(card).toContainText(label);
     }
