@@ -6,8 +6,11 @@
  *
  * Usage: MS_TEAMS_WEBHOOK_URI=... bun scripts/ci/teams-card.ts test-results/summary.json
  *        MS_TEAMS_WEBHOOK_URI=... bun scripts/ci/teams-card.ts --start
+ *        MS_TEAMS_WEBHOOK_URI=... bun scripts/ci/teams-card.ts --replaced
  *
  * `--start` announces the thread at job start, before any suite has a result.
+ * `--replaced` says a newer core-web-app merge cancelled the run; it reads the
+ * new run's URL from E2E_REPLACED_BY.
  */
 
 /** Loads the .env files. The webhook URL lives in the deployment's local one. */
@@ -561,6 +564,39 @@ export function buildThreadPayload(summary: Summary | null, env: NodeJS.ProcessE
   };
 }
 
+/**
+ * What a run a newer core-web-app merge cancelled posts in its thread: a grey
+ * badge on the parent, and one card linking the run that replaced it.
+ */
+export function buildReplacedPayload(replacedBy: string, env: NodeJS.ProcessEnv = process.env) {
+  const body = [
+    text('Stopped: replaced by a newer main', { size: 'Medium', weight: 'Bolder' }),
+    text(
+      'A newer merge to core-web-app main reached the preview, so this run was cancelled. ' +
+        'Its results would describe a bundle the preview no longer serves. ' +
+        'The new run reports in a thread of its own.',
+      { spacing: 'Small' }
+    ),
+  ];
+
+  return {
+    key: env.TEAMS_THREAD_KEY ?? '',
+    parent: JSON.stringify(buildParentCard(env)),
+    badge: JSON.stringify(
+      badge(env.E2E_SUITE || 'Results', {
+        style: 'Subtle',
+        appearance: 'Filled',
+        tooltip: 'Stopped: replaced by a newer main',
+      })
+    ),
+    cards: [
+      message(body, workflowRunUrl(env), [
+        { type: 'Action.OpenUrl', title: 'Open the new run', url: replacedBy },
+      ]).attachments[0]?.content,
+    ],
+  };
+}
+
 export function buildCardWithinLimit(summary: Summary): {
   card: ReturnType<typeof buildCard>;
   detail: Detail;
@@ -813,6 +849,16 @@ async function post(): Promise<void> {
     report(
       `Announced the thread ${payload.key || '(no key set)'}.`,
       '{ "key", "parent", "badge": "", "cards": [] }'
+    );
+    return;
+  }
+
+  if (summaryPath === '--replaced') {
+    const replacedBy = process.env.E2E_REPLACED_BY ?? '';
+    if (!(await send(webhook, buildReplacedPayload(replacedBy)))) process.exit(1);
+    report(
+      `Said the run was replaced by ${replacedBy}.`,
+      '{ "key", "parent", "badge", "cards": [ 1 ] }'
     );
     return;
   }

@@ -7,6 +7,7 @@ import {
   buildBadge,
   buildParentCard,
   buildPosts,
+  buildReplacedPayload,
   buildThreadPayload,
   parseMentions,
   TEAMS_PAYLOAD_LIMIT,
@@ -619,6 +620,28 @@ describe('buildThreadPayload', () => {
     expect(payload.parent).toContain('"2026-09-18-schedule-1fe9550"');
     expect(payload.badge).toBe('');
     expect(payload.cards).toEqual([]);
+  });
+});
+
+describe('buildReplacedPayload', () => {
+  const newRun = 'https://github.com/openbraininstitute/obi-e2e/actions/runs/43';
+
+  test('says the run was replaced, in the same thread, and links the new run', () => {
+    const payload = buildReplacedPayload(newRun, threadEnv);
+
+    expect(payload.key).toBe('2026-09-18-schedule-1fe9550');
+    expect(payload.parent).toContain(',"{{BADGES}}"');
+    expect(JSON.parse(payload.badge)).toMatchObject({
+      type: 'Badge',
+      text: 'Regular',
+      tooltip: 'Stopped: replaced by a newer main',
+    });
+    expect(payload.cards).toHaveLength(1);
+
+    const words: string[] = [];
+    walk(payload.cards[0], words);
+    expect(words).toContain('Stopped: replaced by a newer main');
+    expect(collect(payload.cards[0], (node) => node.url === newRun)).toHaveLength(1);
   });
 });
 

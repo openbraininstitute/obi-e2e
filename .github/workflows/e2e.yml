@@ -53,11 +53,20 @@ concurrency:
   # shared group did both — GitHub keeps one waiting run per group and cancels it
   # when a third arrives, and a manual dispatch cancelled the nightly run in
   # flight. Only a manual re-dispatch at the same target supersedes the manual
-  # run before it.
+  # run before it, and a core-web-app merge the run for the merge before it.
+  #
+  # core-web-app dispatches a merge only once the preview serves it, so by then
+  # the older run is testing a bundle the preview no longer has: its pages fail
+  # on chunks that 404. The older run says so in its thread (see "Say the run was
+  # replaced") and publishes nothing. Schedules, releases and pushes stay in
+  # groups of their own and are never cancelled by a merge.
   group: >-
     ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch'
-        && format('manual-{0}', inputs.environment) || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'workflow_dispatch' }}
+        && format('manual-{0}', inputs.environment)
+        || github.event.action == 'core-web-app-main' && 'core-web-app-main'
+        || github.run_id }}
+  cancel-in-progress: >-
+    ${{ github.event_name == 'workflow_dispatch' || github.event.action == 'core-web-app-main' }}
 
 permissions:
   contents: read
@@ -156,6 +165,10 @@ jobs:
     needs: matrix
     if: needs.matrix.outputs.runs != '[]'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # `gh run list`, to name the run that replaced a cancelled one.
+      actions: read
     # A 2-core runner gives workersFor() two workers, so the whole suite walks
     # through 248 tests two at a time. Forty-five minutes cut it off mid-run.
     timeout-minutes: 120
@@ -292,8 +305,36 @@ jobs:
           E2E_REPORT_URL: ${{ steps.report.outputs.artifact-url }}
         run: bun scripts/ci/summarize-results.ts test-results/results.json test-results
 
+      # A newer core-web-app merge cancels this run (see `concurrency`). Its
+      # results would describe a bundle the preview no longer serves, so the
+      # thread gets what replaced it instead. A run cancelled for any other
+      # reason finds nothing here and posts its card as before. `continue-on-error`
+      # because a lookup that fails must not cost the thread its card.
+      - name: Find the run that replaced this one
+        id: replaced
+        if: cancelled() && github.event.action == 'core-web-app-main'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Run ids only grow, so a larger one is a later merge.
+          by=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow e2e.yml \
+            --event repository_dispatch --limit 20 --json databaseId,displayTitle,url \
+            --jq "map(select(.displayTitle == \"core-web-app-main\" and .databaseId > $GITHUB_RUN_ID))
+                  | max_by(.databaseId) | .url // \"\"")
+          echo "by=$by" >> "$GITHUB_OUTPUT"
+
+      - name: Say the run was replaced
+        if: cancelled() && steps.replaced.outputs.by != ''
+        env:
+          MS_TEAMS_WEBHOOK_URI: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+          TEAMS_LAYOUT: thread
+          E2E_SUITE: Regular
+          E2E_REPLACED_BY: ${{ steps.replaced.outputs.by }}
+        run: bun scripts/ci/teams-card.ts --replaced
+
       - name: Post Teams card
-        if: always()
+        if: ${{ !cancelled() || steps.replaced.outputs.by == '' }}
         env:
           MS_TEAMS_WEBHOOK_URI: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
           TEAMS_LAYOUT: thread
@@ -372,7 +413,9 @@ jobs:
   # that tests two deployments never folds one into the other.
   publish:
     needs: [matrix, run, site]
-    if: always() && needs.matrix.outputs.runs != '[]' && needs.run.result != 'skipped'
+    # Not for a cancelled run: a newer one is on its way, and a half-run report
+    # would sit on the dashboard beside it.
+    if: ${{ !cancelled() && needs.matrix.outputs.runs != '[]' && needs.run.result != 'skipped' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
