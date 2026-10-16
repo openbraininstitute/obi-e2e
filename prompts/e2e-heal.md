@@ -67,7 +67,12 @@ Classify:
 - **Timing** — the element arrives late, or the page beat its own hydration.
   Wait for the thing itself; never add a sleep. Hydration sign: click
   passes, what it opens never shows, snapshot still shows closed state. Fix:
-  `clickUntil(target, shows)` from `@fixtures/interactions`.
+  `clickUntil(target, shows)` from `@fixtures/interactions`. A state the test
+  cannot come back from fails on the event that causes it (a refused call, a
+  reload), not on an assertion running out of clock.
+- **Deploy under the run** — `page-problems.txt` shows `ChunkLoadError` and
+  "the bundle changed under the page": the app was redeployed mid-test. Nothing
+  to fix; re-run it.
 - **Flow change** — a new step or dialog. Update the test, and say that
   `scenario.md` needs the same edit.
 - **Not in this deployment** — behind a flag, or newer than the build under

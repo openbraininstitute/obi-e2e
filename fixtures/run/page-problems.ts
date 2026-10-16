@@ -30,6 +30,9 @@ const KNOWN_NOISE = /antd: compatible/;
  */
 const STALE_BUNDLE = /ChunkLoadError|Loading (?:CSS )?chunk \S+ failed/;
 
+/** The line that says the page was reloaded onto a new deploy. */
+export const BUNDLE_CHANGED = 'the bundle changed under the page; reloading once';
+
 /** Bundles, fonts and images say nothing about why a test failed. */
 const NOT_WORTH_REPORTING = /\/(?:_next|__nextjs)\/|\.(?:png|jpe?g|svg|woff2?|css|js)(?:\?|$)/;
 
@@ -121,7 +124,7 @@ export function watchPage(page: Page): void {
   const reloadOnce = (text: string): void => {
     if (reloaded || !STALE_BUNDLE.test(text) || page.isClosed()) return;
     reloaded = true;
-    add('the bundle changed under the page; reloading once');
+    add(BUNDLE_CHANGED);
     void page.reload().catch(() => {});
   };
 
@@ -204,9 +207,9 @@ const CALL = /^(GET|POST|PUT|PATCH|DELETE) (\S+) → (.*)$/;
  * The one line most likely to explain a failure, in plain words, or nothing.
  *
  * The test's own error says what it waited for; this says what the backend did
- * meanwhile. Ranked by how surely each kind explains a failure: a task's own
- * error, a 5xx, a crashed tab, a call that got no answer, a refusal, a slow
- * call. Left out on purpose: navigations the page cancelled (`ERR_ABORTED`),
+ * meanwhile. Ranked by how surely each kind explains a failure: a deploy
+ * under the open page, a task's own error, a 5xx, a crashed tab, a call that
+ * got no answer, a refusal, a slow call. Left out on purpose: navigations the page cancelled (`ERR_ABORTED`),
  * 404s and uncaught errors, which a healthy run has too, so naming them would
  * mislead the way a bare locator timeout does.
  */
@@ -215,6 +218,13 @@ export function causeOf(lines: readonly string[]): string | undefined {
   const ranked: { rank: number; text: string }[] = [];
 
   for (const line of lines) {
+    if (line === BUNDLE_CHANGED) {
+      ranked.push({
+        rank: 0,
+        text: 'The app was redeployed during the test: the page asked for a bundle chunk that is no longer served, and was reloaded.',
+      });
+      continue;
+    }
     if (line.startsWith('task error: ')) {
       ranked.push({ rank: 0, text: `The task failed: ${line.slice('task error: '.length)}` });
       continue;
