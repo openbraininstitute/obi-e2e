@@ -1,0 +1,132 @@
+{
+  "passed": 4,
+  "failed": 1,
+  "flaky": 0,
+  "skipped": 5,
+  "durationMs": 11386,
+  "environment": "staging",
+  "baseUrl": "https://main.preview.openbraininstitute.org",
+  "browser": "chromium",
+  "commit": "009add77c9395b90ca7066ef5b0e09f5c483536e",
+  "runUrl": "https://github.com/openbraininstitute/obi-e2e/actions/runs/38905300983",
+  "reportUrl": "",
+  "trigger": "On deploy",
+  "failures": [
+    {
+      "title": "setup/credits.setup.ts › the project can pay for this run",
+      "section": "",
+      "file": "setup/credits.setup.ts",
+      "line": 11,
+      "project": "funding",
+      "error": "Error: The virtual lab holds 43.25 credits and this run needs 500. Nothing can be launched until someone tops the lab up, so the tests that spend are not attempted. Everything that only reads still runs."
+    }
+  ],
+  "totalFailures": 1,
+  "services": [
+    {
+      "key": "entitycore",
+      "label": "Entity core",
+      "version": "2026.10.1",
+      "status": "healthy"
+    },
+    {
+      "key": "virtual-lab",
+      "label": "Virtual lab manager",
+      "status": "healthy"
+    },
+    {
+      "key": "obi-one",
+      "label": "OBI One",
+      "version": "2026.10.15",
+      "status": "healthy"
+    },
+    {
+      "key": "circuit",
+      "label": "Circuit",
+      "version": "2026.9.2",
+      "status": "healthy"
+    },
+    {
+      "key": "notebook",
+      "label": "Notebook service",
+      "status": "healthy"
+    },
+    {
+      "key": "thumbnail",
+      "label": "Thumbnail generation",
+      "status": "healthy"
+    },
+    {
+      "key": "simulator",
+      "label": "Small scale simulator",
+      "status": "healthy"
+    },
+    {
+      "key": "ai-agent",
+      "label": "AI agent",
+      "version": "0.1.32",
+      "status": "healthy"
+    },
+    {
+      "key": "auth-manager",
+      "label": "Auth manager",
+      "version": "2026.08.05.1",
+      "status": "healthy"
+    },
+    {
+      "key": "launch-system",
+      "label": "Launch system",
+      "status": "skipped",
+      "problem": "reachable only inside the VPC"
+    }
+  ],
+  "features": [
+    {
+      "name": "Brain region simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    },
+    {
+      "name": "E-model optimization",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    },
+    {
+      "name": "Microcircuit simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    },
+    {
+      "name": "Whole brain simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    }
+  ],
+  "credits": {
+    "labBalance": 43.25,
+    "required": 500,
+    "variable": "E2E_SLOW_PROJECT_CREDITS",
+    "problem": "The virtual lab holds 43.25 credits and this run needs 500. Nothing can be launched until someone tops the lab up, so the tests that spend are not attempted. Everything that only reads still runs.",
+    "projectId": "97446a26-9a6e-45ea-82b0-bcca8fc1060d",
+    "remaining": 0,
+    "reversed": "nothing to return",
+    "returned": 0,
+    "removed": "ok"
+  }
+}

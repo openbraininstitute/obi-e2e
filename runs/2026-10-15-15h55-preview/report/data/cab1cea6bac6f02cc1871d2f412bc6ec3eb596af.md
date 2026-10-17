@@ -1,0 +1,131 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: scenarios/data/em-cell-mesh/browse/browse.spec.ts >> EM mesh listing >> Page through the EM mesh listing
+- Location: scenarios/data/em-cell-mesh/browse/browse.spec.ts:140:2
+
+# Error details
+
+```
+Error: expect(locator).toHaveText(expected) failed
+
+Locator: getByTestId('data-grid-result-count').or(getByText(/[\d,]+ results/))
+Expected: "2,739 results"
+Timeout: 30000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "to.have.text" with timeout 30000ms
+  - waiting for getByTestId('data-grid-result-count').or(getByText(/[\d,]+ results/))
+
+```
+
+```yaml
+- menubar "t1/e2e-38759700724-1":
+  - button "CI Test User":
+    - img "UserFilled"
+  - button "t1":
+    - heading "t1" [level=3]
+  - img
+  - button "e2e-38759700724-1"
+  - button "toggle-workspace-panel":
+    - img
+- link "Coins 2000.00":
+  - /url: /app/virtual-lab/0f1a91f7-e871-4780-8f94-79ae61d32d51/2205d060-6f1d-423f-bc26-b7ed1ce3f9f2/credits
+  - img "Coins"
+  - text: "2000.00"
+- link "Home":
+  - /url: /app/virtual-lab/0f1a91f7-e871-4780-8f94-79ae61d32d51/2205d060-6f1d-423f-bc26-b7ed1ce3f9f2
+  - img "Home"
+- link "Data Explore":
+  - /url: /app/virtual-lab/0f1a91f7-e871-4780-8f94-79ae61d32d51/2205d060-6f1d-423f-bc26-b7ed1ce3f9f2/data
+  - text: Data
+  - img "Explore"
+- link "Workflows Workflow":
+  - /url: /app/virtual-lab/0f1a91f7-e871-4780-8f94-79ae61d32d51/2205d060-6f1d-423f-bc26-b7ed1ce3f9f2/workflows
+  - text: Workflows
+  - img "Workflow"
+- link "Notebooks Notebook":
+  - /url: /app/virtual-lab/0f1a91f7-e871-4780-8f94-79ae61d32d51/2205d060-6f1d-423f-bc26-b7ed1ce3f9f2/notebooks
+  - text: Notebooks
+  - img "Notebook"
+- link "Reports":
+  - /url: /app/virtual-lab/0f1a91f7-e871-4780-8f94-79ae61d32d51/2205d060-6f1d-423f-bc26-b7ed1ce3f9f2/reports
+- link:
+  - /url: /app/virtual-lab/0f1a91f7-e871-4780-8f94-79ae61d32d51/2205d060-6f1d-423f-bc26-b7ed1ce3f9f2/help
+- text: Help
+- img "Feedback star"
+- text: Feedback
+- tablist:
+  - tab "Public" [selected]
+  - tab "Project"
+- combobox: Species All
+- tablist:
+  - tab "Experimental" [selected]
+  - tab "Model"
+  - tab "Simulations"
+- button "Morphology 6225 of 6225"
+- button "Single cell electrophysiology 2247 of 2247"
+- button "Ion channel electrophysiology 33198 of 33198"
+- button "Neuron density 62 of 62"
+- button "Bouton density 6 of 6"
+- button "Synapse per connection 12 of 12"
+- button "EM mesh 0 of 2739"
+- img "warning"
+- paragraph: An error occurred while fetching "EM mesh" data for this region. We are sorry about the inconvenience. Please contact support.
+- button "Contact Support"
+- button "expand AI assistant":
+  - img
+  - text: OBI Assistant
+- alert
+```
+
+# Test source
+
+```ts
+  1  | import { entityListing } from '@locators/listing';
+  2  | import { expect, type Page } from '@playwright/test';
+  3  | 
+  4  | import { NO_NAVIGATION } from '../interactions';
+  5  | import { expectListing, expectRows } from './listing';
+  6  | 
+  7  | async function pageSignature(page: Page): Promise<string> {
+  8  |   const cells = await entityListing(page).cells.allInnerTexts();
+  9  |   return cells
+  10 |     .map((cell) => cell.trim())
+  11 |     .filter(Boolean)
+  12 |     .slice(0, 12)
+  13 |     .join('|');
+  14 | }
+  15 | 
+  16 | /** Checks page 2 holds other rows, and page 1 comes back the same. */
+  17 | export async function checkPagination(page: Page): Promise<void> {
+  18 |   const listing = entityListing(page);
+  19 | 
+  20 |   await expectListing(page);
+  21 |   await expectRows(page);
+  22 |   await page.waitForLoadState('networkidle').catch(() => {});
+  23 | 
+  24 |   const total = await listing.resultCount.innerText();
+  25 |   const firstPage = await pageSignature(page);
+  26 |   expect(firstPage).not.toBe('');
+  27 | 
+  28 |   await listing.pageLink(2).click(NO_NAVIGATION);
+  29 |   await expectRows(page);
+  30 |   await expect
+  31 |     .poll(() => pageSignature(page), { message: 'page 2 shows the same rows as page 1' })
+  32 |     .not.toBe(firstPage);
+  33 | 
+> 34 |   await expect(listing.resultCount).toHaveText(total);
+     |                                    ^ Error: expect(locator).toHaveText(expected) failed
+  35 | 
+  36 |   await listing.pageLink(1).click(NO_NAVIGATION);
+  37 |   await expect.poll(() => pageSignature(page)).toBe(firstPage);
+  38 | }
+  39 | 
+```
