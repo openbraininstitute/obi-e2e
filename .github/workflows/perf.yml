@@ -2,7 +2,7 @@ name: Perf
 
 on:
   schedule:
-    # 08:00 in Zurich, after the 06:00 test run. GitHub reads cron in UTC only,
+    # 08:00 in Zurich, the same time as the test run. GitHub reads cron in UTC only,
     # so both offsets are listed and `when` keeps the one that is 08:00 there
     # today: 06:00 UTC in summer (CEST), 07:00 UTC in winter (CET). The string
     # must match `github.event.schedule` exactly.
