@@ -365,13 +365,25 @@ export function ComboboxContent({
       const panel = measureRef.current;
       if (!trigger || !panel) return;
       const rect = trigger.getBoundingClientRect();
-      setLayout({
+      const next = {
         left: rect.left,
         top: rect.top,
         width: rect.width,
         height: rect.height,
         panel: { width: panel.offsetWidth, height: panel.offsetHeight },
-      });
+      };
+      // Bail out when nothing moved, so the per-frame tracking below is free.
+      setLayout((prev) =>
+        prev &&
+        prev.left === next.left &&
+        prev.top === next.top &&
+        prev.width === next.width &&
+        prev.height === next.height &&
+        prev.panel.width === next.panel.width &&
+        prev.panel.height === next.panel.height
+          ? prev
+          : next
+      );
     };
     measure();
     const observer = new ResizeObserver(measure);
@@ -379,12 +391,23 @@ export function ComboboxContent({
     if (measureRef.current) observer.observe(measureRef.current);
     window.addEventListener('scroll', measure, true);
     window.addEventListener('resize', measure);
+    // A ResizeObserver only reports size, so a trigger that moves without
+    // resizing (a sibling filter appearing or vanishing) left the panel at its
+    // old spot. While open, follow the trigger every frame, as floating-ui's
+    // autoUpdate({ animationFrame: true }) does.
+    let frame = 0;
+    const track = () => {
+      measure();
+      frame = requestAnimationFrame(track);
+    };
+    if (context.open) frame = requestAnimationFrame(track);
     return () => {
+      cancelAnimationFrame(frame);
       observer.disconnect();
       window.removeEventListener('scroll', measure, true);
       window.removeEventListener('resize', measure);
     };
-  }, [context.triggerRef, mounted]);
+  }, [context.open, context.triggerRef, mounted]);
 
   if (!mounted) return null;
 
