@@ -431,7 +431,7 @@ export function buildPosts(summary: Summary): Post[] {
  * copy on every later call, so the facts above the badges are whatever the run
  * that opened the thread knew. Nothing a later suite sends can rewrite them.
  */
-const BADGE_TOKEN = '{{BADGES}}';
+export const BADGE_TOKEN = '{{BADGES}}';
 
 /** The one message both suites report under. Built here, spliced by the flow. */
 export function buildParentCard(env: NodeJS.ProcessEnv = process.env) {

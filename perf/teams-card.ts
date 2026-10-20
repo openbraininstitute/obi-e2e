@@ -4,7 +4,8 @@
  * Posts the Lighthouse result to Microsoft Teams as an Adaptive Card.
  * It reads what `bun run perf` leaves in perf/report and .lighthouseci.
  *
- * Usage: MS_TEAMS_WEBHOOK_URI=... bun perf/teams-card.ts
+ * Usage: MS_TEAMS_WEBHOOK_URI=... bun perf/teams-card.ts [--start]
+ * `--start` announces the thread at the start of the job, before there is a result.
  * Without a webhook it prints the card instead, so you can see what would go out.
  */
 
@@ -17,6 +18,7 @@ import { detectTrigger, runUrl } from '@/scripts/ci/summarize-results';
 import {
   badge,
   type BadgeStyle,
+  BADGE_TOKEN,
   cell,
   type ContainerStyle,
   fact,
@@ -63,6 +65,8 @@ export type PerfSummary = {
   pages: PageResult[];
   runUrl: string;
   reportUrl: string;
+  /** The report on GitHub Pages, once the run has published it. */
+  pageUrl: string;
   trigger: string;
 };
 
@@ -128,6 +132,7 @@ export function readSummary(
     pages,
     runUrl: runUrl(env),
     reportUrl: env.E2E_REPORT_URL ?? '',
+    pageUrl: env.PERF_REPORT_PAGE ?? '',
     trigger: detectTrigger(env.GITHUB_EVENT_NAME),
   };
 }
@@ -307,6 +312,9 @@ export function buildPerfCard(summary: PerfSummary) {
       ...(summary.runUrl
         ? [{ type: 'Action.OpenUrl', title: 'Open the run', url: summary.runUrl }]
         : []),
+      ...(summary.pageUrl
+        ? [{ type: 'Action.OpenUrl', title: 'Open the reports', url: summary.pageUrl }]
+        : []),
       ...(summary.reportUrl
         ? [{ type: 'Action.OpenUrl', title: 'Download the reports', url: summary.reportUrl }]
         : []),
@@ -314,18 +322,125 @@ export function buildPerfCard(summary: PerfSummary) {
   };
 }
 
-/** One card as a Teams message. With TEAMS_LAYOUT=thread the flow expects the bare card list. */
-export function payload(card: ReturnType<typeof buildPerfCard>, layout = process.env.TEAMS_LAYOUT) {
-  if (layout === 'thread') return { cards: [card] };
+/** One card as a Teams message, for a webhook that posts it as it is. */
+export function payload(card: ReturnType<typeof buildPerfCard>) {
   return {
     type: 'message',
     attachments: [{ contentType: 'application/vnd.microsoft.card.adaptive', content: card }],
   };
 }
 
+const flow = [
+  {
+    type: 'Layout.Flow',
+    horizontalItemsAlignment: 'Left',
+    columnSpacing: 'Small',
+    rowSpacing: 'Small',
+  },
+];
+
+/**
+ * The message the result is threaded under, the same shape the test run's flow
+ * keeps: it stores the first one it sees for a key and re-renders it, splicing
+ * the badges where {{BADGES}} stands.
+ */
+export function buildPerfParent(env: NodeJS.ProcessEnv = process.env) {
+  const environment = env.E2E_ENV || deploymentEnv();
+  const link = runUrl(env);
+  const started = `${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC`;
+
+  return {
+    $schema: 'http://adaptivecards.io/schemas/adaptive-card.json',
+    type: 'AdaptiveCard',
+    version: '1.5',
+    msteams: { width: 'Full' },
+    body: [
+      {
+        type: 'Container',
+        style: 'emphasis',
+        roundedCorners: true,
+        items: [
+          text(TITLE, { size: 'Large', weight: 'Bolder' }),
+          {
+            type: 'Container',
+            spacing: 'Small',
+            layouts: flow,
+            items: [
+              badge(environment, { style: 'Accent', tooltip: 'Deployment audited' }),
+              badge(detectTrigger(env.GITHUB_EVENT_NAME), {
+                style: 'Subtle',
+                tooltip: 'What started the run',
+              }),
+            ],
+          },
+        ],
+      },
+      panel(
+        [
+          {
+            type: 'FactSet',
+            facts: [
+              fact('Run', env.TEAMS_THREAD_KEY ?? ''),
+              fact('Environment', environment),
+              fact('Started', started),
+            ],
+          },
+        ],
+        { spacing: 'Medium' }
+      ),
+      panel(
+        [
+          {
+            type: 'Container',
+            layouts: flow,
+            // The label keeps the array non-empty before the result is in, so the
+            // token can carry its own leading comma.
+            items: [text('Finished', { subtle: true, size: 'Small' }), BADGE_TOKEN],
+          },
+        ],
+        { spacing: 'Medium' }
+      ),
+    ],
+    actions: link ? [{ type: 'Action.OpenUrl', title: 'Open the run', url: link }] : [],
+  };
+}
+
+/**
+ * What the flow expects, for the announce (no summary: no badge, no cards) and
+ * for the result. Without a `key` it has no thread to put the card in, and it
+ * drops it while still answering 202.
+ */
+export function buildPerfThread(summary: PerfSummary | null, env: NodeJS.ProcessEnv = process.env) {
+  const outcome = summary ? OUTCOME[outcomeOf(summary)] : null;
+
+  return {
+    key: env.TEAMS_THREAD_KEY ?? '',
+    parent: JSON.stringify(buildPerfParent(env)),
+    badge:
+      summary && outcome
+        ? JSON.stringify(
+            badge('Lighthouse', {
+              style: outcome.badge,
+              appearance: 'Filled',
+              tooltip: `${outcome.label} · ${summary.pages.length} pages`,
+            })
+          )
+        : '',
+    cards: summary ? [buildPerfCard(summary)] : [],
+  };
+}
+
 async function post(): Promise<void> {
-  const summary = readSummary();
-  const body = payload(buildPerfCard(summary));
+  const announce = Bun.argv.includes('--start');
+  const thread = process.env.TEAMS_LAYOUT === 'thread';
+
+  if (announce && !thread) {
+    console.log('Only a thread has an announce; nothing sent.');
+    return;
+  }
+
+  const summary = announce ? null : readSummary();
+  const body = thread ? buildPerfThread(summary) : payload(buildPerfCard(readSummary()));
   const webhook = process.env.MS_TEAMS_WEBHOOK_URI;
 
   if (!webhook) {
@@ -335,8 +450,11 @@ async function post(): Promise<void> {
   }
 
   if (!(await send(webhook, body))) process.exit(1);
+
   console.log(
-    `Sent the ${summary.environment} performance card: ${OUTCOME[outcomeOf(summary)].label}, ${summary.pages.length} pages.`
+    summary
+      ? `Sent the ${summary.environment} performance card: ${OUTCOME[outcomeOf(summary)].label}, ${summary.pages.length} pages.`
+      : `Announced the thread ${process.env.TEAMS_THREAD_KEY ?? '(no key set)'}.`
   );
 }
 
