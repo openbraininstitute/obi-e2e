@@ -9,12 +9,12 @@ run-name: >-
 
 on:
   schedule:
-    # 06:00 in Zurich. GitHub reads cron in UTC and knows no time zones, so both
-    # offsets are listed and `matrix` keeps the one that is 06:00 there today:
-    # 04:00 UTC in summer (CEST), 05:00 UTC in winter (CET). The other plans
+    # 08:00 in Zurich. GitHub reads cron in UTC and knows no time zones, so both
+    # offsets are listed and `matrix` keeps the one that is 08:00 there today:
+    # 06:00 UTC in summer (CEST), 07:00 UTC in winter (CET). The other plans
     # nothing. The string must match `github.event.schedule` exactly.
-    - cron: '0 4 * * *'
-    - cron: '0 5 * * *'
+    - cron: '0 6 * * *'
+    - cron: '0 7 * * *'
   push:
     branches: [main]
   workflow_dispatch:
@@ -119,12 +119,12 @@ jobs:
           PRODUCTION_APP_URI: ${{ vars.PRODUCTION_APP_URI }}
         run: |
           if [[ "$EVENT" == schedule ]]; then
-            # Zurich's offset now is its offset at 06:00 today: clocks change at
+            # Zurich's offset now is its offset at 08:00 today: clocks change at
             # 01:00 UTC, before either cron fires.
             offset=$(TZ=Europe/Zurich date +%z)
-            want="0 $((6 - 10#${offset:1:2})) * * *"
+            want="0 $((8 - 10#${offset:1:2})) * * *"
             if [[ "$SCHEDULE" != "$want" ]]; then
-              echo "::notice::'$SCHEDULE' is not 06:00 in Zurich today ('$want' is); nothing to run."
+              echo "::notice::'$SCHEDULE' is not 08:00 in Zurich today ('$want' is); nothing to run."
               echo "runs=[]" >> "$GITHUB_OUTPUT"
               exit 0
             fi

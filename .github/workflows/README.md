@@ -7,14 +7,14 @@ here: GitHub runs every YAML file in this folder, whatever its name.
 
 | Trigger                         | Target      | What runs                   | Result     |
 | ------------------------------- | ----------- | --------------------------- | ---------- |
-| Schedule, 06:00 Zurich time     | staging     | regular and slow            | Teams card |
+| Schedule, 08:00 Zurich time     | staging     | regular and slow            | Teams card |
 | Push to `main` (merged PR)      | preview     | regular and slow            | Teams card |
 | `core-web-app-release` dispatch | staging     | regular and slow            | Teams card |
 | `core-web-app-main` dispatch    | preview     | regular                     | Teams card |
 | Manual run                      | your choice | regular, and slow if ticked | Teams card |
 
 GitHub reads cron in UTC and has no time zones, so the schedule lists both
-04:00 and 05:00 UTC, and the run that is not 06:00 in Zurich that day plans
+06:00 and 07:00 UTC, and the run that is not 08:00 in Zurich that day plans
 nothing and stops in seconds. GitHub may still start a scheduled run late under
 load; the cron sets when it is queued, not when a runner picks it up.
 

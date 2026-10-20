@@ -8,7 +8,7 @@
 # outlast the slowest of them.
 #
 # It has no trigger of its own. `e2e.yml` starts it for every run that includes
-# the slow suite — the 06:00 Zurich schedule, a merge to this repository's main,
+# the slow suite — the 08:00 Zurich schedule, a merge to this repository's main,
 # a web-app release, a manual run with `slow` ticked — and hands it that run's
 # key, so both suites post into one Teams thread and publish into one report
 # folder. Started here by hand, with no key, it is a run of its own.
