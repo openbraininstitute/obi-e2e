@@ -53,6 +53,9 @@ jobs:
     if: needs.when.outputs.go == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions:
+      # Publishes the reports to the gh-pages branch, like e2e.yml's publish job.
+      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -62,6 +65,9 @@ jobs:
     env:
       CI: 'true'
       E2E_ENV: ${{ matrix.environment }}
+      # The key the Teams flow threads by: the announce and the result share it, and
+      # the run id keeps a second run the same day in a thread of its own.
+      TEAMS_THREAD_KEY: perf-${{ github.run_id }}-${{ matrix.environment }}
       E2E_BASE_URL: >-
         ${{ matrix.environment == 'production' && vars.PRODUCTION_APP_URI
             || vars.STAGING_APP_URI }}
@@ -73,6 +79,12 @@ jobs:
           bun-version: 1.4.0
 
       - run: bun install --frozen-lockfile
+
+      - name: Announce the run in Teams
+        env:
+          MS_TEAMS_WEBHOOK_URI: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+          TEAMS_LAYOUT: thread
+        run: bun run notify --perf --start
 
       - name: Audit the marketing pages
         run: bun run perf
@@ -87,10 +99,19 @@ jobs:
             .lighthouseci/assertion-results.json
           retention-days: 5
 
+      - name: Publish the reports to GitHub Pages
+        id: pages
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ci/publish-perf.sh "${{ matrix.environment }}" "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
+
       - name: Post Teams card
         if: always()
         env:
           MS_TEAMS_WEBHOOK_URI: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
           TEAMS_LAYOUT: thread
           E2E_REPORT_URL: ${{ steps.report.outputs.artifact-url }}
+          PERF_REPORT_PAGE: ${{ steps.pages.outputs.url }}
         run: bun run notify --perf

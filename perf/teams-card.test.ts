@@ -6,6 +6,8 @@ import * as path from 'node:path';
 import {
   budgetLine,
   buildPerfCard,
+  buildPerfParent,
+  buildPerfThread,
   outcomeOf,
   payload,
   type PerfSummary,
@@ -20,6 +22,7 @@ const summary: PerfSummary = {
   lighthouseVersion: '12.6.1',
   runUrl: 'https://github.com/obi/e2e/actions/runs/1',
   reportUrl: 'https://github.com/obi/e2e/actions/runs/1/artifacts/2',
+  pageUrl: '',
   trigger: 'Scheduled',
   pages: [
     {
@@ -96,10 +99,48 @@ describe('buildPerfCard', () => {
     expect(texts(buildPerfCard(empty))).toContain('No report');
   });
 
-  test('wraps the card the way each layout expects', () => {
-    const card = buildPerfCard(summary);
-    expect(payload(card, 'thread')).toEqual({ cards: [card] });
-    expect(payload(card, '')).toMatchObject({ type: 'message' });
+  test('wraps the card as a plain message', () => {
+    expect(payload(buildPerfCard(summary))).toMatchObject({ type: 'message' });
+  });
+
+  test('links the report on GitHub Pages first, when the run published one', () => {
+    const card = buildPerfCard({ ...summary, pageUrl: 'https://pages.example/perf/x/' });
+    const titles = card.actions.map((action) => action.title);
+    expect(titles).toEqual(['Open the run', 'Open the reports', 'Download the reports']);
+  });
+});
+
+describe('the Teams thread', () => {
+  const env = {
+    TEAMS_THREAD_KEY: 'perf-1-staging',
+    E2E_ENV: 'staging',
+    GITHUB_EVENT_NAME: 'schedule',
+  };
+
+  test('carries the key the flow looks the thread up by', () => {
+    expect(buildPerfThread(null, env).key).toBe('perf-1-staging');
+    expect(buildPerfThread(summary, env).key).toBe('perf-1-staging');
+  });
+
+  test('the announce has no badge and no cards, so the flow only opens the thread', () => {
+    const announce = buildPerfThread(null, env);
+    expect(announce.badge).toBe('');
+    expect(announce.cards).toEqual([]);
+    expect(JSON.parse(announce.parent).type).toBe('AdaptiveCard');
+  });
+
+  test('the parent ends with the placeholder the flow swaps for the badges', () => {
+    expect(JSON.stringify(buildPerfParent(env))).toContain('"{{BADGES}}"');
+  });
+
+  test('the result carries one badge for the verdict and the card as a reply', () => {
+    const result = buildPerfThread(summary, env);
+    expect(JSON.parse(result.badge)).toMatchObject({
+      type: 'Badge',
+      text: 'Lighthouse',
+      style: 'Warning',
+    });
+    expect(result.cards).toEqual([buildPerfCard(summary)]);
   });
 });
 

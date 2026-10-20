@@ -137,9 +137,11 @@ and the SharePoint list behind it, are set up in
 ## `perf.yml`
 
 Lighthouse on the marketing pages, at 08:00 Zurich time on both deployments, or on the
-deployment chosen for a manual run. It uploads the reports as an artifact and
-posts its own Teams card through the same webhook. See
-[perf/README.md](../../perf/README.md).
+deployment chosen for a manual run. It uploads the reports as an artifact,
+publishes their HTML to `gh-pages` under `perf/<date>-<environment>/` (the five
+newest days of each deployment stay), and posts its own Teams thread through the
+same webhook, announced at the start and answered with the card, under the key
+`perf-<run id>-<environment>`. See [perf/README.md](../../perf/README.md).
 
 ## `gh-pages`
 

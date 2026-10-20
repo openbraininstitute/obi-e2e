@@ -673,8 +673,11 @@ bun run test
 bun run notify
 ```
 
-`bun run notify --perf` posts the performance card from `bun run perf`, as one
-card on its own.
+`bun run notify --perf` posts the performance card from `bun run perf`. It uses
+the same shape and the same flow as the test run, under its own key
+(`perf-<run id>-<environment>`): `bun run notify --perf --start` announces the
+thread when the job starts, and `bun run notify --perf` sends the badge and the
+card when it ends. A call with no `key` gets a `202` and no message.
 
 ## Tagging people when a run cannot be paid for
 

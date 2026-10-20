@@ -5,10 +5,11 @@
  *
  *   bun run notify          the test run: rebuilds the summary, then posts its cards
  *   bun run notify --perf   the Lighthouse run: posts the performance card only
+ *   bun run notify --perf --start   announces that run's Teams thread
  */
 
 const steps = Bun.argv.includes('--perf')
-  ? [['bun', 'perf/teams-card.ts']]
+  ? [['bun', 'perf/teams-card.ts', ...Bun.argv.filter((arg) => arg === '--start')]]
   : [
       ['bun', 'run', 'summarize'],
       ['bun', 'scripts/ci/teams-card.ts', 'test-results/summary.json'],

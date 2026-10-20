@@ -42,8 +42,16 @@ To audit as a desktop instead, add `"settings": { "preset": "desktop" }` under
 
 One row per page: its Lighthouse score, the three metrics with the ones over
 budget in red, and a status. The header says whether every page came in under
-budget, and which deployment and Lighthouse version it was. Two buttons open the
-run and download the reports.
+budget, and which deployment and Lighthouse version it was. Buttons open the
+run, open the reports on GitHub Pages and download them.
+
+It is posted the way the test run is: one thread per audit, announced when the
+job starts and answered with the card and a `Lighthouse` badge when it ends. The
+flow threads by a key, and a card sent without one is accepted and dropped, so
+`TEAMS_THREAD_KEY` (`perf-<run id>-<environment>`) is always set. The HTML
+reports are published to
+`https://openbraininstitute.github.io/obi-e2e/perf/<date>-<environment>/`, with
+the five newest days of each deployment kept.
 
 ## Pages
 
