@@ -1,0 +1,142 @@
+{
+  "passed": 5,
+  "failed": 2,
+  "flaky": 0,
+  "skipped": 3,
+  "durationMs": 2432879,
+  "environment": "staging",
+  "baseUrl": "https://staging.openbraininstitute.org",
+  "browser": "chromium",
+  "commit": "c562272c6f875b3792c4ce01f0b14ee1b113c40e",
+  "runUrl": "https://github.com/openbraininstitute/obi-e2e/actions/runs/39942838650",
+  "reportUrl": "",
+  "trigger": "Scheduled",
+  "failures": [
+    {
+      "title": "scenarios/workflows/optimize-emodel/optimize-emodel.spec.ts › E-model optimization › Optimize an e-model against extracted e-features and launch it: sodium and potassium on the soma and the axon, one short generation",
+      "section": "workflows",
+      "file": "scenarios/workflows/optimize-emodel/optimize-emodel.spec.ts",
+      "line": 53,
+      "project": "slow",
+      "error": "Error: The campaign is still \"Pending\"."
+    },
+    {
+      "title": "scenarios/workflows/simulate-microcircuit/simulate-microcircuit.spec.ts › Microcircuit simulation › Generate a simulation campaign and launch it: two somatic current clamps, on the circuit's own defaults",
+      "section": "workflows",
+      "file": "scenarios/workflows/simulate-microcircuit/simulate-microcircuit.spec.ts",
+      "line": 40,
+      "project": "slow",
+      "error": "Error: The campaign is still \"Pending\".",
+      "cause": "obi-one did not answer GET /declared/task/01a1686a-c9da-74b1-9966-2daf04f78980/stream (net::ERR_HTTP2_PROTOCOL_ERROR)"
+    }
+  ],
+  "totalFailures": 2,
+  "services": [
+    {
+      "key": "entitycore",
+      "label": "Entity core",
+      "version": "2026.10.5",
+      "status": "healthy"
+    },
+    {
+      "key": "virtual-lab",
+      "label": "Virtual lab manager",
+      "status": "healthy"
+    },
+    {
+      "key": "obi-one",
+      "label": "OBI One",
+      "version": "2026.10.21",
+      "status": "healthy"
+    },
+    {
+      "key": "circuit",
+      "label": "Circuit",
+      "version": "2026.9.2",
+      "status": "healthy"
+    },
+    {
+      "key": "notebook",
+      "label": "Notebook service",
+      "status": "healthy"
+    },
+    {
+      "key": "thumbnail",
+      "label": "Thumbnail generation",
+      "status": "healthy"
+    },
+    {
+      "key": "simulator",
+      "label": "Small scale simulator",
+      "status": "healthy"
+    },
+    {
+      "key": "ai-agent",
+      "label": "AI agent",
+      "version": "0.1.32",
+      "status": "healthy"
+    },
+    {
+      "key": "auth-manager",
+      "label": "Auth manager",
+      "version": "2026.08.05.1",
+      "status": "healthy"
+    },
+    {
+      "key": "launch-system",
+      "label": "Launch system",
+      "status": "skipped",
+      "problem": "reachable only inside the VPC"
+    }
+  ],
+  "features": [
+    {
+      "name": "Brain region simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    },
+    {
+      "name": "E-model optimization",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 1,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 306016
+    },
+    {
+      "name": "Microcircuit simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 1,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 2421149
+    },
+    {
+      "name": "Whole brain simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    }
+  ],
+  "credits": {
+    "labBalance": 73085.2,
+    "required": 500,
+    "variable": "E2E_SLOW_PROJECT_CREDITS",
+    "projectId": "5b83329e-e0d6-4d96-b802-8f488593a1b2",
+    "assigned": 500,
+    "remaining": 196.85,
+    "spent": 303.15,
+    "reversed": "ok",
+    "returned": 196.85,
+    "removed": "ok"
+  }
+}
