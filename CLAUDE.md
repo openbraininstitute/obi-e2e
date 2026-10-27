@@ -41,7 +41,12 @@ bun run test    # or a single spec while iterating
   projects, and cleans up after itself. Use `CREDITS` (`@private @credits`) when
   a test launches something the project pays for.
 - Every test runs against staging and production. Add `@staging` or
-  `@production` only when a test cannot run on the other. A scan-config workflow
+  `@production` only when a test cannot run on the other.
+- Two branches. `main` runs on the preview; `release` runs on staging and
+  production. A test for a new feature goes to `main`. A fix for a test that
+  fails on staging goes to `release`, then a PR `release` → `main`. At each
+  web-app release CI opens the PR `main` → `release`; a person merges it
+  (`.github/workflows/README.md`, "Two branches"). A scan-config workflow
   says where it runs in its fixture's `env` list, never with a tag.
 
 ## Browsing the app
