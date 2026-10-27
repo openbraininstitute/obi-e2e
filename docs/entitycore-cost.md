@@ -17,10 +17,7 @@ The run: 08:48:27 to 09:34:03 UTC, 45.6 min, **8 workers** on a laptop
 272 passed, 26 failed. Two other runs of mine overlapped it (an EM circuit
 build chain, and a few timing calls with `curl`), so it is not a clean window.
 
-CloudWatch (ECS CPU and memory, ALB request count and target time, 5xx, RDS):
-**not checked**. The AWS SSO token on this machine had expired and only its
-owner can renew it (`aws sso login --profile staging`). The window above is
-the one to read.
+CloudWatch was read afterwards for the same window (§1, "On the server").
 
 ## 1. What the tests do to entitycore
 
@@ -99,6 +96,43 @@ after an EM skeletonization spent 900 of the project's 2 000 (that scenario
 is switched off again), 1 was the recording array's variant card disabled
 because the circuit-properties call failed under the same load.
 
+### On the server (CloudWatch, staging account, 5-minute points)
+
+entitycore is one Fargate task (1 vCPU, 4 GB) behind `private-alb`, on a
+`db.t4g.medium` Postgres. Three windows, all UTC:
+
+| Window             | What ran                                          | ALB requests | ECS CPU avg / max | ECS memory | RDS CPU avg / max | RDS connections | ALB target p95 | 5xx |
+| ------------------ | ------------------------------------------------- | -----------: | ----------------: | ---------: | ----------------: | --------------: | -------------: | --: |
+| 26 Oct 12:15–12:35 | nightly staging + preview CI runs, 2 workers each |       12 400 |          21 % / — |          — |          35 % / — |               — |         0.78 s |   0 |
+| 27 Oct 07:45–08:05 | CI run on the preview (push), 2 workers           |       12 600 |       18 % / 63 % |  24 → 35 % |       36 % / 75 % |         19 → 30 |          0.9 s |   0 |
+| 27 Oct 08:48–09:34 | this measurement, 8 workers, plus my EM chain     |       35 400 |       30 % / 97 % |  35 → 54 % |       56 % / 91 % |         37 → 40 |         0.94 s |   0 |
+
+Before any run the task sits at 0.1 % CPU and the database at 4 %.
+
+What this says:
+
+- **The browser sees a sixth of the calls.** The ALB counted 35 400 requests
+  to entitycore in my window against 5 238 logged in the browsers. The rest
+  come from the app's server side, obi-one's tasks, thumbnail generation and
+  the virtual lab manager, all triggered by the same page loads and launches.
+  A nightly at 2 workers is about 12 500 requests in 20 minutes, 10 a second.
+- **The database is the bottleneck, not the task.** RDS CPU peaked at 91 %
+  (56 % over five minutes) while the task averaged 30 %; yesterday's nightly
+  already took the database to 35 %. `db.t4g.medium` is a burstable class and
+  its credit balance dipped (576 → 567). The facet queries above are where
+  that CPU goes.
+- **Task memory steps up and does not come back.** 24 % at rest, 35 % after
+  the 2-worker CI run, 54 % (2.2 GB of 4) after mine, flat afterwards. Each
+  run leaves the process larger: this is the shape behind the OOM restarts in
+  #225, and the atlas payloads (1.9 MB decoded, 727 times) are the likeliest
+  weight.
+- **Latency at the ALB is fine; the slow responses are inside the server.**
+  Target p95 stayed under 1 s at the load balancer, while the browser saw
+  4–6 s p95 on the facet listings. The difference is queueing in the single
+  task: one worker process serving 8 browsers plus the server-side callers.
+- 4xx at the target rose from a handful to 50–97 per five minutes during the
+  run (the 307 asset redirects are not 4xx). Not broken down: **not checked**.
+
 ## 2. What should change in obi-e2e
 
 1. **Cache the atlas per worker.** `regions` and `hierarchy` are static for a
@@ -129,6 +163,10 @@ because the circuit-properties call failed under the same load.
 | entitycore          | 238-byte `hierarchy` answers taking 8–21 s under load: the service or its database saturates before any payload is involved                                                                          | direct calls                                      |
 | entitycore          | `single-neuron-synaptome` p95 5.8 s; `cell-composition …/download` p95 8.6 s (asset redirect)                                                                                                        | time table                                        |
 | virtual-lab-manager | Second-largest caller: 3 182 requests, p95 2.1 s; not in the scope of #225 but it shares every page load                                                                                             | service table                                     |
+| entitycore          | The task's memory grows by about 10 % of 4 GB per suite and never comes back: look for a per-process cache of the atlas, or move entitycore off a single 1 vCPU task                                 | ECS memory 24 → 35 → 54 %                         |
+| infra               | `db.t4g.medium` runs at 56 % average and 91 % peak CPU under 8 workers, 35 % under the nightly; the facet queries need an index or a materialized count before a bigger instance                     | RDS CPU                                           |
 
-Not measured: ECS CPU and memory, ALB and RDS metrics, response sizes on the
-wire for anything but the BBP atlas, and the same run at 2 workers.
+Not measured: which 4xx the target returned, response sizes on the wire for
+anything but the BBP atlas, the same run at 2 workers, and the split of the
+ALB count between the browser, the app's server side, obi-one and the
+thumbnail service.
