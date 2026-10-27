@@ -13,7 +13,7 @@ test('memory limits a machine with more cores than it can feed', () => {
 });
 
 test('a large machine stops at the ceiling', () => {
-  expect(workersFor({ cpus: 64, memoryGB: 256 })).toBe(8);
+  expect(workersFor({ cpus: 64, memoryGB: 256 })).toBe(4);
 });
 
 test('a local dev server gets a lower ceiling than a deployment', () => {
