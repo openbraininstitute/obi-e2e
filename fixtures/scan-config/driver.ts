@@ -15,8 +15,10 @@ import {
   scanConfigOptionalNumber,
   scanConfigOptions,
   scanConfigProtocol,
+  scanConfigSectionTypes,
   scanConfigSweep,
   scanConfigSweepValues,
+  sectionTypeLabel,
   uiElementOf,
 } from '@locators/scan-config';
 import { morphologyLocations, morphologyViewer, sceneLoading } from '@locators/viewer';
@@ -286,10 +288,8 @@ export class ScanConfigDriver {
         return;
 
       case ScanConfigUiElement.MorphologySectionTypeSelection:
-        throw new Error(
-          `${at}: section types are labelled by obi-one at run time, so a fixture cannot set ` +
-            'them by SWC code. Leave the field out to keep the schema default.'
-        );
+        await this.setSectionTypes(field, value, at);
+        return;
 
       // What the browse step already chose arrives filled in, and a fixture that
       // names nothing leaves it that way.
@@ -363,6 +363,51 @@ export class ScanConfigDriver {
       }
       await rows.offset(index).fill(String(entry.offset));
     }
+  }
+
+  /**
+   * Ticks the section types locations may be generated on.
+   *
+   * The seed names them as the schema does, by SWC code — 3 for the basal
+   * dendrites, 4 for the apical ones — and obi-one offers the ones the
+   * morphology has, by label. The field has no default: since core-web-app
+   * #1992 an untouched control holds nothing and the form stays incomplete, so
+   * a seed that leaves it out never generates.
+   *
+   * Each label is typed into the search box and taken with Enter, the only
+   * handle the control gives. The box is read-only until it has focus, so it
+   * is clicked rather than filled, and like every control here the click can
+   * be swallowed by a tooltip drawn under the pointer: Escape dismisses it and
+   * the retry gets there. The tag the control then shows is what the retry
+   * waits for, and a tag already there is left alone, since Enter on a held
+   * value would drop it again.
+   */
+  private async setSectionTypes(field: Locator, value: unknown, at: string): Promise<void> {
+    if (!Array.isArray(value) || value.length === 0) {
+      throw new Error(
+        `${at}: needs the SWC section types to place on, such as [3] for the basal dendrites`
+      );
+    }
+
+    const picker = scanConfigSectionTypes(field);
+
+    for (const [index, code] of value.entries()) {
+      const label = sectionTypeLabel(code, `${at}[${index}]`);
+      const held = picker.held(label);
+
+      await expect(async () => {
+        if ((await held.count()) > 0) return;
+
+        await this.page.keyboard.press('Escape');
+        await picker.search.click({ ...NO_NAVIGATION, timeout: OPENS_WITHIN });
+        await picker.search.pressSequentially(label);
+        await picker.search.press('Enter');
+        await expect(held).toBeVisible({ timeout: OPENS_WITHIN });
+      }, `${at}: "${label}" could not be picked. The morphology may have no such sections.`).toPass();
+    }
+
+    // The list stays open after a pick and covers the fields below.
+    await this.page.keyboard.press('Escape');
   }
 
   /**
