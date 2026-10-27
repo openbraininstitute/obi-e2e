@@ -4,7 +4,7 @@ import { entityListing } from '@locators/listing';
 import { workflowBrowse, workflowsHub, workspaceNav } from '@locators/workflows';
 import { expect, type Locator, type Page } from '@playwright/test';
 
-import { NO_NAVIGATION } from '../interactions';
+import { clickUntil, NO_NAVIGATION } from '../interactions';
 import { routes } from '../routes';
 import type { ScanConfigSelection } from '../scan-config';
 
@@ -133,23 +133,34 @@ export async function chooseEntities(
 
   if (selection.mode === 'none') return null;
 
-  if (selection.scope) {
-    await browse.scope(selection.scope).click(NO_NAVIGATION);
-  }
-
+  // The prerequisite is a page of its own, ahead of the listing and its scope
+  // tabs: the EM circuit build asks for the dataset before it shows a morphology.
   if (selection.mode === 'multiple' && selection.prerequisite) {
     await browse.prerequisite(selection.prerequisite).click(NO_NAVIGATION);
   }
 
   await expect(listing.table).toBeVisible();
 
+  // Clicked until the tab reports itself active: a click the listing drops
+  // while it is still settling leaves the search on the public scope, where a
+  // project's own entity is never found.
+  if (selection.scope) {
+    await clickUntil(browse.scope(selection.scope), browse.activeScope(selection.scope));
+  }
+
   for (const name of selection.entities) {
     await listing.search.fill(name);
     await expect(listing.resultCount).toBeVisible();
 
-    const named = listing.rows.filter({ hasText: name });
-    // The name's first row, unless one id was asked for: the search matches by substring.
-    const row = (rowId ? named.and(page.locator(`[row-id="${rowId}"]`)) : named).first();
+    // The name's first row, unless one id was asked for: the search matches by
+    // substring, and the id alone names the row then. What the search box finds
+    // need not be what the row shows — a skeletonized morphology is found by
+    // the neuron id in its description and shown under its mesh's id.
+    const row = (
+      rowId
+        ? listing.rows.and(page.locator(`[row-id="${rowId}"]`))
+        : listing.rows.filter({ hasText: name })
+    ).first();
     if (!(await appears(row))) {
       return `This project holds no "${name}" to build from.`;
     }

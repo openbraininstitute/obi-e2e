@@ -462,18 +462,32 @@ describe('buildParentCard', () => {
   test('carries the data the whole thread is about', () => {
     const facts = factsOf(buildParentCard(threadEnv));
 
-    expect(facts.slice(0, 5)).toEqual([
+    expect(facts.slice(0, 4)).toEqual([
       { title: 'Run', value: '2026-09-18-schedule-1fe9550' },
       { title: 'Trigger', value: 'Scheduled' },
-      { title: 'Environment', value: 'staging' },
       // No release, so the only sha here is this repository's own.
       { title: 'e2e-commit', value: '1fe9550' },
       { title: 'Suites', value: 'regular, slow' },
     ]);
-    expect(facts[5]).toMatchObject({ title: 'Started' });
-    expect((facts[5] as { value: string }).value).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC$/);
+    expect(facts[4]).toMatchObject({ title: 'Started' });
+    expect((facts[4] as { value: string }).value).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC$/);
     // The token lives in the badge row below, not among the facts.
     expect(facts).not.toContain('{{BADGES}}');
+  });
+
+  test('shows the environment as a tag, the way the Finished row shows a suite', () => {
+    const row = collect(
+      buildParentCard(threadEnv),
+      (node) =>
+        Array.isArray(node.items) &&
+        (node.items[0] as { text?: string } | undefined)?.text === 'Environment'
+    )[0] as { items: unknown[] };
+
+    expect(row.items).toHaveLength(2);
+    expect(row.items[1]).toMatchObject({ type: 'Badge', text: 'staging', style: 'Accent' });
+    expect(factsOf(buildParentCard(threadEnv))).not.toContainEqual(
+      expect.objectContaining({ title: 'Environment' })
+    );
   });
 
   test('ends the badge row with the token, after its label', () => {
@@ -535,9 +549,11 @@ describe('buildParentCard', () => {
       actions: { type: string; url: string }[];
     };
 
+    // The deployment twice: in the header, and as the Environment row's tag.
     expect(collect(card, (node) => node.type === 'Badge').map((item) => item.text)).toEqual([
       'staging',
       'Scheduled',
+      'staging',
     ]);
     expect(card.actions).toHaveLength(1);
     expect(card.actions[0]).toMatchObject({

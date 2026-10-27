@@ -4,9 +4,10 @@ The Synaptome build workflow, under Build on the Workflows page. obi-one
 describes the form, and the seed fills it in.
 
 The seed holds two configurations, and each one becomes a test of its own. One
-fills the form through its fields; the other places its synapses by clicking the
-morphology in the 3D viewer. The seed also says which deployments the workflow
-runs on, so no line here does.
+fills the form through its fields, naming the section types its random
+locations may land on — the form holds none until they are picked; the other
+places its synapses by clicking the morphology in the 3D viewer. The seed also
+says which deployments the workflow runs on, so no line here does.
 
 User: credits
 Seed: seed.json

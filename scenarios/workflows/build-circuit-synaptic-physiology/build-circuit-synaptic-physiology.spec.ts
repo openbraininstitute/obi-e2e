@@ -1,16 +1,16 @@
-import { NO_NAVIGATION } from '@fixtures/interactions';
 import { loadSeed, notDeployedHere, runsOnThisDeployment } from '@fixtures/scan-config';
 import { scanConfigWords } from '@fixtures/scan-config/activities';
 import {
   campaignTags,
   campaignTimeout,
+  registeredId,
   runCampaign,
   runForItsOutput,
 } from '@fixtures/steps/campaign';
 import { chooseEntities, openWorkflowsHub, startWorkflow } from '@fixtures/steps/workflows';
 import { CREDITS } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
-import { scanConfigEditor, scanConfigResults } from '@locators/scan-config';
+import { scanConfigEditor } from '@locators/scan-config';
 import type { Page } from '@playwright/test';
 
 const fixture = loadSeed(import.meta.dir);
@@ -31,25 +31,6 @@ async function openEditor(page: Page): Promise<void> {
   test.skip(missing !== null, missing ?? '');
 
   await expect(page).toHaveURL(new RegExp(`/configure/${fixture.workflow.type}/`));
-}
-
-/**
- * The id of the entity a finished campaign registered under this name.
- *
- * Its card links to its details page, and that address ends with the id. The
- * lab and the project come earlier in it, and are ids too.
- */
-async function registeredId(page: Page, name: string): Promise<string> {
-  const results = scanConfigResults(page);
-
-  await results.file(name).click(NO_NAVIGATION);
-  await expect(results.preview.entity.viewDetails).toBeVisible();
-
-  const address = (await results.preview.entity.viewDetails.getAttribute('href')) ?? '';
-  const id = /\/([0-9a-f-]{36})\/?(?:[?#].*)?$/i.exec(address)?.[1];
-  if (!id) throw new Error(`The card of "${name}" links to "${address}", which names no entity.`);
-
-  return id;
 }
 
 test.describe('Circuit synaptic physiology build', () => {

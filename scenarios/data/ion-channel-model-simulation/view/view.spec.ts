@@ -1,4 +1,5 @@
 import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
+import { clickUntil } from '@fixtures/interactions';
 import { routes } from '@fixtures/routes';
 import { AUTHENTICATED } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
@@ -53,7 +54,12 @@ test.describe('Ion channel details', () => {
       await expect(view.section(name).first()).toBeVisible();
     }
 
-    await view.section('scan-config-tab-configuration').first().click();
+    // The first click after the details page loads: the server sends the tab
+    // before React listens, and a click in that window is dropped.
+    await clickUntil(
+      view.section('scan-config-tab-configuration').first(),
+      view.section('scan-config-root-element-info').first()
+    );
 
     for (const name of SECTIONS) {
       await expect(view.section(name).first()).toBeVisible();

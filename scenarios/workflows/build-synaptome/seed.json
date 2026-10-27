@@ -57,6 +57,7 @@
         "morphology_locations": {
           "basal_locations": {
             "type": "RandomMorphologyLocations",
+            "section_types": [3],
             "number_of_locations": 100,
             "random_seed": 42
           }

@@ -221,6 +221,27 @@ export async function runForItsOutput(
 }
 
 /**
+ * The id of the entity a finished campaign registered under this name.
+ *
+ * Its card links to its details page, and that address ends with the id. The
+ * lab and the project come earlier in it, and are ids too. A second workflow
+ * picks the entity by this id, since every run of a build registers its copy
+ * under the same name.
+ */
+export async function registeredId(page: Page, name: string): Promise<string> {
+  const results = scanConfigResults(page);
+
+  await results.file(name).click(NO_NAVIGATION);
+  await expect(results.preview.entity.viewDetails).toBeVisible();
+
+  const address = (await results.preview.entity.viewDetails.getAttribute('href')) ?? '';
+  const id = /\/([0-9a-f-]{36})\/?(?:[?#].*)?$/i.exec(address)?.[1];
+  if (!id) throw new Error(`The card of "${name}" links to "${address}", which names no entity.`);
+
+  return id;
+}
+
+/**
  * Runs `steps`, failing with `lost` the moment the page loads a new document.
  *
  * Until the campaign is generated, the form is all there is, and it lives in

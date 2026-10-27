@@ -2,6 +2,7 @@
 
 import { test as base, expect } from '@playwright/test';
 
+import { cacheAtlas } from './run/atlas-cache';
 import { testWorkspace } from './run/env';
 import { attachPageProblems, watchPage } from './run/page-problems';
 
@@ -20,6 +21,9 @@ export const test = base.extend<Fixtures>({
   /** Every page keeps the calls that failed under it, for the report to carry. */
   page: async ({ page }, use, testInfo) => {
     watchPage(page);
+    // The atlas comes from the worker's cache after its first fetch, not from
+    // entitycore on every load.
+    await cacheAtlas(page);
     await use(page);
     await attachPageProblems(page, testInfo);
   },
