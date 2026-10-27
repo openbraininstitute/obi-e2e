@@ -9,9 +9,45 @@ here: GitHub runs every YAML file in this folder, whatever its name.
 | ------------------------------- | ----------- | --------------------------- | ---------- |
 | Schedule, 08:00 Zurich time     | staging     | regular and slow            | Teams card |
 | Push to `main` (merged PR)      | preview     | regular and slow            | Teams card |
+| Push to `release` (merged PR)   | staging     | regular and slow            | Teams card |
 | `core-web-app-release` dispatch | staging     | regular and slow            | Teams card |
 | `core-web-app-main` dispatch    | preview     | regular                     | Teams card |
 | Manual run                      | your choice | regular, and slow if ticked | Teams card |
+
+## Two branches
+
+The preview serves the web app's `main`; staging and production serve a
+release, which is days behind it. So the tests have two branches too, and each
+target runs the branch written for the app it has:
+
+| Target                 | App it serves     | Tests it runs |
+| ---------------------- | ----------------- | ------------- |
+| preview                | web app `main`    | `main`        |
+| staging and production | a web app release | `release`     |
+
+Where a change goes:
+
+- A test for a new or changed feature: a PR to `main`. It runs on the preview
+  now, and reaches staging with the next web app release.
+- A fix for a test that fails on staging or production: a PR to `release`. It
+  runs on staging as soon as it merges.
+
+People merge between the branches, always as a pull request. Nothing merges on
+its own:
+
+- At each web-app release, the `release-branch` job of `e2e.yml` opens the
+  pull request `main` → `release`, named after the release, so it cannot be
+  forgotten. Someone reads it and merges it; staging then runs the tests
+  written for the new app. Conflicts show in that PR, like in any PR.
+- After a fix is merged to `release`, its author opens `release` → `main` and
+  merges it, so the fix is not lost at the next release PR.
+
+The first run after the job lands creates `release` from `main`. The reporting
+scripts under `scripts/ci/` run from the branch that was checked out, so a
+change to them reaches staging runs with the next release PR too.
+
+One thing to accept: a test fix merged to `main` alone does not reach staging
+until the next release PR. Merge it to `release` when staging needs it.
 
 GitHub reads cron in UTC and has no time zones, so the schedule lists both
 06:00 and 07:00 UTC, and the run that is not 08:00 in Zurich that day plans

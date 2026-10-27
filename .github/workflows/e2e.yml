@@ -16,7 +16,9 @@ on:
     - cron: '0 6 * * *'
     - cron: '0 7 * * *'
   push:
-    branches: [main]
+    # `main` is tested on the preview, `release` on staging: see "Two branches"
+    # in README.md.
+    branches: [main, release]
   workflow_dispatch:
     inputs:
       environment:
@@ -79,7 +81,7 @@ concurrency:
     ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch'
         && format('manual-{0}', inputs.environment)
         || github.event.action == 'core-web-app-main' && 'core-web-app-main'
-        || github.event_name == 'push' && 'push-main'
+        || github.event_name == 'push' && format('push-{0}', github.ref_name)
         || github.run_id }}
   cancel-in-progress: >-
     ${{ github.event_name == 'workflow_dispatch' || github.event.action == 'core-web-app-main'
@@ -113,6 +115,7 @@ jobs:
           RELEASE: ${{ github.event.client_payload.release }}
           RELEASE_COMMIT: ${{ github.event.client_payload.commit }}
           SHA: ${{ github.sha }}
+          REF: ${{ github.ref_name }}
           RUN: ${{ github.run_id }}
           PREVIEW_APP_URI: ${{ vars.PREVIEW_APP_URI }}
           STAGING_APP_URI: ${{ vars.STAGING_APP_URI }}
@@ -147,11 +150,13 @@ jobs:
                 '[{name:$env,environment:$env,grep:$grep}]')
               slow=$([[ "$INPUT_SLOW" == true ]] && echo true || echo false) ;;
             *)
-              # A push to this repository: a merged PR is tested against the main
-              # preview. Only the manual arm reads an input, and only a manual
-              # dispatch can set one, so production stays unreachable from
-              # anything automatic.
-              runs=$(jq -cn '[{name:"preview",environment:"preview",grep:""}]')
+              # A push to this repository: a PR merged to `main` is tested against
+              # the main preview, one merged to `release` against staging, the
+              # deployment that branch is for. Only the manual arm reads an input,
+              # and only a manual dispatch can set one, so production stays
+              # unreachable from anything automatic.
+              env=$([[ "$REF" == release ]] && echo staging || echo preview)
+              runs=$(jq -cn --arg env "$env" '[{name:$env,environment:$env,grep:""}]')
               slow=true ;;
           esac
 
@@ -178,8 +183,58 @@ jobs:
             echo "started=$now"
           } >> "$GITHUB_OUTPUT"
 
-  run:
+  # The `release` branch is what staging and production run (README.md, "Two
+  # branches"). Nothing here merges: people merge. This job only makes sure the
+  # branch exists, and on a web-app release opens the pull request `main` →
+  # `release` so that the update cannot be forgotten. Always runs, and does
+  # nothing on most events, so `run` can wait on it without an `always()`.
+  release-branch:
     needs: matrix
+    if: needs.matrix.outputs.runs != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      # The first run after this job lands finds no `release` branch: it starts
+      # as a copy of `main`, so that day's staging run is what it was yesterday.
+      - name: Create release from main the first time
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/release" > /dev/null 2>&1 && exit 0
+          main=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)
+          gh api -X POST "repos/$GITHUB_REPOSITORY/git/refs" -f ref=refs/heads/release -f sha="$main" > /dev/null
+          echo "Created release from main ($main)." >> "$GITHUB_STEP_SUMMARY"
+
+      # One open PR at a time: a second release while it waits only reports.
+      # Nothing to open when `release` already has everything `main` has.
+      - name: Open the release pull request
+        if: github.event.action == 'core-web-app-release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE: ${{ github.event.client_payload.release }}
+          RELEASE_URL: ${{ github.event.client_payload.release_url }}
+        run: |
+          set -euo pipefail
+          open=$(gh pr list --repo "$GITHUB_REPOSITORY" --base release --head main --json url --jq '.[0].url')
+          if [[ -n "$open" ]]; then
+            echo "::notice::The release pull request is already open: $open"
+            exit 0
+          fi
+          ahead=$(gh api "repos/$GITHUB_REPOSITORY/compare/release...main" --jq .ahead_by)
+          if [[ "$ahead" == 0 ]]; then
+            echo "release already has everything main has; no pull request to open." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          url=$(gh pr create --repo "$GITHUB_REPOSITORY" --base release --head main \
+            --title "Release $RELEASE: update the staging tests" \
+            --body "The web app released [$RELEASE]($RELEASE_URL) to staging. Merge this so staging and production run the tests written for it. Resolve any conflict here.")
+          echo "Opened $url" >> "$GITHUB_STEP_SUMMARY"
+
+  run:
+    needs: [matrix, release-branch]
     if: needs.matrix.outputs.runs != '[]'
     runs-on: ubuntu-latest
     permissions:
@@ -239,7 +294,12 @@ jobs:
       # What a restart on a new build runs: the suites this run runs.
       E2E_RESTART_SLOW: ${{ needs.matrix.outputs.slow }}
     steps:
+      # The preview runs the tests of `main`; staging and production run the
+      # tests of `release`, which `release-branch` above has just brought up to
+      # date for a web-app release.
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ matrix.run.environment == 'preview' && github.sha || 'release' }}
 
       - uses: oven-sh/setup-bun@v2
         with:
