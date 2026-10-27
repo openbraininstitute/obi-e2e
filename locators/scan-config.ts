@@ -321,6 +321,48 @@ export function scanConfigEModelMechanisms(page: Page) {
   };
 }
 
+/**
+ * What obi-one calls each SWC section type it offers, keyed by the code the
+ * schema takes (`section_types`, an `enum` of 3 and 4).
+ *
+ * ponytail: copied from obi-one's `app/services/morphology_section_types.py`,
+ * so a relabelled type breaks the lookup until this is updated. The control
+ * marks neither its options nor its tags, so the label is all there is to
+ * pick by; a test id keyed by the code retires the table.
+ */
+const SECTION_TYPE_LABELS: Record<number, string> = {
+  3: 'Basal dendrite',
+  4: 'Apical dendrite',
+};
+
+/** The label a section type code is offered under, or a failure naming the ones known. */
+export function sectionTypeLabel(code: unknown, at: string): string {
+  const label = typeof code === 'number' ? SECTION_TYPE_LABELS[code] : undefined;
+  if (label === undefined) {
+    throw new Error(
+      `${at}: a section type is its SWC code, one of ` +
+        `${Object.keys(SECTION_TYPE_LABELS).join(', ')}; got ${JSON.stringify(code)}.`
+    );
+  }
+  return label;
+}
+
+/**
+ * The section types a placement strategy may generate locations on.
+ *
+ * An antd multi-select with no mark of its own: its search box is the
+ * combobox, read-only until clicked, and it filters on the label. A value it
+ * holds is a tag titled with that label. The dropdown is portaled out of the
+ * field, so a title inside the field is only ever a tag — what proves a pick
+ * took.
+ */
+export function scanConfigSectionTypes(field: Locator) {
+  return {
+    search: field.getByRole('combobox'),
+    held: (label: string): Locator => field.getByTitle(label, { exact: true }),
+  };
+}
+
 /** Quotes a value so it can sit inside an attribute selector. */
 export function cssEscape(value: string): string {
   return value.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
