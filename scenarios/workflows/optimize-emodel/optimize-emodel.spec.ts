@@ -23,6 +23,11 @@ const [extraction] = targets.cases;
 test.skip(!runsOnThisDeployment(fixture), notDeployedHere(fixture));
 test.skip(!runsOnThisDeployment(targets), notDeployedHere(targets));
 
+// Off since 27 Oct 2026: obi-one rejects the seed's "gNaTgbar" conductance ("the model offers
+// no parameter"), on staging and the preview alike. Delete this line once the seed names the
+// parameters the model offers, or obi-one offers these again.
+test.skip(true, 'E-model optimization is off while obi-one rejects the seed (gNaTgbar).');
+
 // Every campaign case extracts its targets first, so the clock covers both runs.
 test.describe.configure({ timeout: campaignTimeout(targets) + campaignTimeout(fixture) });
 

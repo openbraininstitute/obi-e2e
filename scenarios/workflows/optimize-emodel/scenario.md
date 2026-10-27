@@ -29,6 +29,10 @@ says which deployments the workflow runs on, so no line here does.
 User: credits
 Seed: seed.json
 
+Off since 27 Oct 2026: obi-one rejects the seed's `gNaTgbar` conductance ("the
+model offers no parameter"), so both tests skip with that reason until the seed
+and the model agree again. The tests stay as they are.
+
 ## The form will not launch until it is complete
 
 Precondition:
