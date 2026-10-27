@@ -133,12 +133,14 @@ export async function chooseEntities(
 
   if (selection.mode === 'none') return null;
 
-  if (selection.scope) {
-    await browse.scope(selection.scope).click(NO_NAVIGATION);
-  }
-
+  // The prerequisite is a page of its own, ahead of the listing and its scope
+  // tabs: the EM circuit build asks for the dataset before it shows a morphology.
   if (selection.mode === 'multiple' && selection.prerequisite) {
     await browse.prerequisite(selection.prerequisite).click(NO_NAVIGATION);
+  }
+
+  if (selection.scope) {
+    await browse.scope(selection.scope).click(NO_NAVIGATION);
   }
 
   await expect(listing.table).toBeVisible();

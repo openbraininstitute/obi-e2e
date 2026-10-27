@@ -7,10 +7,11 @@ over a circuit.
 The workflow sits behind a feature flag, which the seed names. The flag is set
 before the page loads, because the hub renders the card disabled otherwise.
 
-The seed says what a coordinate holds the moment it is generated. It says
-nothing about the finished one: the array it builds is named after the circuit
-it came from, and that name is different on every deployment. So the finished
-run is only asked to have produced something.
+The seed says what a coordinate holds the moment it is generated, and what the
+finished one holds: the probe's weights, its electrode locations, a picture of
+the array, and the array obi-one registers. That array is named after the
+circuit's id rather than its name, and the id differs on every deployment, so
+the seed names it by its start.
 
 The seed also says which deployments the workflow runs on, so no line here does.
 
@@ -76,5 +77,6 @@ Steps:
 Expected:
 
 - The coordinate leaves "created"
-- The coordinate reaches "done" (within 5 minutes)
-- It has produced something
+- The coordinate reaches "done" (within 6 minutes)
+- Its inputs are exactly: "Task configuration", "obi_one_coordinate.json"
+- Its outputs are exactly: "Task logs", the recording array, "weights.h5", "electrode_locations.json", "electrode_array.png"

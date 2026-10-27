@@ -15,6 +15,19 @@ const LOG_FILE = 'Task logs';
  */
 const FILES_SETTLE_WITHIN = 60_000;
 
+/**
+ * A seed names a file exactly, or by its start with a trailing `*`: the
+ * recording array obi-one registers is named after the circuit's id, which
+ * differs on every deployment.
+ */
+const PREFIX = '*';
+
+function fileSelector(name: string): string {
+  return name.endsWith(PREFIX)
+    ? `[data-file-name^="${name.slice(0, -PREFIX.length)}"]`
+    : `[data-file-name="${name}"]`;
+}
+
 async function checkFiles(panel: Locator, names: string[]): Promise<void> {
   const files = panel.locator('[data-file-name]');
 
@@ -25,12 +38,20 @@ async function checkFiles(panel: Locator, names: string[]): Promise<void> {
     const shown = await files.evaluateAll((items) =>
       items.map((item) => item.getAttribute('data-file-name') ?? '')
     );
-    expect(shown.toSorted()).toEqual(names.toSorted());
+    expect(shown.map((file) => asNamed(file, names)).toSorted()).toEqual(names.toSorted());
   }).toPass({ timeout: FILES_SETTLE_WITHIN });
 
   for (const name of names) {
-    await expect(panel.locator(`[data-file-name="${name}"]`)).toBeVisible();
+    await expect(panel.locator(fileSelector(name))).toBeVisible();
   }
+}
+
+/** The name the seed gives a shown file: its prefix entry when one covers it, else itself. */
+export function asNamed(file: string, names: string[]): string {
+  return (
+    names.find((name) => name.endsWith(PREFIX) && file.startsWith(name.slice(0, -PREFIX.length))) ??
+    file
+  );
 }
 
 /** Checks the input and output files listed right after generation. */

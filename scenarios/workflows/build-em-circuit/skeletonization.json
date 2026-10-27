@@ -1,0 +1,45 @@
+{
+  "name": "EM mesh skeletonization of one MICrONS neuron, for the circuit build",
+  "activity": "process",
+  "env": ["staging", "production"],
+  "workflow": {
+    "label": "EM mesh skeletonization",
+    "type": "skeletonization-campaign"
+  },
+  "schemaName": "SkeletonizationScanConfig",
+  "selection": {
+    "mode": "multiple",
+    "entities": ["microns_v1718_864691135476581440"],
+    "scope": "public"
+  },
+  "cases": [
+    {
+      "name": "the MICrONS neuron 864691135476581440, without the raw spines",
+      "config": {
+        "info": {
+          "type": "Info",
+          "campaign_name": "E2E skeletonization for the EM circuit build",
+          "campaign_description": "Skeletonizes one MICrONS mesh so the EM circuit build has a morphology to map synapses onto."
+        },
+        "initialize": {
+          "type": "SkeletonizationScanConfig.Initialize",
+          "neuron_voxel_size": 0.1,
+          "spines_voxel_size": 0.1,
+          "write_raw_spines": false
+        }
+      },
+      "expect": {
+        "coordinateCount": 1,
+        "generated": {
+          "inputs": ["obi_one_coordinate.json"],
+          "outputs": []
+        },
+        "completed": {
+          "inputs": ["Task configuration", "obi_one_coordinate.json"],
+          "outputs": ["Task logs", "Skeletonized morphology"],
+          "within": 30
+        }
+      }
+    }
+  ]
+}

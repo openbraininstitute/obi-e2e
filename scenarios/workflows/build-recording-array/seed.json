@@ -43,6 +43,17 @@
         "generated": {
           "inputs": ["obi_one_coordinate.json"],
           "outputs": []
+        },
+        "completed": {
+          "within": 6,
+          "inputs": ["Task configuration", "obi_one_coordinate.json"],
+          "outputs": [
+            "Task logs",
+            "Extracellular Recording Array for *",
+            "weights.h5",
+            "electrode_locations.json",
+            "electrode_array.png"
+          ]
         }
       }
     }

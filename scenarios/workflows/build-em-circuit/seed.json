@@ -28,7 +28,15 @@
         }
       },
       "expect": {
-        "coordinateCount": 1
+        "coordinateCount": 1,
+        "generated": {
+          "inputs": ["obi_one_coordinate.json"],
+          "outputs": []
+        },
+        "completed": {
+          "inputs": ["Task configuration", "obi_one_coordinate.json"],
+          "outputs": ["Task logs", "Afferent-synaptome-864691135476581440"]
+        }
       }
     }
   ]
