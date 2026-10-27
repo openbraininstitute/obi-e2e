@@ -37,7 +37,7 @@
         "completed": {
           "inputs": ["Task configuration", "obi_one_coordinate.json"],
           "outputs": ["Task logs", "Skeletonized morphology"],
-          "within": 30
+          "within": 15
         }
       }
     }

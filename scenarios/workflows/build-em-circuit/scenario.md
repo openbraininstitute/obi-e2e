@@ -12,12 +12,11 @@ tab, picks the dataset first and the morphology under it: obi-one names the
 morphology after the mesh's id and describes it by the neuron's, which is what
 the seed searches for.
 
-The seed names no deployment, so the workflow runs nowhere yet and this file is
-skipped on staging and on production both. On 27 Oct 2026 the chain got as far
-as the build's browse step: the skeletonization of the MICrONS mesh took about
-nine minutes and 900 credits, more than a nightly project can spare, and the
-morphology it registered was not offered under the dataset afterwards. Naming
-a deployment in the seed is what turns it on, once the data is there.
+The seed marks the case slow: the skeletonization alone costs about 900
+credits and seven to nine minutes, more than a nightly project spares, so the
+chain runs in the slow job, whose project needs at least 1 000 credits
+(`E2E_SLOW_PROJECT_CREDITS`). The build itself takes under two minutes and one
+credit. Measured on main.preview on 27 Oct 2026, 8.4 minutes end to end.
 
 Launching prices the build first: the estimate is shown and has to be confirmed
 before anything starts.
@@ -81,4 +80,5 @@ Expected:
 
 - The coordinate leaves "created"
 - The coordinate reaches "done" (within 5 minutes)
-- It has produced something
+- Its inputs are exactly: "Task configuration", "obi_one_coordinate.json", "Circuit directory"
+- Its outputs are exactly: "Task logs", "Afferent-synaptome-864691135476581440"
