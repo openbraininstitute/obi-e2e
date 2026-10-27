@@ -4,6 +4,7 @@ import { test as base, expect } from '@playwright/test';
 
 import { testWorkspace } from './run/env';
 import { attachPageProblems, watchPage } from './run/page-problems';
+import { logRequests } from './run/request-log';
 
 type Workspace = { labId: string; projectId: string };
 
@@ -20,6 +21,7 @@ export const test = base.extend<Fixtures>({
   /** Every page keeps the calls that failed under it, for the report to carry. */
   page: async ({ page }, use, testInfo) => {
     watchPage(page);
+    logRequests(page, testInfo);
     await use(page);
     await attachPageProblems(page, testInfo);
   },
