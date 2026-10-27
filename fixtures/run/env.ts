@@ -283,7 +283,12 @@ export function testWorkspace(): { labId: string; projectId: string } {
 
 const MEMORY_PER_WORKER_GB = 1.5;
 
-const MAX_WORKERS = 8;
+/**
+ * Against a deployment. Eight workers took staging's database to 91 % CPU and
+ * failed 17 listing tests on load alone (27 Oct 2026, docs/entitycore-cost.md);
+ * CI's 2-core runner gives two. Four keeps a local full run honest.
+ */
+const MAX_WORKERS = 4;
 
 /**
  * A local server is a Next dev server: one process, compiling each route the
