@@ -46,9 +46,17 @@ Where the bytes go (decoded; on the wire the atlas is gzipped about 7:1, e.g.
 | `cell-morphology`                         |      312 |   8 |    867 |  4 895 |
 
 The atlas alone (`regions` + `hierarchy`) is 727 requests and **64 % of every
-byte** entitycore sent. It is fetched on 204 of the 347 visits, about twice per
-visit, and nothing survives a reload: the app keeps it in React Query memory
-and entitycore sends no `Cache-Control`.
+byte** entitycore sent, decoded. On the wire it is a sixth of that: since
+entitycore 2026.10.4 (prod-platform-architecture#225, 23 Oct) the responses are
+zstd-compressed (220 KB for the 1.87 MB BBP regions page), carry an `ETag` with
+`Cache-Control: private, no-cache`, and `regions` is cached on the server for an
+hour. A browser that already holds the page revalidates and gets a `304` with
+no body (checked with `curl`: 0 bytes, 0.3 s); the app's atlas fetch sets no
+`no-store`, so real users get that. **The suite never does**: all 786 atlas
+responses in this run were `200`, because Playwright gives every test a fresh
+browser context with an empty cache. The 676 MB is the suite's own cost, not a
+missing server cache. "Twice per visit" is pagination: `regions` comes in two
+pages of 1 000.
 
 Where the time goes (109 responses took over 3 s):
 
@@ -124,8 +132,9 @@ What this says:
 - **Task memory steps up and does not come back.** 24 % at rest, 35 % after
   the 2-worker CI run, 54 % (2.2 GB of 4) after mine, flat afterwards. Each
   run leaves the process larger: this is the shape behind the OOM restarts in
-  #225, and the atlas payloads (1.9 MB decoded, 727 times) are the likeliest
-  weight.
+  #225. What holds it is **not checked**; the 23 Oct status in #225 saw the
+  same 45–48 % during e2e runs before the compression release and ≤ 26 % after
+  it, so this run, at 8 workers, pushed past that again.
 - **Latency at the ALB is fine; the slow responses are inside the server.**
   Target p95 stayed under 1 s at the load balancer, while the browser saw
   4–6 s p95 on the facet listings. The difference is queueing in the single
@@ -135,10 +144,11 @@ What this says:
 
 ## 2. What should change in obi-e2e
 
-1. **Cache the atlas per worker.** `regions` and `hierarchy` are static for a
-   deployment. A `page.route` in the `page` fixture that answers them from
-   memory after the worker's first fetch removes 727 requests and 676 MB per
-   run, 64 % of the bytes, with no change to what the tests see. Reasoned, not
+1. **Cache the atlas per worker.** Each test starts with an empty browser
+   cache, so the server's `ETag` never earns a `304` here. A `page.route` in the
+   `page` fixture that answers `regions` and `hierarchy` from memory after the
+   worker's first fetch removes 727 requests and 676 MB decoded (about 110 MB
+   on the wire) per run, with no change to what the tests see. Reasoned, not
    measured.
 2. **Fewer page loads of the same listing.** Every browse spec opens its
    listing in `beforeEach`, 4–5 times per file: 347 visits for 258 tests.
@@ -154,17 +164,17 @@ What this says:
 
 ## 3. What should change in entitycore or core-web-app
 
-| Where               | What                                                                                                                                                                                                 | Evidence                                          |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| entitycore          | `Cache-Control` and `ETag` on `brain-atlas/{id}/regions` and `brain-region-hierarchy/{id}/hierarchy`: static per deployment, 1.9 MB decoded, served 727 times in one run                             | §1, bytes table                                   |
-| core-web-app        | Fetch the atlas once per page load, not twice, and keep it across loads (persisted query cache)                                                                                                      | 4 × regions and 3 × hierarchy per Data page visit |
-| core-web-app        | The circuit listing calls `/circuit` 13 times per visit (0.9 MB each)                                                                                                                                | 244 requests, 226 MB, 9 visits                    |
-| entitycore          | `cell-morphology` listing with facets: 4.4 s even for `page_size=0`, so the facet aggregation is the cost; same shape on `ion-channel-recording` (p95 4.1 s) and `electrical-cell-recording` (2.7 s) | time table, direct calls                          |
-| entitycore          | 238-byte `hierarchy` answers taking 8–21 s under load: the service or its database saturates before any payload is involved                                                                          | direct calls                                      |
-| entitycore          | `single-neuron-synaptome` p95 5.8 s; `cell-composition …/download` p95 8.6 s (asset redirect)                                                                                                        | time table                                        |
-| virtual-lab-manager | Second-largest caller: 3 182 requests, p95 2.1 s; not in the scope of #225 but it shares every page load                                                                                             | service table                                     |
-| entitycore          | The task's memory grows by about 10 % of 4 GB per suite and never comes back: look for a per-process cache of the atlas, or move entitycore off a single 1 vCPU task                                 | ECS memory 24 → 35 → 54 %                         |
-| infra               | `db.t4g.medium` runs at 56 % average and 91 % peak CPU under 8 workers, 35 % under the nightly; the facet queries need an index or a materialized count before a bigger instance                     | RDS CPU                                           |
+| Where               | What                                                                                                                                                                                                                                                                 | Evidence                                          |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| entitycore          | Already done on staging (2026.10.4): zstd, `ETag`, server cache on `regions`. Left to promote to production, as #225 lists. Nothing more asked here                                                                                                                  | `curl`: 220 KB on the wire, `304` on revalidation |
+| core-web-app        | Keep the atlas across page loads: the browser revalidates (`304`), but the app still re-parses 1.9 MB of JSON per atlas on every load; a persisted query cache or a per-atlas cache like the one `mtype` already uses (`cache: { ttlInSeconds: 86_400 }`) skips both | regions + hierarchy on 204 of 347 visits          |
+| core-web-app        | The circuit listing calls `/circuit` 13 times per visit (0.9 MB each)                                                                                                                                                                                                | 244 requests, 226 MB, 9 visits                    |
+| entitycore          | `cell-morphology` listing with facets: 4.4 s even for `page_size=0`, so the facet aggregation is the cost; same shape on `ion-channel-recording` (p95 4.1 s) and `electrical-cell-recording` (2.7 s)                                                                 | time table, direct calls                          |
+| entitycore          | 238-byte `hierarchy` answers taking 8–21 s under load: the service or its database saturates before any payload is involved                                                                                                                                          | direct calls                                      |
+| entitycore          | `single-neuron-synaptome` p95 5.8 s; `cell-composition …/download` p95 8.6 s (asset redirect)                                                                                                                                                                        | time table                                        |
+| virtual-lab-manager | Second-largest caller: 3 182 requests, p95 2.1 s; not in the scope of #225 but it shares every page load                                                                                                                                                             | service table                                     |
+| entitycore          | The task's memory grows by about 10 % of 4 GB per suite and never comes back: look for a per-process cache of the atlas, or move entitycore off a single 1 vCPU task                                                                                                 | ECS memory 24 → 35 → 54 %                         |
+| infra               | `db.t4g.medium` runs at 56 % average and 91 % peak CPU under 8 workers, 35 % under the nightly; the facet queries need an index or a materialized count before a bigger instance                                                                                     | RDS CPU                                           |
 
 Not measured: which 4xx the target returned, response sizes on the wire for
 anything but the BBP atlas, the same run at 2 workers, and the split of the
