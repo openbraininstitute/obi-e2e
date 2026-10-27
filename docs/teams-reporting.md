@@ -11,6 +11,7 @@ and post them
 │  Run       2026-09-18-schedule-1fe9550-staging │
 │  Suites    regular, slow                       │
 │  Started   06:00 UTC                           │
+│  Environment  [staging]                        │  ← a tag, like the suites
 │  Finished  [Regular ✓] [Slow ✗]                │  ← badges grow
 └────────────────────────────────────────────────┘
    └─ reply: the regular suite's summary card
