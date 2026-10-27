@@ -188,6 +188,23 @@ export function fact(title: string, value: string) {
   return { title, value };
 }
 
+/** A small label with tags flowing after it: what a fact looks like when its value is a badge. */
+export function labelledRow(label: string, items: unknown[]) {
+  return {
+    type: 'Container',
+    spacing: 'Small',
+    layouts: [
+      {
+        type: 'Layout.Flow',
+        horizontalItemsAlignment: 'Left',
+        columnSpacing: 'Small',
+        rowSpacing: 'Small',
+      },
+    ],
+    items: [text(label, { subtle: true, size: 'Small' }), ...items],
+  };
+}
+
 function clamp(value: string, max: number): string {
   return value.length <= max ? value : `${value.slice(0, max - 1)}…`;
 }
@@ -481,7 +498,6 @@ export function buildParentCard(env: NodeJS.ProcessEnv = process.env) {
             fact('Run', env.TEAMS_THREAD_KEY ?? ''),
             fact('Trigger', trigger),
             ...(release ? [fact('Release', release)] : []),
-            fact('Environment', environment),
             // Seven characters, like the seed half of the thread key.
             ...(releaseCommit ? [fact('Commit', releaseCommit.slice(0, 7))] : []),
             fact('e2e-commit', (env.GITHUB_SHA ?? '').slice(0, 7) || 'n/a'),
@@ -491,26 +507,18 @@ export function buildParentCard(env: NodeJS.ProcessEnv = process.env) {
             fact('Started', started),
           ],
         },
+        // A fact's value is text only, and the deployment reads as a tag, the
+        // way the header and the Finished row show it.
+        labelledRow('Environment', [
+          badge(environment, { style: 'Accent', tooltip: 'Deployment under test' }),
+        ]),
       ],
       { spacing: 'Medium' }
     ),
     panel(
-      [
-        {
-          type: 'Container',
-          layouts: [
-            {
-              type: 'Layout.Flow',
-              horizontalItemsAlignment: 'Left',
-              columnSpacing: 'Small',
-              rowSpacing: 'Small',
-            },
-          ],
-          // The label is what keeps the array non-empty before any suite has
-          // reported, so the token can carry its own leading comma.
-          items: [text('Finished', { subtle: true, size: 'Small' }), BADGE_TOKEN],
-        },
-      ],
+      // The label is what keeps the array non-empty before any suite has
+      // reported, so the token can carry its own leading comma.
+      [labelledRow('Finished', [BADGE_TOKEN])],
       { spacing: 'Medium' }
     ),
   ];
