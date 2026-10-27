@@ -1,7 +1,7 @@
 {
   "name": "Electron microscopy circuit build from one MICrONS morphology",
   "activity": "build",
-  "env": [],
+  "env": ["staging"],
   "workflow": {
     "label": "Electron microscopy circuit",
     "type": "em-synapse-mapping-campaign"
@@ -16,6 +16,7 @@
   "cases": [
     {
       "name": "maps synapses onto one morphology",
+      "slow": true,
       "config": {
         "info": {
           "type": "Info",
@@ -28,7 +29,16 @@
         }
       },
       "expect": {
-        "coordinateCount": 1
+        "coordinateCount": 1,
+        "generated": {
+          "inputs": ["obi_one_coordinate.json"],
+          "outputs": []
+        },
+        "completed": {
+          "within": 5,
+          "inputs": ["Task configuration", "obi_one_coordinate.json", "Circuit directory"],
+          "outputs": ["Task logs", "Afferent-synaptome-864691135476581440"]
+        }
       }
     }
   ]

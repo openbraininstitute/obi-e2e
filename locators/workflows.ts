@@ -50,6 +50,10 @@ export function workflowBrowse(page: Page) {
   return {
     scope: (name: 'public' | 'project'): Locator => page.getByTestId(`scope-selector-tab-${name}`),
 
+    /** The same tab, once the listing shows that scope. Both halves are one element. */
+    activeScope: (name: 'public' | 'project'): Locator =>
+      page.getByTestId(`scope-selector-tab-${name}`).and(page.locator('[data-state="active"]')),
+
     // A prerequisite is a card, and different workflows draw it as a radio or a button.
     prerequisite: (name: string): Locator =>
       page.getByRole('radio').or(page.getByRole('button')).filter({ hasText: name }).first(),
