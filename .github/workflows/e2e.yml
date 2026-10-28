@@ -210,6 +210,12 @@ jobs:
 
       # One open PR at a time: a second release while it waits only reports.
       # Nothing to open when `release` already has everything `main` has.
+      #
+      # The pull request is a reminder, not the run: `run` waits on this job, so
+      # a refused PR would leave staging untested. GitHub refuses it while the
+      # repository setting "Allow GitHub Actions to create and approve pull
+      # requests" is off; the step then warns and links the page to open it by
+      # hand, and the run goes on.
       - name: Open the release pull request
         if: github.event.action == 'core-web-app-release'
         env:
@@ -228,10 +234,15 @@ jobs:
             echo "release already has everything main has; no pull request to open." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          url=$(gh pr create --repo "$GITHUB_REPOSITORY" --base release --head main \
+          if url=$(gh pr create --repo "$GITHUB_REPOSITORY" --base release --head main \
             --title "Release $RELEASE: update the staging tests" \
-            --body "The web app released [$RELEASE]($RELEASE_URL) to staging. Merge this so staging and production run the tests written for it. Resolve any conflict here.")
-          echo "Opened $url" >> "$GITHUB_STEP_SUMMARY"
+            --body "The web app released [$RELEASE]($RELEASE_URL) to staging. Merge this so staging and production run the tests written for it. Resolve any conflict here." 2>&1); then
+            echo "Opened $url" >> "$GITHUB_STEP_SUMMARY"
+          else
+            compare="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/compare/release...main?expand=1"
+            echo "::warning::Could not open the release pull request ($url). Open it by hand: $compare"
+            echo "Could not open the release pull request for $RELEASE: $url. [Open it by hand]($compare)." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   run:
     needs: [matrix, release-branch]
