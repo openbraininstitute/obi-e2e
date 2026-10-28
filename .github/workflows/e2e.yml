@@ -229,8 +229,10 @@ jobs:
             echo "::notice::The release pull request is already open: $open"
             exit 0
           fi
-          ahead=$(gh api "repos/$GITHUB_REPOSITORY/compare/release...main" --jq .ahead_by)
-          if [[ "$ahead" == 0 ]]; then
+          # By content, not commits: after a squash merge main still counts commits
+          # ahead of release while both hold the same files (as after #50).
+          tree() { gh api "repos/$GITHUB_REPOSITORY/commits/$1" --jq .commit.tree.sha; }
+          if [[ "$(tree main)" == "$(tree release)" ]]; then
             echo "release already has everything main has; no pull request to open." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
