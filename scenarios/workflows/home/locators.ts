@@ -26,7 +26,9 @@ export const TYPES: Record<
       type: 'ion-channel-build-campaign',
       formerly: 'ion-channel-modeling-campaign',
     },
-    { label: 'Single neuron', type: 'memodel' },
+    // core-web-app #2015 moved the single neuron build into the scan-config
+    // editor, under a campaign type of its own. Drop `formerly` once production has it.
+    { label: 'Single neuron', type: 'memodel-build-campaign', formerly: 'memodel' },
     {
       label: 'Electron microscopy circuit',
       type: 'em-synapse-mapping-campaign',

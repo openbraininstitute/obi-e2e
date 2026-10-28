@@ -2,7 +2,7 @@
 
 import { test as base, expect } from '@playwright/test';
 
-import { cacheAtlas } from './run/atlas-cache';
+import { cacheAtlas, releaseAtlas } from './run/atlas-cache';
 import { testWorkspace } from './run/env';
 import { attachPageProblems, watchPage } from './run/page-problems';
 
@@ -25,6 +25,7 @@ export const test = base.extend<Fixtures>({
     // entitycore on every load.
     await cacheAtlas(page);
     await use(page);
+    await releaseAtlas(page);
     await attachPageProblems(page, testInfo);
   },
 });
