@@ -18,6 +18,7 @@ test.describe('Workflows page', () => {
     for (const category of CATEGORIES) {
       await expect(hub.category(category)).toBeVisible();
     }
+    await expect(hub.category('validate')).toHaveCount(0);
   });
 
   test('Build offers the models it can make', { tag: AUTHENTICATED }, async ({ page }) => {

@@ -1,7 +1,12 @@
 import type { Page } from '@playwright/test';
 
-/** The categories the Workflows page offers, by the name it gives each. */
-export const CATEGORIES = ['build', 'simulate', 'process', 'optimize', 'validate'] as const;
+/**
+ * The categories the Workflows page offers, by the name it gives each.
+ *
+ * Not `validate`: core-web-app #2034 put it behind the `emodel-validation`
+ * feature flag, off by default.
+ */
+export const CATEGORIES = ['build', 'simulate', 'process', 'optimize'] as const;
 
 export type Category = (typeof CATEGORIES)[number];
 
