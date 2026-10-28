@@ -83,7 +83,7 @@ Expected:
 - The optimizations tab opens by itself
 - There are as many coordinates as the seed says
 - The first coordinate reads "created"
-- Its inputs are exactly: "obi_one_coordinate.json"
+- Its inputs are exactly: "OBI-ONE Config"
 - It has produced no outputs yet
 - The launch button reads "Launch optimizations"
 
@@ -112,14 +112,14 @@ Expected:
 
 - The coordinate leaves "created"
 - The coordinate reaches "done" (within 30 minutes)
-- Its inputs are exactly: "Task configuration" and "obi_one_coordinate.json"
-- Its outputs are exactly: "Task logs", the e-model "E2E_cADpyr", the ME-model
+- Its inputs are exactly: "Launch Config" and "OBI-ONE Config"
+- Its outputs are exactly: "Task Log", the e-model "E2E_cADpyr", the ME-model
   built from it, "E2E_cADpyr MEModel", and the optimization's "final.json" and
   "analysis_figures"
 
 Steps:
 
-1. Open "Task logs"
+1. Open "Task Log"
 
 Expected:
 

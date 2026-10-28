@@ -76,25 +76,25 @@
         "generated": {
           "inputs": [
             "Circuit directory",
-            "Stimulus 0_spikes.h5",
-            "node_sets.json",
-            "obi_one_coordinate.json",
-            "simulation_config.json"
+            "Stimulus 0_spikes",
+            "Node sets",
+            "OBI-ONE Config",
+            "SONATA Simulation Config"
           ],
           "outputs": []
         },
         "completed": {
           "inputs": [
             "Circuit directory",
-            "Stimulus 0_spikes.h5",
-            "node_sets.json",
-            "obi_one_coordinate.json",
-            "simulation_config.json"
+            "Stimulus 0_spikes",
+            "Node sets",
+            "OBI-ONE Config",
+            "SONATA Simulation Config"
           ],
-          "outputs": ["Recording 0.h5", "spikes.h5"],
+          "outputs": ["Recording 0", "S1nonbarrel_neurons"],
           "views": {
-            "Recording 0.h5": ["Time (ms)", "Voltage (mV)"],
-            "spikes.h5": ["PopulationS1nonbarrel_neurons", "spikes"]
+            "Recording 0": ["Time (ms)", "Voltage (mV)"],
+            "S1nonbarrel_neurons": ["PopulationS1nonbarrel_neurons", "spikes"]
           }
         }
       }

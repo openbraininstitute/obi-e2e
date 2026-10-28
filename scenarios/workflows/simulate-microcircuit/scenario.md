@@ -61,8 +61,8 @@ Expected:
 - The simulations tab opens by itself
 - There are as many coordinates as the seed says
 - The first coordinate reads "created"
-- Its inputs are exactly: "Circuit directory", "node_sets.json",
-  "obi_one_coordinate.json" and "simulation_config.json"
+- Its inputs are exactly: "Circuit directory", "Node sets",
+  "OBI-ONE Config" and "SONATA Simulation Config"
 - It has produced no outputs yet
 
 Steps:
@@ -97,6 +97,6 @@ Expected:
 
 - The coordinate leaves "created"
 - It reaches "done"
-- Its inputs have gained "Task configuration"
-- Its outputs are exactly: "Task logs" and "spikes.h5"
+- Its inputs have gained "Launch Config"
+- Its outputs are exactly: "Task Log" and "S1nonbarrel_neurons", the spikes of the one population
 - The task log reads "Task execution completed."

@@ -50,7 +50,7 @@ Expected:
 - The results tab opens by itself
 - There are as many coordinates as the seed says
 - The first coordinate reads "created"
-- Its inputs are exactly: "obi_one_coordinate.json"
+- Its inputs are exactly: "OBI-ONE Config"
 - It has produced no outputs yet
 
 Steps:
@@ -78,5 +78,5 @@ Expected:
 
 - The coordinate leaves "created"
 - The coordinate reaches "done" (within 6 minutes)
-- Its inputs are exactly: "Task configuration", "obi_one_coordinate.json"
-- Its outputs are exactly: "Task logs", the recording array, "weights.h5", "electrode_locations.json", "electrode_array.png"
+- Its inputs are exactly: "Launch Config", "OBI-ONE Config"
+- Its outputs are exactly: "Task Log", the recording array, "weights.h5", "electrode_locations.json", "electrode_array.png"

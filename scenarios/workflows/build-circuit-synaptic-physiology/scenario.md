@@ -59,7 +59,7 @@ Expected:
 - The results tab opens by itself
 - There are as many coordinates as the seed says
 - The first coordinate reads "created"
-- Its inputs are exactly: "obi_one_coordinate.json"
+- Its inputs are exactly: "OBI-ONE Config"
 - It has produced no outputs yet
 - The launch button reads "Launch builds"
 
@@ -88,14 +88,14 @@ Expected:
 
 - The coordinate leaves "created"
 - The coordinate reaches "done" (within 5 minutes)
-- Its inputs are exactly: "Task configuration", "obi_one_coordinate.json" and
+- Its inputs are exactly: "Launch Config", "OBI-ONE Config" and
   "Circuit directory"
-- Its outputs are exactly: "Task logs" and the circuit the build registered,
+- Its outputs are exactly: "Task Log" and the circuit the build registered,
   "nbS1-O1-E2PV-maxNsyn-HEX0-L2 (synapse-parameterized)"
 
 Steps:
 
-1. Open "Task logs"
+1. Open "Task Log"
 
 Expected:
 
@@ -139,8 +139,8 @@ Expected:
 
 - The simulations tab opens by itself
 - There is one coordinate, and it reads "created"
-- Its inputs are exactly: "Circuit directory", "node_sets.json",
-  "obi_one_coordinate.json" and "simulation_config.json"
+- Its inputs are exactly: "Circuit directory", "Node sets",
+  "OBI-ONE Config" and "SONATA Simulation Config"
 
 Steps:
 
@@ -149,8 +149,7 @@ Steps:
 Expected:
 
 - The coordinate reaches "done" (within 5 minutes)
-- Its outputs are exactly: "Recording 0.h5" and "spikes.h5"
-- "Recording 0.h5" holds a trace for each of the two neurons,
-  "S1nonbarrel_neurons_0" and "S1nonbarrel_neurons_1", against "Time (ms)" and
+- Its outputs are exactly: "Recording 0" and "S1nonbarrel_neurons", the spikes of the one population
+- "Recording 0" holds the traces of "2 cells recorded", against "Time (ms)" and
   "Voltage (mV)"
-- "spikes.h5" shows the spikes of "PopulationS1nonbarrel_neurons"
+- "S1nonbarrel_neurons" shows the spikes of "PopulationS1nonbarrel_neurons"

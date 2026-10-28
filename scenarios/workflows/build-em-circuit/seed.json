@@ -31,13 +31,13 @@
       "expect": {
         "coordinateCount": 1,
         "generated": {
-          "inputs": ["obi_one_coordinate.json"],
+          "inputs": ["OBI-ONE Config"],
           "outputs": []
         },
         "completed": {
           "within": 5,
-          "inputs": ["Task configuration", "obi_one_coordinate.json", "Circuit directory"],
-          "outputs": ["Task logs", "Afferent-synaptome-864691135476581440"]
+          "inputs": ["Launch Config", "OBI-ONE Config", "Circuit directory"],
+          "outputs": ["Task Log", "Afferent-synaptome-864691135476581440"]
         }
       }
     }

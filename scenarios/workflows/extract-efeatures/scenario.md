@@ -63,7 +63,7 @@ Expected:
 - The extractions tab opens by itself
 - There are as many coordinates as the seed says
 - The first coordinate reads "created"
-- Its inputs are exactly: "obi_one_coordinate.json"
+- Its inputs are exactly: "OBI-ONE Config"
 - It has produced no outputs yet
 
 Steps:
@@ -98,6 +98,6 @@ Expected:
 
 - The coordinate leaves "created"
 - It reaches "done"
-- Its inputs are exactly: "Task configuration", "obi_one_coordinate.json"
-- Its outputs are exactly: "Task logs", "extracted_features.json", "figures"
+- Its inputs are exactly: "Launch Config", "OBI-ONE Config"
+- Its outputs are exactly: "Task Log", "extracted_features.json", "figures"
 - The task log reads "Task execution completed."
