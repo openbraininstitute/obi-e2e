@@ -37,6 +37,18 @@ export async function cacheAtlas(page: Page): Promise<void> {
   await page.route(STATIC_ATLAS, serve);
 }
 
+/**
+ * Lets go of the routes once the test is over.
+ *
+ * A test that ends while a page is still loading leaves `serve` mid-fetch, and
+ * the fetch then fails with "Test ended" outside any test — which Playwright
+ * counts as an error of the run, so a run with every test green still exits 1.
+ * Dropping the routes with their errors ignored is what Playwright asks for.
+ */
+export async function releaseAtlas(page: Page): Promise<void> {
+  await page.unrouteAll({ behavior: 'ignoreErrors' });
+}
+
 async function serve(route: Route): Promise<void> {
   const request = route.request();
   if (request.method() !== 'GET') return route.fallback();

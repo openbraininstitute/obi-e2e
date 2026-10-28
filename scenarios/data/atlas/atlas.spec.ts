@@ -1,6 +1,7 @@
-import { NO_NAVIGATION } from '@fixtures/interactions';
+import { NO_NAVIGATION, untilResponsive } from '@fixtures/interactions';
 import { AUTHENTICATED } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
+import type { Page } from '@playwright/test';
 
 import { atlasPanel, figure } from './locators';
 import { mouseAtlasRoute } from './mouse';
@@ -19,8 +20,19 @@ const A_DENSITY = /Neurons \[\/mm3\][\s~]*[\d,]+/;
  * assertion clock with the skeleton still showing. Reading the page before it
  * has settled is what turned this scenario flaky, and a click sent while the
  * meshes are still being built hangs until the runner is free again.
+ *
+ * The spinner leaves when the meshes have arrived, not when they are painted:
+ * the painting is what holds the thread, so the page is also asked to answer
+ * (`untilResponsive`) before a test touches it, and again before every flip of
+ * the switch, which repaints the whole brain in the other colouring.
  */
 const SETTLES_WITHIN = 150_000;
+
+/** Flips the count/density switch once the page can take the click. */
+async function flip(page: Page): Promise<void> {
+  await untilResponsive(page, SETTLES_WITHIN);
+  await atlasPanel(page).countOrDensity.click(NO_NAVIGATION);
+}
 
 test.describe('The atlas and its neuron counts', () => {
   test.beforeEach(async ({ page, workspace }) => {
@@ -46,6 +58,7 @@ test.describe('The atlas and its neuron counts', () => {
         `The composition panel gave up: "${await atlas.compositionFailed.innerText()}".`
       );
     }
+    await untilResponsive(page, SETTLES_WITHIN);
   });
 
   test(
@@ -67,7 +80,7 @@ test.describe('The atlas and its neuron counts', () => {
     await expect(atlas.counter).toHaveText(A_COUNT);
     const noted = await figure(page);
 
-    await atlas.countOrDensity.click(NO_NAVIGATION);
+    await flip(page);
 
     await expect(atlas.countOrDensity).toHaveAttribute('aria-checked', 'true');
     await expect(atlas.counter).toHaveText(A_DENSITY);
@@ -83,10 +96,10 @@ test.describe('The atlas and its neuron counts', () => {
       await expect(atlas.counter).toHaveText(A_COUNT);
       const noted = await figure(page);
 
-      await atlas.countOrDensity.click(NO_NAVIGATION);
+      await flip(page);
       await expect(atlas.counter).toHaveText(A_DENSITY);
 
-      await atlas.countOrDensity.click(NO_NAVIGATION);
+      await flip(page);
 
       await expect(atlas.countOrDensity).toHaveAttribute('aria-checked', 'false');
       await expect(atlas.counter).toHaveText(A_COUNT);
