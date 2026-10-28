@@ -10,6 +10,7 @@
     "auth": "E2E_RUN_ID=live bun --bun playwright test --project=setup",
     "preflight": "bun scripts/ci/preflight.ts",
     "reclaim": "bun scripts/ci/reclaim.ts",
+    "release": "bun scripts/release.ts",
     "test:ui": "bun --bun playwright test --ui",
     "test:headed": "bun --bun playwright test --headed",
     "test:debug": "bun --bun playwright test --debug",
