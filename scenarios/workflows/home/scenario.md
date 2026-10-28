@@ -20,7 +20,8 @@ Expected:
 - "Simulate" is offered
 - "Process data" is offered
 - "Optimize" is offered
-- "Validate" is offered
+- "Validate" is not offered: it sits behind the `emodel-validation` feature
+  flag, off by default (core-web-app #2034)
 
 ## Build offers the models it can make
 

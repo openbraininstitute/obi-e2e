@@ -25,7 +25,7 @@ Expected:
 - There is a box to search activities by name
 - There is a way to filter the columns
 
-## The category picker offers all six categories
+## The category picker offers all five categories
 
 Precondition:
 
@@ -42,7 +42,8 @@ Expected:
 - "Extract" is offered
 - "Process data" is offered
 - "Optimize" is offered
-- "Validate" is offered
+- Nothing else is offered: "Validate" sits behind the `emodel-validation`
+  feature flag, off by default (core-web-app #2034)
 
 ## The type picker offers the types of the chosen category
 
