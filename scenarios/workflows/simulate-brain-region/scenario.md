@@ -68,8 +68,8 @@ Expected:
 - The simulations tab opens by itself
 - There are as many coordinates as the seed says
 - The first coordinate reads "created"
-- Its inputs are exactly: "circuit_config.json", "node_sets.json",
-  "obi_one_coordinate.json" and "simulation_config.json"
+- Its inputs are exactly: "circuit_config.json", "Node sets",
+  "OBI-ONE Config" and "SONATA Simulation Config"
 - It has produced no outputs yet
 - The launch button reads "Launch simulations"
 

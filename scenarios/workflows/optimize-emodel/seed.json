@@ -214,14 +214,14 @@
       "expect": {
         "coordinateCount": 1,
         "generated": {
-          "inputs": ["obi_one_coordinate.json"],
+          "inputs": ["OBI-ONE Config"],
           "outputs": []
         },
         "completed": {
           "within": 30,
-          "inputs": ["Task configuration", "obi_one_coordinate.json"],
+          "inputs": ["Launch Config", "OBI-ONE Config"],
           "outputs": [
-            "Task logs",
+            "Task Log",
             "E2E_cADpyr",
             "E2E_cADpyr MEModel",
             "final.json",

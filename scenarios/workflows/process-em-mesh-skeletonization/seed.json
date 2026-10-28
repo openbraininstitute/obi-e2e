@@ -31,12 +31,12 @@
       "expect": {
         "coordinateCount": 1,
         "generated": {
-          "inputs": ["obi_one_coordinate.json"],
+          "inputs": ["OBI-ONE Config"],
           "outputs": []
         },
         "completed": {
-          "inputs": ["Task configuration", "obi_one_coordinate.json"],
-          "outputs": ["Task logs", "Skeletonized morphology"],
+          "inputs": ["Launch Config", "OBI-ONE Config"],
+          "outputs": ["Task Log", "Skeletonized morphology"],
           "views": {
             "Skeletonized morphology": {
               "Brain Region": "Temporal lobe",

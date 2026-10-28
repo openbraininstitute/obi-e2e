@@ -6,7 +6,7 @@ import { expect, type Locator, type Page } from '@playwright/test';
 import { NO_NAVIGATION } from '../interactions';
 import type { ScanConfigCase, ScanConfigView } from '../scan-config';
 
-const LOG_FILE = 'Task logs';
+const LOG_FILE = 'Task Log';
 
 /**
  * How long a file list may take to settle once the run has finished. The
@@ -28,13 +28,36 @@ function fileSelector(name: string): string {
     : `[data-file-name="${name}"]`;
 }
 
+/**
+ * Opens every shut group in a panel.
+ *
+ * A simulation folds its files into groups — "Circuit", "Simulation",
+ * "Simulation Result" — that start shut and render no file row until opened;
+ * a build lists its files flat, and then there is nothing to open. A group's
+ * button is the only one in the panel that says whether it is expanded.
+ *
+ * Picked by the attribute, not its value: a locator re-resolves on every use,
+ * so one filtered to the shut groups points at the next shut group as soon as
+ * the clicked one opens, and the check that it opened then reads the wrong one.
+ */
+async function openGroups(panel: Locator): Promise<void> {
+  for (const group of await panel.locator('button[aria-expanded]').all()) {
+    if ((await group.getAttribute('aria-expanded')) === 'true') continue;
+    await group.click(NO_NAVIGATION);
+    await expect(group).toHaveAttribute('aria-expanded', 'true');
+  }
+}
+
 async function checkFiles(panel: Locator, names: string[]): Promise<void> {
   const files = panel.locator('[data-file-name]');
 
   // Comparing the names, not the count, so a changed output prints what changed.
   // A bounded retry: `toPass()` alone retries until the test runs out of clock,
   // so a list that will never match held an optimization's page for half an hour.
+  // The groups are opened inside the retry: a result's group arrives, shut,
+  // once the run's files are in.
   await expect(async () => {
+    await openGroups(panel);
     const shown = await files.evaluateAll((items) =>
       items.map((item) => item.getAttribute('data-file-name') ?? '')
     );

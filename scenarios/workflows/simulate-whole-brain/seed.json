@@ -59,9 +59,9 @@
         "generated": {
           "inputs": [
             "Circuit directory",
-            "node_sets.json",
-            "obi_one_coordinate.json",
-            "simulation_config.json"
+            "Node sets",
+            "OBI-ONE Config",
+            "SONATA Simulation Config"
           ],
           "outputs": []
         }
