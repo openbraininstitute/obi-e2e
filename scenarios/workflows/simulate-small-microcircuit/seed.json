@@ -72,23 +72,23 @@
         "generated": {
           "inputs": [
             "Circuit directory",
-            "node_sets.json",
-            "obi_one_coordinate.json",
-            "simulation_config.json"
+            "Node sets",
+            "OBI-ONE Config",
+            "SONATA Simulation Config"
           ],
           "outputs": []
         },
         "completed": {
           "inputs": [
             "Circuit directory",
-            "node_sets.json",
-            "obi_one_coordinate.json",
-            "simulation_config.json"
+            "Node sets",
+            "OBI-ONE Config",
+            "SONATA Simulation Config"
           ],
-          "outputs": ["Recording 0.h5", "spikes.h5"],
+          "outputs": ["Recording 0", "hippocampus_neurons"],
           "views": {
-            "Recording 0.h5": ["hippocampus_neurons_0", "Time (ms)", "Voltage (mV)"],
-            "spikes.h5": ["Populationhippocampus_neurons", "spikes"]
+            "Recording 0": ["9 cells recorded", "Time (ms)", "Voltage (mV)"],
+            "hippocampus_neurons": ["Populationhippocampus_neurons", "spikes"]
           }
         }
       }

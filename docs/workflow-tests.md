@@ -95,10 +95,10 @@ registered, read property by property:
 ```json
 "completed": {
   "within": 20,
-  "inputs": ["obi_one_coordinate.json"],
-  "outputs": ["Task logs", "E2E synaptome build"],
+  "inputs": ["OBI-ONE Config"],
+  "outputs": ["Task Log", "E2E synaptome build"],
   "views": {
-    "spikes.h5": ["PopulationAll", "spikes"],
+    "All": ["PopulationAll", "spikes"],
     "E2E synaptome build": { "Number of synapses": "1" }
   }
 }

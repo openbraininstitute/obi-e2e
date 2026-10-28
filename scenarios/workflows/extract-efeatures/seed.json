@@ -255,13 +255,13 @@
       "expect": {
         "coordinateCount": 1,
         "generated": {
-          "inputs": ["obi_one_coordinate.json"],
+          "inputs": ["OBI-ONE Config"],
           "outputs": []
         },
         "completed": {
-          "inputs": ["Task configuration", "obi_one_coordinate.json"],
+          "inputs": ["Launch Config", "OBI-ONE Config"],
           "outputs": [
-            "Task logs",
+            "Task Log",
             "EFeature Extraction Result — E2E e-feature extraction",
             "extracted_features.json",
             "figures"

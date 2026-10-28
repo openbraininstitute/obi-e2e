@@ -80,5 +80,5 @@ Expected:
 
 - The coordinate leaves "created"
 - The coordinate reaches "done" (within 5 minutes)
-- Its inputs are exactly: "Task configuration", "obi_one_coordinate.json", "Circuit directory"
-- Its outputs are exactly: "Task logs", "Afferent-synaptome-864691135476581440"
+- Its inputs are exactly: "Launch Config", "OBI-ONE Config", "Circuit directory"
+- Its outputs are exactly: "Task Log", "Afferent-synaptome-864691135476581440"

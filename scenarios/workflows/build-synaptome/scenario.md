@@ -89,7 +89,7 @@ Expected:
 - The results tab opens by itself
 - There are as many coordinates as the seed says
 - The first coordinate reads "created"
-- Its inputs are exactly: "obi_one_coordinate.json"
+- Its inputs are exactly: "OBI-ONE Config"
 - It has produced no outputs yet
 - The launch button reads "Launch builds"
 
@@ -119,13 +119,13 @@ Expected:
 - The coordinate leaves "created"
 - The coordinate reaches "done" (within 5 minutes)
 - Its inputs are exactly:
-  "Task configuration", "obi_one_coordinate.json" and "Circuit directory"
+  "Launch Config", "OBI-ONE Config" and "Circuit directory"
 - Its outputs are exactly:
-  "Task logs" and the synaptome named after the campaign
+  "Task Log" and the synaptome named after the campaign
 
 Steps:
 
-1. Open "Task logs"
+1. Open "Task Log"
 
 Expected:
 

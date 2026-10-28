@@ -63,22 +63,22 @@
         "generated": {
           "inputs": [
             "Circuit directory",
-            "node_sets.json",
-            "obi_one_coordinate.json",
-            "simulation_config.json"
+            "Node sets",
+            "OBI-ONE Config",
+            "SONATA Simulation Config"
           ],
           "outputs": []
         },
         "completed": {
           "within": 40,
           "inputs": [
-            "Task configuration",
+            "Launch Config",
             "Circuit directory",
-            "node_sets.json",
-            "obi_one_coordinate.json",
-            "simulation_config.json"
+            "Node sets",
+            "OBI-ONE Config",
+            "SONATA Simulation Config"
           ],
-          "outputs": ["Task logs", "spikes.h5"]
+          "outputs": ["Task Log", "S1nonbarrel_neurons"]
         }
       }
     }

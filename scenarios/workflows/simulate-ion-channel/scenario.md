@@ -59,7 +59,7 @@ Expected:
 - There are as many coordinates as the seed says
 - The first coordinate reads "created"
 - Its inputs are exactly:
-  "node_sets.json", "obi_one_coordinate.json" and "simulation_config.json"
+  "Node sets", "OBI-ONE Config" and "SONATA Simulation Config"
 - It has produced no outputs yet
 - The launch button reads "Launch simulations"
 
@@ -88,11 +88,11 @@ Expected:
 
 - The coordinate leaves "created"
 - The coordinate reaches "done" (within 5 minutes)
-- Its outputs are exactly: "Recording 0.h5" and "spikes.h5"
+- Its outputs are exactly: "Recording 0" and "All", the spikes of the one population
 
 Steps:
 
-1. Open "Recording 0.h5"
+1. Open "Recording 0"
 
 Expected:
 
@@ -100,7 +100,7 @@ Expected:
 
 Steps:
 
-1. Open "spikes.h5"
+1. Open "All"
 
 Expected:
 
