@@ -1,3 +1,4 @@
+import { settledCount } from '@fixtures/checks/filter';
 import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
 import { routes } from '@fixtures/routes';
 import { setColumn } from '@fixtures/steps/listing-columns';
@@ -13,6 +14,9 @@ const SEARCH = 'Sst-IRES';
 test.use(WIDE_VIEWPORT);
 
 test.describe('What the listing remembers', () => {
+  // Read from the page: staging and production hold different data, and both grow.
+  let unfiltered = '';
+
   test.beforeEach(async ({ page, workspace }) => {
     const listing = entityListing(page);
 
@@ -21,16 +25,24 @@ test.describe('What the listing remembers', () => {
     await expect(listing.cells.first()).toBeVisible();
 
     await listing.search.clear();
-    await expect(listing.resultCount).toHaveText(/^6,225 results/);
+    await settledCount(page);
+    unfiltered = await listing.resultCount.innerText();
   });
+
+  /** Searches, and waits out the "0 results" the listing shows while it fetches. */
+  async function search(page: Parameters<typeof dataView>[0]) {
+    const listing = entityListing(page);
+
+    await listing.search.fill(SEARCH);
+    await expect(listing.resultCount).not.toHaveText(unfiltered);
+    await expect(listing.resultCount).not.toHaveText(/^0 results/);
+    return listing.resultCount.innerText();
+  }
 
   async function searchAndOpenOne(page: Parameters<typeof dataView>[0]) {
     const listing = entityListing(page);
     const view = dataView(page);
-
-    await listing.search.fill(SEARCH);
-    await expect(listing.resultCount).not.toHaveText(/^6,225 results/);
-    const filtered = await listing.resultCount.innerText();
+    const filtered = await search(page);
 
     await listing.cells
       .filter({ hasText: new RegExp(SEARCH) })
@@ -65,7 +77,7 @@ test.describe('What the listing remembers', () => {
     await page.waitForURL(/browse\/entity/);
 
     await expect(listing.search).toHaveValue('');
-    await expect(listing.resultCount).toHaveText(/^6,225 results/);
+    await expect(listing.resultCount).toHaveText(unfiltered);
   });
 
   test(
@@ -74,9 +86,7 @@ test.describe('What the listing remembers', () => {
     async ({ page, workspace }) => {
       const listing = entityListing(page);
 
-      await listing.search.fill(SEARCH);
-      await expect(listing.resultCount).not.toHaveText(/^6,225 results/);
-      const filtered = await listing.resultCount.innerText();
+      const filtered = await search(page);
 
       await page.goto(`/app/virtual-lab/${workspace.labId}/${workspace.projectId}/workflows`);
       await page.goto(routes.dataEntity(workspace.labId, workspace.projectId, SLUG));
