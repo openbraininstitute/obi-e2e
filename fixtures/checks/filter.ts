@@ -67,7 +67,7 @@ async function steady(
  * filter is cleared, so a non-zero figure is waited for first. A listing that
  * really is empty gives none, and its zero is taken after that wait.
  */
-async function settledCount(page: Page): Promise<number> {
+export async function settledCount(page: Page): Promise<number> {
   await expect(entityListing(page).resultCount).toBeVisible();
 
   // Short: an empty listing spends this once per column.
