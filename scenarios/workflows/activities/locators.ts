@@ -1,13 +1,17 @@
 import type { Page } from '@playwright/test';
 
-/** The categories the picker offers, as it labels them. */
+/**
+ * The categories the picker offers, as it labels them.
+ *
+ * Not "Validate": core-web-app #2034 put it behind the `emodel-validation`
+ * feature flag, off by default.
+ */
 export const CATEGORY_OPTIONS = [
   'Build',
   'Simulate',
   'Extract',
   'Process data',
   'Optimize',
-  'Validate',
 ] as const;
 
 /** The types "Build" offers, and the group each sits under. */

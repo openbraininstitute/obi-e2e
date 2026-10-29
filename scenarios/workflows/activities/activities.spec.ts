@@ -24,7 +24,7 @@ test.describe('Workflow activities', () => {
   });
 
   test(
-    'The category picker offers all six categories',
+    'The category picker offers all five categories',
     { tag: AUTHENTICATED },
     async ({ page }) => {
       const filters = activityFilters(page);

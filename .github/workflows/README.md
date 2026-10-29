@@ -49,6 +49,23 @@ change to them reaches staging runs with the next release PR too.
 One thing to accept: a test fix merged to `main` alone does not reach staging
 until the next release PR. Merge it to `release` when staging needs it.
 
+What starts the release run is not core-web-app but the Azure deploy:
+`azure-terraform-deployment`'s E2E gate waits until staging serves the new tag,
+then sends `core-web-app-release`. When it did not, or a release needs testing
+again, send the same event by hand:
+
+```bash
+bun run release --tag 2026.10.28.2 --dry-run   # checks the release and staging, sends nothing
+bun run release --tag 2026.10.28.2             # sends it, finds the run, opens the release PR
+bun run release --tag latest                   # core-web-app's newest release
+```
+
+It refuses a tag staging does not serve yet, unless `--force`. After sending,
+it waits for the run's `release-branch` job and opens the `main` → `release`
+pull request itself when the job could not. It decides by content, not by
+commits: after a squash merge main still counts commits ahead of `release`
+while both hold the same files.
+
 GitHub reads cron in UTC and has no time zones, so the schedule lists both
 06:00 and 07:00 UTC, and the run that is not 08:00 in Zurich that day plans
 nothing and stops in seconds. GitHub may still start a scheduled run late under
