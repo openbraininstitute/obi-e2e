@@ -1,0 +1,134 @@
+{
+  "passed": 6,
+  "failed": 1,
+  "flaky": 0,
+  "skipped": 3,
+  "durationMs": 1288547,
+  "environment": "staging",
+  "baseUrl": "https://main.preview.openbraininstitute.org",
+  "browser": "chromium",
+  "commit": "9a4c7695d48e7928d24ee63f09476b4edb622ed1",
+  "runUrl": "https://github.com/openbraininstitute/obi-e2e/actions/runs/40468997917",
+  "reportUrl": "",
+  "trigger": "On deploy",
+  "failures": [
+    {
+      "title": "scenarios/workflows/optimize-emodel/optimize-emodel.spec.ts › E-model optimization › Optimize an e-model against extracted e-features and launch it: sodium and potassium on the soma and the axon, one short generation",
+      "section": "workflows",
+      "file": "scenarios/workflows/optimize-emodel/optimize-emodel.spec.ts",
+      "line": 53,
+      "project": "slow",
+      "error": "Error: emodel_optimisation_parameters.mechanisms.mechanism_regions.somatic[0].parameters.gNaTgbar: the model offers no parameter \"gNaTgbar\".",
+      "cause": "obi-one took 115.7 s to answer GET /declared/task/01a17c52-d69e-753d-ad94-c8e38c273d52/stream"
+    }
+  ],
+  "totalFailures": 1,
+  "services": [
+    {
+      "key": "entitycore",
+      "label": "Entity core",
+      "version": "2026.10.10",
+      "status": "healthy"
+    },
+    {
+      "key": "virtual-lab",
+      "label": "Virtual lab manager",
+      "status": "healthy"
+    },
+    {
+      "key": "obi-one",
+      "label": "OBI One",
+      "version": "2026.10.21",
+      "status": "healthy"
+    },
+    {
+      "key": "circuit",
+      "label": "Circuit",
+      "version": "2026.9.2",
+      "status": "healthy"
+    },
+    {
+      "key": "notebook",
+      "label": "Notebook service",
+      "status": "healthy"
+    },
+    {
+      "key": "thumbnail",
+      "label": "Thumbnail generation",
+      "status": "healthy"
+    },
+    {
+      "key": "simulator",
+      "label": "Small scale simulator",
+      "status": "healthy"
+    },
+    {
+      "key": "ai-agent",
+      "label": "AI agent",
+      "version": "0.1.32",
+      "status": "healthy"
+    },
+    {
+      "key": "auth-manager",
+      "label": "Auth manager",
+      "version": "2026.08.05.1",
+      "status": "healthy"
+    },
+    {
+      "key": "launch-system",
+      "label": "Launch system",
+      "status": "skipped",
+      "problem": "reachable only inside the VPC"
+    }
+  ],
+  "features": [
+    {
+      "name": "Brain region simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    },
+    {
+      "name": "E-model optimization",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 1,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 198417
+    },
+    {
+      "name": "Microcircuit simulation",
+      "section": "workflows",
+      "passed": 1,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 1273180
+    },
+    {
+      "name": "Whole brain simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    }
+  ],
+  "credits": {
+    "labBalance": 63223.9,
+    "required": 500,
+    "variable": "E2E_SLOW_PROJECT_CREDITS",
+    "projectId": "9767201d-c015-4a9e-a394-c5e29ff5afd7",
+    "assigned": 500,
+    "remaining": 196.85,
+    "spent": 303.15,
+    "reversed": "ok",
+    "returned": 196.85,
+    "removed": "ok"
+  }
+}

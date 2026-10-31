@@ -1,0 +1,133 @@
+{
+  "passed": 7,
+  "failed": 0,
+  "flaky": 0,
+  "skipped": 4,
+  "durationMs": 1257679,
+  "environment": "staging",
+  "baseUrl": "https://main.preview.openbraininstitute.org",
+  "browser": "chromium",
+  "commit": "e714a00153d476e3e6c1f84a16cd0484dbdcd3e7",
+  "runUrl": "https://github.com/openbraininstitute/obi-e2e/actions/runs/40878579530",
+  "reportUrl": "",
+  "trigger": "On deploy",
+  "failures": [],
+  "totalFailures": 0,
+  "services": [
+    {
+      "key": "entitycore",
+      "label": "Entity core",
+      "version": "2026.10.10",
+      "status": "healthy"
+    },
+    {
+      "key": "virtual-lab",
+      "label": "Virtual lab manager",
+      "status": "healthy"
+    },
+    {
+      "key": "obi-one",
+      "label": "OBI One",
+      "version": "2026.10.23",
+      "status": "healthy"
+    },
+    {
+      "key": "circuit",
+      "label": "Circuit",
+      "version": "2026.9.2",
+      "status": "healthy"
+    },
+    {
+      "key": "notebook",
+      "label": "Notebook service",
+      "status": "healthy"
+    },
+    {
+      "key": "thumbnail",
+      "label": "Thumbnail generation",
+      "status": "healthy"
+    },
+    {
+      "key": "simulator",
+      "label": "Small scale simulator",
+      "status": "healthy"
+    },
+    {
+      "key": "ai-agent",
+      "label": "AI agent",
+      "version": "0.1.32",
+      "status": "healthy"
+    },
+    {
+      "key": "auth-manager",
+      "label": "Auth manager",
+      "version": "2026.08.05.1",
+      "status": "healthy"
+    },
+    {
+      "key": "launch-system",
+      "label": "Launch system",
+      "status": "skipped",
+      "problem": "reachable only inside the VPC"
+    }
+  ],
+  "features": [
+    {
+      "name": "Brain region simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    },
+    {
+      "name": "E-model optimization",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    },
+    {
+      "name": "Electron microscopy circuit build",
+      "section": "workflows",
+      "passed": 1,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 576135
+    },
+    {
+      "name": "Microcircuit simulation",
+      "section": "workflows",
+      "passed": 1,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 1244672
+    },
+    {
+      "name": "Whole brain simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    }
+  ],
+  "credits": {
+    "labBalance": 302553.2,
+    "required": 2000,
+    "variable": "E2E_SLOW_PROJECT_CREDITS",
+    "projectId": "8b2f3497-31fc-41c9-a4c4-782cbc44ebbc",
+    "assigned": 2000,
+    "remaining": 802,
+    "spent": 1198,
+    "reversed": "ok",
+    "returned": 802,
+    "removed": "ok"
+  }
+}

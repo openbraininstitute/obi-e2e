@@ -1,0 +1,151 @@
+{
+  "passed": 5,
+  "failed": 2,
+  "flaky": 0,
+  "skipped": 4,
+  "durationMs": 454616,
+  "environment": "staging",
+  "baseUrl": "https://staging.openbraininstitute.org",
+  "browser": "chromium",
+  "commit": "7ef42465c68c8de19c52b49ca6bdbb5f11b49544",
+  "runUrl": "https://github.com/openbraininstitute/obi-e2e/actions/runs/40681386836",
+  "reportUrl": "",
+  "trigger": "Release",
+  "failures": [
+    {
+      "title": "scenarios/workflows/build-em-circuit/build-em-circuit.spec.ts › Electron microscopy circuit build › Generate a build campaign and launch it: maps synapses onto one morphology",
+      "section": "workflows",
+      "file": "scenarios/workflows/build-em-circuit/build-em-circuit.spec.ts",
+      "line": 26,
+      "project": "slow",
+      "error": "Error: expect(received).toEqual(expected) // deep equality",
+      "cause": "obi-one took 353.0 s to answer GET /declared/task/01a1824d-c931-7593-ab1c-eb121a289ce1/stream"
+    },
+    {
+      "title": "scenarios/workflows/simulate-microcircuit/simulate-microcircuit.spec.ts › Microcircuit simulation › Generate a simulation campaign and launch it: two somatic current clamps, on the circuit's own defaults",
+      "section": "workflows",
+      "file": "scenarios/workflows/simulate-microcircuit/simulate-microcircuit.spec.ts",
+      "line": 40,
+      "project": "slow",
+      "error": "Error: expect(received).toEqual(expected) // deep equality"
+    }
+  ],
+  "totalFailures": 2,
+  "services": [
+    {
+      "key": "entitycore",
+      "label": "Entity core",
+      "version": "2026.10.10",
+      "status": "healthy"
+    },
+    {
+      "key": "virtual-lab",
+      "label": "Virtual lab manager",
+      "status": "healthy"
+    },
+    {
+      "key": "obi-one",
+      "label": "OBI One",
+      "version": "2026.10.21",
+      "status": "healthy"
+    },
+    {
+      "key": "circuit",
+      "label": "Circuit",
+      "version": "2026.9.2",
+      "status": "healthy"
+    },
+    {
+      "key": "notebook",
+      "label": "Notebook service",
+      "status": "healthy"
+    },
+    {
+      "key": "thumbnail",
+      "label": "Thumbnail generation",
+      "status": "healthy"
+    },
+    {
+      "key": "simulator",
+      "label": "Small scale simulator",
+      "status": "healthy"
+    },
+    {
+      "key": "ai-agent",
+      "label": "AI agent",
+      "version": "0.1.32",
+      "status": "healthy"
+    },
+    {
+      "key": "auth-manager",
+      "label": "Auth manager",
+      "version": "2026.08.05.1",
+      "status": "healthy"
+    },
+    {
+      "key": "launch-system",
+      "label": "Launch system",
+      "status": "skipped",
+      "problem": "reachable only inside the VPC"
+    }
+  ],
+  "features": [
+    {
+      "name": "Brain region simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    },
+    {
+      "name": "E-model optimization",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    },
+    {
+      "name": "Electron microscopy circuit build",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 1,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 443357
+    },
+    {
+      "name": "Microcircuit simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 1,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 86313
+    },
+    {
+      "name": "Whole brain simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    }
+  ],
+  "credits": {
+    "labBalance": 26951.7,
+    "required": 2000,
+    "variable": "E2E_SLOW_PROJECT_CREDITS",
+    "projectId": "376672fd-c6f9-4777-983e-3aea38299529",
+    "assigned": 2000,
+    "remaining": 1101.15,
+    "spent": 898.85,
+    "reversed": "ok",
+    "returned": 1101.15,
+    "removed": "ok"
+  }
+}

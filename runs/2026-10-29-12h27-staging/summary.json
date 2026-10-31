@@ -1,0 +1,681 @@
+{
+  "passed": 249,
+  "failed": 10,
+  "flaky": 4,
+  "skipped": 51,
+  "durationMs": 1018333,
+  "environment": "staging",
+  "baseUrl": "https://staging.openbraininstitute.org",
+  "browser": "chromium",
+  "commit": "a0e1f172bb9f2d6599ecb7003cfc02601658b7cf",
+  "runUrl": "https://github.com/openbraininstitute/obi-e2e/actions/runs/40871003284",
+  "reportUrl": "",
+  "trigger": "On deploy",
+  "failures": [
+    {
+      "title": "setup/credits.setup.ts › the project can pay for this run",
+      "section": "",
+      "file": "setup/credits.setup.ts",
+      "line": 11,
+      "project": "funding",
+      "error": "Error: The virtual lab holds 1453.05 credits and this run needs 2000. Nothing can be launched until someone tops the lab up, so the tests that spend are not attempted. Everything that only reads still runs."
+    },
+    {
+      "title": "scenarios/data/cell-morphology/browse/browse.spec.ts › Morphology listing › Every Morphology filter narrows the listing",
+      "section": "data",
+      "file": "scenarios/data/cell-morphology/browse/browse.spec.ts",
+      "line": 133,
+      "project": "private",
+      "error": "Error: The listing did not load: An error occurred while fetching \"Morphology\" data for this region. We are sorry about the inconvenience. Please contact support.",
+      "cause": "entitycore did not answer GET /brain-region-hierarchy (net::ERR_FAILED; the browser blocked it (CORS), which is how a service that is down or failing looks from the page)"
+    },
+    {
+      "title": "scenarios/data/circuit/browse/browse.spec.ts › Circuit listing › Search the Circuit listing",
+      "section": "data",
+      "file": "scenarios/data/circuit/browse/browse.spec.ts",
+      "line": 134,
+      "project": "private",
+      "error": "Error: expect(locator).toBeVisible() failed",
+      "cause": "entitycore answered 504 to GET /brain-region-hierarchy/e3e70682-c209-4cac-a29f-6fbed82c07cd/hierarchy: <html> <head><title>504 Gateway Time-out</title></head> <body> <center><h1>504 Gateway Time-out</h1></center> </body> </html> <!-- a padding to disable MSIE and Chrome friendly error page --> <!-- a padding to disable MSIE and Chrome friendly error page --> <!-- a padding to disable MSIE and Chrome "
+    },
+    {
+      "title": "scenarios/data/circuit/browse/browse.spec.ts › Circuit listing › Every Circuit filter narrows the listing",
+      "section": "data",
+      "file": "scenarios/data/circuit/browse/browse.spec.ts",
+      "line": 146,
+      "project": "private",
+      "error": "Error: The listing did not load: An error occurred while fetching \"Circuit\" data for this region. We are sorry about the inconvenience. Please contact support.",
+      "cause": "entitycore did not answer GET /brain-region-hierarchy (net::ERR_FAILED; the browser blocked it (CORS), which is how a service that is down or failing looks from the page)"
+    },
+    {
+      "title": "scenarios/data/circuit/browse/browse.spec.ts › Circuit listing › Switch between the flat and hierarchy views",
+      "section": "data",
+      "file": "scenarios/data/circuit/browse/browse.spec.ts",
+      "line": 155,
+      "project": "private",
+      "error": "Error: expect(locator).toBeVisible() failed",
+      "cause": "entitycore answered 502 to GET /brain-region-hierarchy/e3e70682-c209-4cac-a29f-6fbed82c07cd/hierarchy: <html> <head><title>502 Bad Gateway</title></head> <body> <center><h1>502 Bad Gateway</h1></center> </body> </html> <!-- a padding to disable MSIE and Chrome friendly error page --> <!-- a padding to disable MSIE and Chrome friendly error page --> <!-- a padding to disable MSIE and Chrome friendly e"
+    },
+    {
+      "title": "scenarios/data/circuit/view/view.spec.ts › Circuit details › Open one Circuit beside the listing",
+      "section": "data",
+      "file": "scenarios/data/circuit/view/view.spec.ts",
+      "line": 40,
+      "project": "private",
+      "error": "Error: expect(locator).toBeVisible() failed",
+      "cause": "entitycore answered 504 to GET /brain-region-hierarchy/e3e70682-c209-4cac-a29f-6fbed82c07cd/hierarchy: <html> <head><title>504 Gateway Time-out</title></head> <body> <center><h1>504 Gateway Time-out</h1></center> </body> </html> <!-- a padding to disable MSIE and Chrome friendly error page --> <!-- a padding to disable MSIE and Chrome friendly error page --> <!-- a padding to disable MSIE and Chrome "
+    }
+  ],
+  "totalFailures": 14,
+  "services": [
+    {
+      "key": "entitycore",
+      "label": "Entity core",
+      "version": "2026.10.10",
+      "status": "healthy"
+    },
+    {
+      "key": "virtual-lab",
+      "label": "Virtual lab manager",
+      "status": "healthy"
+    },
+    {
+      "key": "obi-one",
+      "label": "OBI One",
+      "version": "2026.10.23",
+      "status": "healthy"
+    },
+    {
+      "key": "circuit",
+      "label": "Circuit",
+      "version": "2026.9.2",
+      "status": "healthy"
+    },
+    {
+      "key": "notebook",
+      "label": "Notebook service",
+      "status": "healthy"
+    },
+    {
+      "key": "thumbnail",
+      "label": "Thumbnail generation",
+      "status": "healthy"
+    },
+    {
+      "key": "simulator",
+      "label": "Small scale simulator",
+      "status": "healthy"
+    },
+    {
+      "key": "ai-agent",
+      "label": "AI agent",
+      "version": "0.1.32",
+      "status": "healthy"
+    },
+    {
+      "key": "auth-manager",
+      "label": "Auth manager",
+      "version": "2026.08.05.1",
+      "status": "healthy"
+    },
+    {
+      "key": "launch-system",
+      "label": "Launch system",
+      "status": "skipped",
+      "problem": "reachable only inside the VPC"
+    }
+  ],
+  "features": [
+    {
+      "name": "Bouton density listing",
+      "section": "data",
+      "passed": 8,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 56598
+    },
+    {
+      "name": "Circuit listing",
+      "section": "data",
+      "passed": 4,
+      "failed": 5,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 164116
+    },
+    {
+      "name": "Data page",
+      "section": "data",
+      "passed": 3,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 13051
+    },
+    {
+      "name": "Data types",
+      "section": "data",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 3,
+      "skipped": 0,
+      "durationMs": 29609
+    },
+    {
+      "name": "E-model listing",
+      "section": "data",
+      "passed": 9,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 92732
+    },
+    {
+      "name": "EM mesh listing",
+      "section": "data",
+      "passed": 9,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 79029
+    },
+    {
+      "name": "Filtering a listing",
+      "section": "data",
+      "passed": 5,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 27126
+    },
+    {
+      "name": "Ion channel electrophysiology listing",
+      "section": "data",
+      "passed": 9,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 92484
+    },
+    {
+      "name": "Ion channel listing",
+      "section": "data",
+      "passed": 4,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 2,
+      "durationMs": 145064
+    },
+    {
+      "name": "Ion channel model listing",
+      "section": "data",
+      "passed": 9,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 62600
+    },
+    {
+      "name": "ME-model listing",
+      "section": "data",
+      "passed": 10,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 67857
+    },
+    {
+      "name": "Microcircuit listing",
+      "section": "data",
+      "passed": 7,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 51778
+    },
+    {
+      "name": "Morphology listing",
+      "section": "data",
+      "passed": 8,
+      "failed": 1,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 79743
+    },
+    {
+      "name": "Neuron density listing",
+      "section": "data",
+      "passed": 9,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 172253
+    },
+    {
+      "name": "on the Data page",
+      "section": "data",
+      "passed": 12,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 104539
+    },
+    {
+      "name": "Paired neurons listing",
+      "section": "data",
+      "passed": 4,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 2,
+      "durationMs": 188495
+    },
+    {
+      "name": "Single cell electrophysiology listing",
+      "section": "data",
+      "passed": 5,
+      "failed": 3,
+      "flaky": 1,
+      "skipped": 0,
+      "durationMs": 72371
+    },
+    {
+      "name": "Single neuron (legacy) listing",
+      "section": "data",
+      "passed": 4,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 2,
+      "durationMs": 215582
+    },
+    {
+      "name": "Single neuron listing",
+      "section": "data",
+      "passed": 7,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 123749
+    },
+    {
+      "name": "Small microcircuit listing",
+      "section": "data",
+      "passed": 7,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 39075
+    },
+    {
+      "name": "Synapse per connection listing",
+      "section": "data",
+      "passed": 8,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 61132
+    },
+    {
+      "name": "Synaptome (legacy) listing",
+      "section": "data",
+      "passed": 8,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 48704
+    },
+    {
+      "name": "Synaptome (legacy) listing",
+      "section": "data",
+      "passed": 4,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 2,
+      "durationMs": 213321
+    },
+    {
+      "name": "Synaptome listing",
+      "section": "data",
+      "passed": 8,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 66024
+    },
+    {
+      "name": "Synaptome listing",
+      "section": "data",
+      "passed": 4,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 2,
+      "durationMs": 184859
+    },
+    {
+      "name": "Synthesized morphology listing",
+      "section": "data",
+      "passed": 9,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 164946
+    },
+    {
+      "name": "The atlas and its neuron counts",
+      "section": "data",
+      "passed": 4,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 60530
+    },
+    {
+      "name": "What the listing remembers",
+      "section": "data",
+      "passed": 4,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 35636
+    },
+    {
+      "name": "Whole brain circuit listing",
+      "section": "data",
+      "passed": 4,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 2,
+      "durationMs": 189388
+    },
+    {
+      "name": "About page",
+      "section": "site",
+      "passed": 3,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 6904
+    },
+    {
+      "name": "Contact page",
+      "section": "site",
+      "passed": 2,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 4358
+    },
+    {
+      "name": "Home page",
+      "section": "site",
+      "passed": 1,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 2864
+    },
+    {
+      "name": "Mission page",
+      "section": "site",
+      "passed": 3,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 8730
+    },
+    {
+      "name": "News page",
+      "section": "site",
+      "passed": 3,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 9000
+    },
+    {
+      "name": "Our story",
+      "section": "site",
+      "passed": 2,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 4828
+    },
+    {
+      "name": "Pricing page",
+      "section": "site",
+      "passed": 4,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 9114
+    },
+    {
+      "name": "Site footer",
+      "section": "site",
+      "passed": 4,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 12735
+    },
+    {
+      "name": "Site navigation",
+      "section": "site",
+      "passed": 4,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 31091
+    },
+    {
+      "name": "Team page",
+      "section": "site",
+      "passed": 3,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 4853
+    },
+    {
+      "name": "Notebooks",
+      "section": "virtual-labs",
+      "passed": 8,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 32334
+    },
+    {
+      "name": "OBI Assistant",
+      "section": "virtual-labs",
+      "passed": 3,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 12662
+    },
+    {
+      "name": "Onboarding user",
+      "section": "virtual-labs",
+      "passed": 6,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 30631
+    },
+    {
+      "name": "Project credits",
+      "section": "virtual-labs",
+      "passed": 3,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 15531
+    },
+    {
+      "name": "Brain region simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    },
+    {
+      "name": "Circuit synaptic physiology build",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 4,
+      "durationMs": 0
+    },
+    {
+      "name": "Circuit synaptic physiology build of a synaptome",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    },
+    {
+      "name": "E-model optimization",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    },
+    {
+      "name": "EM mesh skeletonization",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 2,
+      "durationMs": 0
+    },
+    {
+      "name": "Extracellular recording array build",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    },
+    {
+      "name": "Intracellular e-feature extraction",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 2,
+      "durationMs": 0
+    },
+    {
+      "name": "Ion channel simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 2,
+      "durationMs": 0
+    },
+    {
+      "name": "Microcircuit simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    },
+    {
+      "name": "Paired neurons simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 2,
+      "durationMs": 0
+    },
+    {
+      "name": "Single neuron simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 3,
+      "durationMs": 0
+    },
+    {
+      "name": "Small microcircuit simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 2,
+      "durationMs": 0
+    },
+    {
+      "name": "Synaptome build",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 11,
+      "durationMs": 0
+    },
+    {
+      "name": "Synaptome simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 2,
+      "durationMs": 0
+    },
+    {
+      "name": "Whole brain simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    },
+    {
+      "name": "Workflow activities",
+      "section": "workflows",
+      "passed": 4,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 15014
+    },
+    {
+      "name": "Workflows page",
+      "section": "workflows",
+      "passed": 4,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 13006
+    }
+  ],
+  "credits": {
+    "labBalance": 1453.05,
+    "required": 2000,
+    "variable": "E2E_PROJECT_CREDITS",
+    "problem": "The virtual lab holds 1453.05 credits and this run needs 2000. Nothing can be launched until someone tops the lab up, so the tests that spend are not attempted. Everything that only reads still runs.",
+    "projectId": "476b60c1-ea98-46e1-8442-f5a78bacf21c",
+    "remaining": 0,
+    "reversed": "nothing to return",
+    "returned": 0,
+    "removed": "ok"
+  }
+}

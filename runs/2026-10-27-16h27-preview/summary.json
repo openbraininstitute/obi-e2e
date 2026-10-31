@@ -1,0 +1,670 @@
+{
+  "passed": 281,
+  "failed": 15,
+  "flaky": 0,
+  "skipped": 18,
+  "durationMs": 1461394,
+  "environment": "staging",
+  "baseUrl": "https://main.preview.openbraininstitute.org",
+  "browser": "chromium",
+  "commit": "b5c1f9c12ae556bce65e152f72a9589ffd69afa0",
+  "runUrl": "https://github.com/openbraininstitute/obi-e2e/actions/runs/40536636612",
+  "reportUrl": "",
+  "trigger": "PR preview",
+  "failures": [
+    {
+      "title": "scenarios/workflows/build-circuit-synaptic-physiology/build-circuit-synaptic-physiology.spec.ts › Circuit synaptic physiology build › Generate a build campaign and launch it: an excitatory model on the synapses between the pair",
+      "section": "workflows",
+      "file": "scenarios/workflows/build-circuit-synaptic-physiology/build-circuit-synaptic-physiology.spec.ts",
+      "line": 49,
+      "project": "credits",
+      "error": "Error: expect(received).toEqual(expected) // deep equality"
+    },
+    {
+      "title": "scenarios/workflows/build-circuit-synaptic-physiology/build-circuit-synaptic-physiology.spec.ts › Circuit synaptic physiology build › Generate a build campaign and launch it: the default model drawn with two random seeds, giving a grid of two coordinates",
+      "section": "workflows",
+      "file": "scenarios/workflows/build-circuit-synaptic-physiology/build-circuit-synaptic-physiology.spec.ts",
+      "line": 49,
+      "project": "credits",
+      "error": "Error: expect(received).toEqual(expected) // deep equality"
+    },
+    {
+      "title": "scenarios/workflows/build-circuit-synaptic-physiology/build-circuit-synaptic-physiology.spec.ts › Circuit synaptic physiology build › Simulate the circuit the build registered",
+      "section": "workflows",
+      "file": "scenarios/workflows/build-circuit-synaptic-physiology/build-circuit-synaptic-physiology.spec.ts",
+      "line": 59,
+      "project": "credits",
+      "error": "Error: expect(received).toEqual(expected) // deep equality",
+      "cause": "obi-one took 99.2 s to answer GET /declared/task/01a17e28-f3ee-7291-b08c-de9d2dbd122f/stream"
+    },
+    {
+      "title": "scenarios/workflows/build-circuit-synaptic-physiology-synaptome/build-circuit-synaptic-physiology-synaptome.spec.ts › Circuit synaptic physiology build of a synaptome › Generate a build campaign and launch it: an inhibitory model on the thalamic inputs, the default excitatory model on the rest",
+      "section": "workflows",
+      "file": "scenarios/workflows/build-circuit-synaptic-physiology-synaptome/build-circuit-synaptic-physiology-synaptome.spec.ts",
+      "line": 14,
+      "project": "credits",
+      "error": "Error: expect(received).toEqual(expected) // deep equality"
+    },
+    {
+      "title": "scenarios/workflows/build-recording-array/build-recording-array.spec.ts › Extracellular recording array build › Generate a build campaign and launch it: one sixteen-electrode linear probe",
+      "section": "workflows",
+      "file": "scenarios/workflows/build-recording-array/build-recording-array.spec.ts",
+      "line": 15,
+      "project": "credits",
+      "error": "Error: expect(received).toEqual(expected) // deep equality"
+    }
+  ],
+  "totalFailures": 15,
+  "services": [
+    {
+      "key": "entitycore",
+      "label": "Entity core",
+      "version": "2026.10.10",
+      "status": "healthy"
+    },
+    {
+      "key": "virtual-lab",
+      "label": "Virtual lab manager",
+      "status": "healthy"
+    },
+    {
+      "key": "obi-one",
+      "label": "OBI One",
+      "version": "2026.10.21",
+      "status": "healthy"
+    },
+    {
+      "key": "circuit",
+      "label": "Circuit",
+      "version": "2026.9.2",
+      "status": "healthy"
+    },
+    {
+      "key": "notebook",
+      "label": "Notebook service",
+      "status": "healthy"
+    },
+    {
+      "key": "thumbnail",
+      "label": "Thumbnail generation",
+      "status": "healthy"
+    },
+    {
+      "key": "simulator",
+      "label": "Small scale simulator",
+      "status": "healthy"
+    },
+    {
+      "key": "ai-agent",
+      "label": "AI agent",
+      "version": "0.1.32",
+      "status": "healthy"
+    },
+    {
+      "key": "auth-manager",
+      "label": "Auth manager",
+      "version": "2026.08.05.1",
+      "status": "healthy"
+    },
+    {
+      "key": "launch-system",
+      "label": "Launch system",
+      "status": "skipped",
+      "problem": "reachable only inside the VPC"
+    }
+  ],
+  "features": [
+    {
+      "name": "Bouton density listing",
+      "section": "data",
+      "passed": 8,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 49633
+    },
+    {
+      "name": "Circuit listing",
+      "section": "data",
+      "passed": 9,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 335775
+    },
+    {
+      "name": "Data page",
+      "section": "data",
+      "passed": 3,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 19498
+    },
+    {
+      "name": "Data types",
+      "section": "data",
+      "passed": 3,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 18658
+    },
+    {
+      "name": "E-model listing",
+      "section": "data",
+      "passed": 9,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 77544
+    },
+    {
+      "name": "EM mesh listing",
+      "section": "data",
+      "passed": 9,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 72498
+    },
+    {
+      "name": "Filtering a listing",
+      "section": "data",
+      "passed": 5,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 34764
+    },
+    {
+      "name": "Ion channel electrophysiology listing",
+      "section": "data",
+      "passed": 9,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 75929
+    },
+    {
+      "name": "Ion channel listing",
+      "section": "data",
+      "passed": 4,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 2,
+      "durationMs": 143005
+    },
+    {
+      "name": "Ion channel model listing",
+      "section": "data",
+      "passed": 9,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 58946
+    },
+    {
+      "name": "ME-model listing",
+      "section": "data",
+      "passed": 10,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 69818
+    },
+    {
+      "name": "Microcircuit listing",
+      "section": "data",
+      "passed": 7,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 60148
+    },
+    {
+      "name": "Morphology listing",
+      "section": "data",
+      "passed": 9,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 103867
+    },
+    {
+      "name": "Neuron density listing",
+      "section": "data",
+      "passed": 9,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 164747
+    },
+    {
+      "name": "on the Data page",
+      "section": "data",
+      "passed": 12,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 100125
+    },
+    {
+      "name": "Paired neurons listing",
+      "section": "data",
+      "passed": 4,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 2,
+      "durationMs": 193752
+    },
+    {
+      "name": "Single cell electrophysiology listing",
+      "section": "data",
+      "passed": 9,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 89129
+    },
+    {
+      "name": "Single neuron (legacy) listing",
+      "section": "data",
+      "passed": 4,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 2,
+      "durationMs": 215706
+    },
+    {
+      "name": "Single neuron listing",
+      "section": "data",
+      "passed": 7,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 128500
+    },
+    {
+      "name": "Small microcircuit listing",
+      "section": "data",
+      "passed": 7,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 39903
+    },
+    {
+      "name": "Synapse per connection listing",
+      "section": "data",
+      "passed": 8,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 54573
+    },
+    {
+      "name": "Synaptome (legacy) listing",
+      "section": "data",
+      "passed": 8,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 50275
+    },
+    {
+      "name": "Synaptome (legacy) listing",
+      "section": "data",
+      "passed": 4,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 2,
+      "durationMs": 214409
+    },
+    {
+      "name": "Synaptome listing",
+      "section": "data",
+      "passed": 8,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 69185
+    },
+    {
+      "name": "Synaptome listing",
+      "section": "data",
+      "passed": 4,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 2,
+      "durationMs": 188311
+    },
+    {
+      "name": "Synthesized morphology listing",
+      "section": "data",
+      "passed": 9,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 141479
+    },
+    {
+      "name": "The atlas and its neuron counts",
+      "section": "data",
+      "passed": 4,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 100249
+    },
+    {
+      "name": "What the listing remembers",
+      "section": "data",
+      "passed": 4,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 37188
+    },
+    {
+      "name": "Whole brain circuit listing",
+      "section": "data",
+      "passed": 4,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 2,
+      "durationMs": 193417
+    },
+    {
+      "name": "About page",
+      "section": "site",
+      "passed": 3,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 15420
+    },
+    {
+      "name": "Contact page",
+      "section": "site",
+      "passed": 2,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 3323
+    },
+    {
+      "name": "Home page",
+      "section": "site",
+      "passed": 1,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 1895
+    },
+    {
+      "name": "Mission page",
+      "section": "site",
+      "passed": 3,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 9082
+    },
+    {
+      "name": "News page",
+      "section": "site",
+      "passed": 3,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 9394
+    },
+    {
+      "name": "Our story",
+      "section": "site",
+      "passed": 2,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 5309
+    },
+    {
+      "name": "Pricing page",
+      "section": "site",
+      "passed": 4,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 9774
+    },
+    {
+      "name": "Site footer",
+      "section": "site",
+      "passed": 4,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 10313
+    },
+    {
+      "name": "Site navigation",
+      "section": "site",
+      "passed": 4,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 31007
+    },
+    {
+      "name": "Team page",
+      "section": "site",
+      "passed": 3,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 5571
+    },
+    {
+      "name": "Notebooks",
+      "section": "virtual-labs",
+      "passed": 8,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 39508
+    },
+    {
+      "name": "OBI Assistant",
+      "section": "virtual-labs",
+      "passed": 3,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 14616
+    },
+    {
+      "name": "Onboarding user",
+      "section": "virtual-labs",
+      "passed": 6,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 25583
+    },
+    {
+      "name": "Project credits",
+      "section": "virtual-labs",
+      "passed": 3,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 18978
+    },
+    {
+      "name": "Brain region simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    },
+    {
+      "name": "Circuit synaptic physiology build",
+      "section": "workflows",
+      "passed": 1,
+      "failed": 3,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 444943
+    },
+    {
+      "name": "Circuit synaptic physiology build of a synaptome",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 1,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 96181
+    },
+    {
+      "name": "E-model optimization",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    },
+    {
+      "name": "EM mesh skeletonization",
+      "section": "workflows",
+      "passed": 1,
+      "failed": 1,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 77897
+    },
+    {
+      "name": "Extracellular recording array build",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 1,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 84723
+    },
+    {
+      "name": "Intracellular e-feature extraction",
+      "section": "workflows",
+      "passed": 1,
+      "failed": 1,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 83830
+    },
+    {
+      "name": "Ion channel simulation",
+      "section": "workflows",
+      "passed": 1,
+      "failed": 1,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 79424
+    },
+    {
+      "name": "Microcircuit simulation",
+      "section": "workflows",
+      "passed": 1,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 11079
+    },
+    {
+      "name": "Paired neurons simulation",
+      "section": "workflows",
+      "passed": 1,
+      "failed": 1,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 85377
+    },
+    {
+      "name": "Single neuron simulation",
+      "section": "workflows",
+      "passed": 1,
+      "failed": 2,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 157485
+    },
+    {
+      "name": "Small microcircuit simulation",
+      "section": "workflows",
+      "passed": 1,
+      "failed": 1,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 193889
+    },
+    {
+      "name": "Synaptome build",
+      "section": "workflows",
+      "passed": 9,
+      "failed": 2,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 266488
+    },
+    {
+      "name": "Synaptome simulation",
+      "section": "workflows",
+      "passed": 1,
+      "failed": 1,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 94971
+    },
+    {
+      "name": "Whole brain simulation",
+      "section": "workflows",
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 0
+    },
+    {
+      "name": "Workflow activities",
+      "section": "workflows",
+      "passed": 4,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "durationMs": 18286
+    },
+    {
+      "name": "Workflows page",
+      "section": "workflows",
+      "passed": 4,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "durationMs": 18383
+    }
+  ],
+  "credits": {
+    "labBalance": 34928.3,
+    "required": 2000,
+    "variable": "E2E_PROJECT_CREDITS",
+    "projectId": "97052cce-2cf1-48d4-a8e5-730b05508121",
+    "assigned": 2000,
+    "remaining": 1999.5,
+    "spent": 0.5,
+    "reversed": "ok",
+    "returned": 1999.5,
+    "removed": "ok"
+  }
+}
