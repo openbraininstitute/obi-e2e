@@ -6,6 +6,18 @@ export function onboardingLocators(page: Page) {
     homeHeading: by.testId(page, 'home-hero-heading'),
     virtualLabsLink: by.testId(page, 'virtual-labs-link'),
     profileButton: by.testId(page, 'user-profile-button'),
+    // The first-run wizard carries no test ids yet. Its country field is the
+    // page's only combobox, and no label points at it, so the role has to do.
+    country: page.getByRole('combobox'),
+    // The dropdown's `option` role sits on a hidden node kept for screen
+    // readers; the row a person clicks is a plain div that carries the title
+    // and `aria-selected`. The chosen country shows under the same title, with
+    // neither, so the attribute keeps the two apart.
+    countryOption: (name: string) =>
+      page.getByTitle(name, { exact: true }).and(page.locator('[aria-selected]')),
+    affiliation: page.getByRole('textbox', { name: /^Affiliation/ }),
+    createVirtualLab: page.getByRole('button', { name: 'Create virtual lab' }),
+    goToProject: page.getByRole('button', { name: 'Go to project' }),
     currentVirtualLab: by.testId(page, 'current-virtual-lab-name'),
     currentProject: by.testId(page, 'current-project-name'),
     projectItem: by.testId(page, 'project-item-selector'),
