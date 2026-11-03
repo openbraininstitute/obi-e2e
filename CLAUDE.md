@@ -43,11 +43,13 @@ bun run test    # or a single spec while iterating
 - Every test runs against staging and production. Add `@staging` or
   `@production` only when a test cannot run on the other.
 - Two branches. `main` runs on the preview; `release` runs on staging and
-  production. A test for a new feature goes to `main`. A fix for a test that
-  fails on staging goes to `release`, then a PR `release` → `main`. At each
-  web-app release CI opens the PR `main` → `release`; a person merges it
-  (`.github/workflows/README.md`, "Two branches"). A scan-config workflow
-  says where it runs in its fixture's `env` list, never with a tag.
+  production. Every PR goes to `main`, a fix for a test that fails only on
+  staging or production too; never open one against `release`. `release` moves
+  only by the PR `main` → `release`: CI opens it at each web-app release, and a
+  person merges it (`.github/workflows/README.md`, "Two branches"). Before
+  fixing a staging or production failure, check that `main` does not already
+  have the fix. A scan-config workflow says where it runs in its fixture's
+  `env` list, never with a tag.
 
 ## Browsing the app
 
