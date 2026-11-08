@@ -40,7 +40,7 @@ function fileSelector(name: string): string {
  * so one filtered to the shut groups points at the next shut group as soon as
  * the clicked one opens, and the check that it opened then reads the wrong one.
  */
-async function openGroups(panel: Locator): Promise<void> {
+export async function openGroups(panel: Locator): Promise<void> {
   for (const group of await panel.locator('button[aria-expanded]').all()) {
     if ((await group.getAttribute('aria-expanded')) === 'true') continue;
     await group.click(NO_NAVIGATION);
