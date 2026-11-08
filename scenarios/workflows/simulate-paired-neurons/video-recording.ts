@@ -10,6 +10,7 @@
 
 import { film, hideActionLabel, lastFrame } from '@fixtures/recording';
 import { callout } from '@fixtures/recording/callout';
+import { focusOn, pullBack } from '@fixtures/recording/camera';
 import {
   tourCircuitViewer,
   tourInputFiles,
@@ -18,9 +19,18 @@ import {
 } from '@fixtures/recording/steps';
 import { loadSeed, notDeployedHere, runsOnThisDeployment } from '@fixtures/scan-config';
 import { campaignTimeout, runCampaign } from '@fixtures/steps/campaign';
-import { chooseEntities, openWorkflowsHub, startWorkflow } from '@fixtures/steps/workflows';
+import {
+  entityNameCell,
+  openEntityListing,
+  openWorkflowsHub,
+  pickEntity,
+  searchEntity,
+  startWorkflow,
+  useChosenEntities,
+} from '@fixtures/steps/workflows';
 import { CREDITS } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
+import { entityListing } from '@locators/listing';
 import { scanConfigEditor, scanConfigResults } from '@locators/scan-config';
 import { circuitViewer } from '@locators/viewer';
 import { workflowsHub } from '@locators/workflows';
@@ -59,8 +69,26 @@ test('Paired neurons simulation, in one take', { tag: CREDITS }, async ({ page, 
   });
 
   await test.step('The circuit', async () => {
-    const missing = await chooseEntities(page, fixture.selection);
-    test.skip(missing !== null, missing ?? '');
+    const { selection } = fixture;
+    await openEntityListing(page, selection);
+
+    // The spec's `chooseEntities`, taken apart so the camera can look closer
+    // between its steps. The seed names one circuit.
+    const entities = selection.mode === 'none' ? [] : selection.entities;
+    for (const name of entities) {
+      await focusOn(page, entityListing(page).search);
+      const row = await searchEntity(page, name);
+      test.skip(row === null, `This project holds no "${name}" to simulate.`);
+      await expect(row!).toBeVisible();
+      await pullBack(page);
+
+      await focusOn(page, entityNameCell(row!, name));
+      const unpickable = await pickEntity(page, selection, name, row!);
+      test.skip(unpickable !== null, unpickable ?? '');
+      await pullBack(page);
+    }
+
+    await useChosenEntities(page, selection);
     await expect(page).toHaveURL(new RegExp(`/configure/${fixture.workflow.type}/`));
   });
 
