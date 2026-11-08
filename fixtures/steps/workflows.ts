@@ -19,7 +19,14 @@ async function appears(locator: Locator): Promise<boolean> {
     .catch(() => false);
 }
 
-/** Opens the hub, through the nav when the first load lands elsewhere. */
+/**
+ * Opens the hub, through the nav when the load lands elsewhere.
+ *
+ * A project page whose project fetch fails on the server bounces through
+ * `/app/virtual-lab/sync` to the project home — after the document has arrived
+ * at `/workflows`, so the URL alone is no proof the hub is coming. The hub
+ * itself settles it, and a page that was bounced goes back through the nav.
+ */
 export async function openWorkflowsHub(page: Page, workspace: Workspace): Promise<void> {
   await page.goto(routes.workflows(workspace.labId, workspace.projectId), {
     waitUntil: 'domcontentloaded',
@@ -33,10 +40,8 @@ export async function openWorkflowsHub(page: Page, workspace: Workspace): Promis
         : page.getByRole('link', { name: /^Workflows/ }).first();
       await link.click();
     }
-    expect(page.url()).toMatch(/\/workflows$/);
+    await expect(workflowsHub(page).categoryMenu).toBeVisible({ timeout: APPEARS_TIMEOUT });
   }).toPass();
-
-  await expect(workflowsHub(page).categoryMenu).toBeVisible();
 }
 
 /**
