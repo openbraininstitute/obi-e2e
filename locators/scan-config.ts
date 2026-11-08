@@ -8,6 +8,8 @@
 import type { Locator, Page } from '@playwright/test';
 import { kebabCase } from 'es-toolkit';
 
+import { nodesTable } from './viewer';
+
 /** Both attribute names: older deployments use the second, newer ones the first. */
 export const UI_ELEMENT_ATTRIBUTES = [
   'data-scan-config-block-element-container-of',
@@ -102,6 +104,31 @@ export function scanConfigResults(page: Page) {
     fileView: view,
 
     logs: view,
+
+    /**
+     * The chart a recording or a spike file opens, and its controls.
+     *
+     * The pane draws the chart's toolbar twice (checked on main.preview,
+     * 2026-11-08), both visible and both driving the one chart, so the first
+     * is taken. The controls carry no test id; a selector is a button in the
+     * combobox role showing its label and value, "Group byAll". That role
+     * takes no name from its text, so it is told apart by the text itself.
+     */
+    chart: {
+      groupBy: view
+        .getByRole('combobox')
+        .filter({ hasText: /^Group by/ })
+        .first(),
+      orderBy: view
+        .getByRole('combobox')
+        .filter({ hasText: /^Order by/ })
+        .first(),
+      /** One choice of an open selector, by the words it shows. */
+      option: (name: string): Locator => page.getByRole('option', { name, exact: true }),
+      /** Spike file: only the cells that fired. */
+      spiking: view.getByRole('button', { name: 'Spiking', exact: true }),
+      nodes: nodesTable(view),
+    },
 
     preview: {
       entity: {

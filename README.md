@@ -14,7 +14,7 @@ supported. Never use `bunx playwright`: the tests need Bun, not Node.
 
 ```bash
 git clone git@github.com:openbraininstitute/obi-e2e && cd obi-e2e
-make setup        # Bun, packages, Chromium, the agent skill, .env.staging.local
+make setup        # Bun, packages, Chromium, ffmpeg, the agent skill, .env.staging.local
 # fill in the QA user and LAB_ID in .env.staging.local, then:
 make auth
 make test scenarios/site
@@ -169,6 +169,21 @@ Ask one question: **did the product change on purpose?**
 Never change an expected result to make a run pass. `Expected: Running, Actual:
 Failed` is a bug, not a test update.
 
+## Film a scenario
+
+A scientist's walkthrough of one workflow, in one take, pointer shown. Write
+the storyboard, `video-recording.md` beside the scenario, then:
+
+```bash
+/e2e-film scenarios/workflows/simulate-paired-neurons    # writes video-recording.ts from the storyboard
+bun run test:video scenarios/workflows/simulate-paired-neurons    # test-results/videos/workflows-simulate-paired-neurons.webm
+```
+
+`Pace:` in the storyboard is how long each click is held on screen; `Size:` the
+picture. `--format=mp4` encodes with the ffmpeg on PATH; `E2E_VIDEO_SIZE=2560x1440`
+changes the size for one run. The film imports the spec's steps and keeps its
+own in `fixtures/recording/`, which no spec may import.
+
 ## Run the tests
 
 ```bash
@@ -176,6 +191,8 @@ bun run test                          # everything, on staging
 bun run test scenarios/data           # one section, or one scenario folder
 bun run test --grep @credits          # by tag
 bun run test:headed                   # watch the browser
+bun run test:video scenarios/workflows/simulate-paired-neurons  # film the scenario (see "Film a scenario")
+bun run test:video --project=credits scenarios/x/y.spec.ts      # one clip per test instead, joined per spec
 bun run test:ui                       # Playwright UI mode
 bun run report                        # open the last HTML report
 bun run check                         # format, lint, types, unit tests

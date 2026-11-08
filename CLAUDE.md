@@ -2,7 +2,8 @@
 
 E2E tests for the OBI web app. Bun 1.4, Playwright 1.62, oxlint + oxfmt.
 
-Tests run under Bun via `bun --bun playwright`, so Bun APIs work in test code.
+Tests run under Bun via `bun --bun node_modules/.bin/playwright` (by path: on Bun 1.4.3
+the bin name runs under its `node` shebang instead), so Bun APIs work in test code.
 Always run through the package scripts; `bunx playwright` falls back to Node
 workers where the `Bun` global does not exist.
 
@@ -34,6 +35,14 @@ bun run test    # or a single spec while iterating
   `@fixtures/interactions`. Pre-hydration click does nothing, raises no error;
   staging drops it every run.
 - Every test is independent and leaves no data behind outside the QA lab.
+- A scenario's film is `video-recording.ts`, written from its storyboard,
+  `video-recording.md`, by `/e2e-film` (`prompts/e2e-film.md`). One test, one
+  `test.step` per scene, run only in the `video` project by
+  `bun run test:video <scenario folder>`. Its top says how it is shot,
+  `test.use(film({ pace, size }))`. A step the spec also takes is imported
+  from `fixtures/steps`; a step only films take lives in `fixtures/recording`,
+  which no spec imports (oxlint refuses it). A spec and a film never share a
+  file.
 - A test declares its context with a tag, imported from `@fixtures/tags`.
   `VISITOR` (`@public`) runs signed out. `AUTHENTICATED` (`@private`) runs as the
   primary user inside the project the run created for itself. `ONBOARDING`

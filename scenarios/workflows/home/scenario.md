@@ -18,6 +18,7 @@ Expected:
 
 - "Build" is offered
 - "Simulate" is offered
+- "Extract" is offered
 - "Process data" is offered
 - "Optimize" is offered
 - "Validate" is not offered: it sits behind the `emodel-validation` feature

@@ -61,3 +61,39 @@ export function morphologyLocations(page: Page) {
     remove: (index: number): Locator => rows.nth(index).getByTestId('scan-config-location-remove'),
   };
 }
+
+/**
+ * The circuit viewer: the scene a circuit simulation form shows, with its
+ * toolbar. The toolbar's menus are popovers, each a `dialog` while open.
+ */
+export function circuitViewer(page: Page) {
+  const list = page.getByTestId('color-by-dropdown-list');
+
+  return {
+    colourBy: page.getByTestId('color-by-dropdown-trigger'),
+    /** One way of colouring, by the name the list shows: "Mtype", "Layer", "Etype". */
+    colourByOption: (name: string): Locator => list.getByRole('button', { name, exact: true }),
+    populations: page.getByTestId('populations-menu-trigger'),
+    settings: page.getByTestId('viewer-settings'),
+    /** The one open popover. */
+    dialog: page.getByRole('dialog'),
+  };
+}
+
+/**
+ * The table of a population's nodes: under the viewer on the configuration
+ * tab, and under a chart in a campaign's results. `scope` says which.
+ *
+ * The grid pins its selection column into a row of its own ahead of the row
+ * holding the values; both carry the same `row-index`. Clicking the pinned
+ * cell selects the node, and the count above the table says how many are.
+ */
+export function nodesTable(scope: Locator) {
+  const row = (index: number): Locator => scope.locator(`[role="row"][row-index="${index}"]`);
+
+  return {
+    selection: scope.getByText(/^Nodes: \d+\/\d+ selected/),
+    // The pinned selection cell comes first; the row's own cells follow it.
+    select: (index: number): Locator => row(index).getByRole('gridcell').first(),
+  };
+}

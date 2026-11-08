@@ -20,7 +20,7 @@ endif
 endif
 
 KNOWN_TARGETS := help setup install browsers scenario casebook test test-local auth preflight reclaim \
-	test-ui test-headed test-debug report codegen summarize notify test-unit lint \
+	test-ui test-headed test-video test-debug report codegen summarize notify test-unit lint \
 	lint-fix typecheck format format-check check perf
 POSITIONAL_GOALS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 COMMAND_ARGS := $(strip $(ARGS) $(POSITIONAL_GOALS))
@@ -61,6 +61,7 @@ help:
 	@printf "  $(GREEN)make test [path]$(RESET)                  run playwright tests\n"
 	@printf "  $(GREEN)make test-local [path]$(RESET)            test localhost:3001\n"
 	@printf "  $(GREEN)make test-headed [path]$(RESET)          watch the browser\n"
+	@printf "  $(GREEN)make test-video [path]$(RESET)           film a scenario's video-recording.ts in one take\n"
 	@printf "  $(GREEN)make test-ui [path]$(RESET)               open playwright ui\n"
 	@printf "  $(GREEN)make test-debug [path]$(RESET)           debug tests\n"
 	@printf "\n$(BOLD)quality$(RESET)\n"
@@ -104,13 +105,13 @@ casebook:
 	$(call run_step,validate scenarios,bun tools/casebook/validator/cli.ts $(COMMAND_ARGS))
 
 test:
-	$(call run_step,run playwright tests,bun --bun playwright test $(COMMAND_ARGS))
+	$(call run_step,run playwright tests,bun --bun node_modules/.bin/playwright test $(COMMAND_ARGS))
 
 test-local:
-	$(call run_step,run local playwright tests,E2E_BASE_URL=http://localhost:3001 bun --bun playwright test $(COMMAND_ARGS))
+	$(call run_step,run local playwright tests,E2E_BASE_URL=http://localhost:3001 bun --bun node_modules/.bin/playwright test $(COMMAND_ARGS))
 
 auth:
-	$(call run_step,refresh live auth,E2E_RUN_ID=live bun --bun playwright test --project=setup $(COMMAND_ARGS))
+	$(call run_step,refresh live auth,E2E_RUN_ID=live bun --bun node_modules/.bin/playwright test --project=setup $(COMMAND_ARGS))
 
 preflight:
 	$(call run_step,run preflight,bun scripts/ci/preflight.ts $(COMMAND_ARGS))
@@ -119,19 +120,22 @@ reclaim:
 	$(call run_step,reclaim abandoned resources,bun scripts/ci/reclaim.ts $(COMMAND_ARGS))
 
 test-ui:
-	$(call run_step,open playwright ui,bun --bun playwright test --ui $(COMMAND_ARGS))
+	$(call run_step,open playwright ui,bun --bun node_modules/.bin/playwright test --ui $(COMMAND_ARGS))
 
 test-headed:
-	$(call run_step,run headed tests,bun --bun playwright test --headed $(COMMAND_ARGS))
+	$(call run_step,run headed tests,bun --bun node_modules/.bin/playwright test --headed $(COMMAND_ARGS))
+
+test-video:
+	$(call run_step,record tests,bun scripts/video.ts $(COMMAND_ARGS))
 
 test-debug:
-	$(call run_step,debug tests,bun --bun playwright test --debug $(COMMAND_ARGS))
+	$(call run_step,debug tests,bun --bun node_modules/.bin/playwright test --debug $(COMMAND_ARGS))
 
 report:
-	$(call run_step,open playwright report,bun --bun playwright show-report $(COMMAND_ARGS))
+	$(call run_step,open playwright report,bun --bun node_modules/.bin/playwright show-report $(COMMAND_ARGS))
 
 codegen:
-	$(call run_step,open playwright codegen,bun --bun playwright codegen "$${E2E_BASE_URL:-https://staging.openbraininstitute.org}" $(COMMAND_ARGS))
+	$(call run_step,open playwright codegen,bun --bun node_modules/.bin/playwright codegen "$${E2E_BASE_URL:-https://staging.openbraininstitute.org}" $(COMMAND_ARGS))
 
 summarize:
 	$(call run_step,summarize test results,bun scripts/ci/summarize-results.ts test-results/results.json test-results $(COMMAND_ARGS))
