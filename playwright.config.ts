@@ -27,18 +27,6 @@ const SCENARIO_USE = {
   video: RECORDING ? ('on' as const) : ('off' as const),
 };
 
-/**
- * The size of the window and of the video. Playwright scales a video down to
- * 800 px unless told the size, and a form read from a video has to be legible.
- */
-const RECORDING_SIZE = { width: 1280, height: 720 };
-
-/**
- * A pause after each action. At machine speed a form fills in a blink; this
- * leaves each click on screen long enough for a viewer to see where it landed.
- */
-const RECORDING_SLOW_MO = 300;
-
 /** Tags to skip: the other deployment's, plus any named here. */
 function excluding(...also: RegExp[]): RegExp {
   const patterns = [excludedEnvironmentTag(deploymentEnv()), ...also];
@@ -170,9 +158,10 @@ export default defineConfig({
     /**
      * One scenario in one take: `scenarios/<section>/<name>/video-recording.ts`
      * walks the whole journey — hub, form, launch, results — in a single test,
-     * so the video is one film rather than one clip per case. Defined only for
-     * `bun run test:video`: it launches what the project pays for, and a plain
-     * `bun run test` must not pay twice.
+     * so the video is one film rather than one clip per case. Each file sets
+     * its own pace and picture size with `film()` from `@fixtures/recording`.
+     * Defined only for `bun run test:video`: it launches what the project pays
+     * for, and a plain `bun run test` must not pay twice.
      */
     ...(RECORDING
       ? [
@@ -182,13 +171,7 @@ export default defineConfig({
             testMatch: /video-recording\.ts$/,
             dependencies: ['funding'],
             retries: 0,
-            use: {
-              ...SCENARIO_USE,
-              storageState: authStatePath('primary'),
-              viewport: RECORDING_SIZE,
-              video: { mode: 'on' as const, size: RECORDING_SIZE },
-              launchOptions: { slowMo: RECORDING_SLOW_MO },
-            },
+            use: { ...SCENARIO_USE, storageState: authStatePath('primary') },
           },
         ]
       : []),

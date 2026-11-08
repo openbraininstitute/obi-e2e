@@ -61,7 +61,7 @@ help:
 	@printf "  $(GREEN)make test [path]$(RESET)                  run playwright tests\n"
 	@printf "  $(GREEN)make test-local [path]$(RESET)            test localhost:3001\n"
 	@printf "  $(GREEN)make test-headed [path]$(RESET)          watch the browser\n"
-	@printf "  $(GREEN)make test-video [path]$(RESET)           record: videos/<spec>.webm, one per test under videos/tests/\n"
+	@printf "  $(GREEN)make test-video [path]$(RESET)           film a scenario's video-recording.ts in one take\n"
 	@printf "  $(GREEN)make test-ui [path]$(RESET)               open playwright ui\n"
 	@printf "  $(GREEN)make test-debug [path]$(RESET)           debug tests\n"
 	@printf "\n$(BOLD)quality$(RESET)\n"

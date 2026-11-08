@@ -32,5 +32,37 @@
     ".lighthouseci",
     "gh-web/src/components",
     "gh-web/src/lib"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "**/*.spec.ts",
+        "setup/**",
+        "fixtures/steps/**",
+        "fixtures/checks/**",
+        "fixtures/scan-config/**",
+        "fixtures/run/**",
+        "locators/**",
+        "api/**"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@fixtures/recording",
+                  "@fixtures/recording/*",
+                  "**/recording",
+                  "**/recording/*"
+                ],
+                "message": "A test never films. What a film alone needs lives in fixtures/recording; a step both use lives in fixtures/steps."
+              }
+            ]
+          }
+        ]
+      }
+    }
   ]
 }
