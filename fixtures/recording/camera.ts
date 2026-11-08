@@ -2,9 +2,11 @@
  * The camera: a film's way of looking closer at one part of the page.
  *
  * `focusOn` moves in on an element with room around it, so the viewer sees
- * where it sits; `pullBack` returns to the whole screen. Ordinary steps carry
- * on while the camera is wherever the storyboard left it, so a search box can
- * be typed into close up. A step may only act inside the frame: Playwright
+ * where it sits; `pullBack` returns to the whole screen; `scrollTo` brings an
+ * element into view where the camera is. Ordinary steps carry on while the
+ * camera is wherever the storyboard left it, so a search box can be typed
+ * into close up, and one `focusOn` after another is one move flowing into
+ * the next, with no return to the whole screen between them. A step may only act inside the frame: Playwright
  * clicks and types correctly on a scaled page, but it cannot reach what the
  * camera has pushed off-screen, and says so ("outside of the viewport").
  *
@@ -34,6 +36,8 @@ const MIN_SCALE = 1.15;
 
 const MOVE_MS = 900;
 const RETURN_MS = 700;
+/** How long a smooth scroll may take to come to rest before it is taken as stuck. */
+const SCROLL_SETTLES_WITHIN = 1_500;
 /** Ease in and out, cubic: slow at both ends, as a camera on a dolly. */
 const EASE = 'cubic-bezier(0.65, 0, 0.35, 1)';
 
@@ -128,9 +132,41 @@ async function moveTo(page: Page, shot: Shot, ms: number): Promise<void> {
 }
 
 /**
+ * Brings `target` into view, smoothly, inside whatever scrolls around it: a
+ * form's column, a table, a file pane. Resolves once the scrolling has come
+ * to rest. The window itself is put back where it was: under the camera the
+ * page is scaled from its corner, and a window scroll would slide it out
+ * from under the frame.
+ */
+export async function scrollTo(page: Page, target: Locator): Promise<void> {
+  await target.evaluate(
+    (element, settlesWithin) =>
+      new Promise<void>((resolve) => {
+        const windowX = window.scrollX;
+        const windowY = window.scrollY;
+        element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+        const start = performance.now();
+        let last = element.getBoundingClientRect();
+        let still = 0;
+        const tick = () => {
+          window.scrollTo(windowX, windowY);
+          const now = element.getBoundingClientRect();
+          still = now.top === last.top && now.left === last.left ? still + 1 : 0;
+          last = now;
+          // Five quiet frames: a smooth scroll pauses for no more than one.
+          if (still >= 5 || performance.now() - start > settlesWithin) resolve();
+          else requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }),
+    SCROLL_SETTLES_WITHIN
+  );
+}
+
+/**
  * Moves in on `subject`, one element or several framed together, with room
- * around it. Resolves once the move has settled, so the next step starts on
- * a still picture.
+ * around it, scrolling each into view first. Resolves once the move has
+ * settled, so the next step starts on a still picture.
  */
 export async function focusOn(
   page: Page,
@@ -143,6 +179,7 @@ export async function focusOn(
   const shot = await currentShot(page);
   const boxes: Box[] = [];
   for (const target of Array.isArray(subject) ? subject : [subject]) {
+    await scrollTo(page, target);
     const box = await target.boundingBox();
     if (!box) throw new Error(`The camera has nothing to focus on: ${target} is not on the page.`);
     boxes.push(unscaled(box, shot));
