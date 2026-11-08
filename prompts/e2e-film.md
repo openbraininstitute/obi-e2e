@@ -34,14 +34,15 @@ Show:
 - <What is on screen before the next scene>
 ```
 
-| Line    | Means                                                                                                                                       |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Pace:` | How long every click, fill or keypress is held on screen before it runs. The one timing knob.                                               |
-| `Size:` | The window and the picture, `WIDTHxHEIGHT`. Full HD when absent. `E2E_VIDEO_SIZE` overrides it for one run.                                 |
-| `User:` | The tag, as in a scenario: `credits`, `authenticated`, `public`.                                                                            |
-| `Seed:` | The `seed.json` the form is filled from, when there is one.                                                                                 |
-| `## `   | A scene. Its title is captioned on the picture while it plays.                                                                              |
-| `Show:` | What the viewer must see before the film moves on. Each line is an assertion: that is what makes the film wait for the page, never a sleep. |
+| Line                                           | Means                                                                                                                                                                          |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Pace:`                                        | How long every click, fill or keypress is held on screen before it runs. The one timing knob.                                                                                  |
+| `Size:`                                        | The window and the picture, `WIDTHxHEIGHT`. Full HD when absent. `E2E_VIDEO_SIZE` overrides it for one run.                                                                    |
+| `User:`                                        | The tag, as in a scenario: `credits`, `authenticated`, `public`.                                                                                                               |
+| `Seed:`                                        | The `seed.json` the form is filled from, when there is one.                                                                                                                    |
+| `## `                                          | A scene. Its title names the `test.step` in the report; nothing is written over the picture.                                                                                   |
+| `Show:`                                        | What the viewer must see before the film moves on. Each line is an assertion: that is what makes the film wait for the page, never a sleep.                                    |
+| `Point at "<element>" as "<title>": "<words>"` | A step that is a callout: a panel beside the element, with an arrow to it, headed by the title and holding the words, shown for a few seconds, then gone before the next step. |
 
 A scene may show more than any case checks — a tab the scientist wants seen,
 a chart opened, a panel scrolled. That is the point of a film, and why it has a
@@ -71,9 +72,20 @@ spec does not already have is written against what you saw, by test id first.
 `scenarios/workflows/simulate-paired-neurons/video-recording.ts` is the shape:
 
 - The top says how it is shot: `const PACE = <Pace>; test.use(film({ pace: PACE, size }))`.
-- One `test`, tagged from `User:`, titled `<Title>, in one take`.
-- One `test.step` per scene, titled exactly as the scene. Inside it, the
-  scene's steps, then its `Show:` lines as `expect`s.
+- One `test`, tagged from `User:`, titled `<Title>, in one take`. Its first
+  line is `await hideActionLabel(page)`: the film shows the screen, the
+  pointer and the callouts, and nothing else of Playwright's.
+- One `test.step` per scene, titled exactly as the scene, so the report reads
+  like the storyboard. Inside it, the scene's steps, then its `Show:` lines as
+  `expect`s.
+- `Point at "<element>" as "<title>": "<words>"` is `await callout(page,
+<locator>, '<words>', { title, side, align })` from
+  `@fixtures/recording/callout`, the title and the words exactly as written;
+  `side: 'top'` for an element near the bottom, `align: 'end'` for one near the
+  right edge. It resolves once the panel is gone.
+  { title, side, align })`from`@fixtures/recording/callout`: the scene's name
+as the title, `side: 'top'`for an element near the bottom,`align: 'end'`
+  for one near the right edge. It resolves once the panel is gone.
 - A step that only this film takes goes in the film. A step two films take
   goes in `fixtures/recording/`. A step the spec also takes is already in
   `fixtures/steps/` — call it; if it is not there yet, move it there from the
