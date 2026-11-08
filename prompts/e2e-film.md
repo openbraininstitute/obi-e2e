@@ -45,6 +45,7 @@ Show:
 | `Point at "<element>" as "<title>": "<words>"` | A step that is a callout: a panel beside the element, with an arrow to it, headed by the title and holding the words, shown for a few seconds, then gone before the next step.                              |
 | `Focus on "<element>"`                         | A camera move: in on the element, with room around it so the viewer sees where it sits. `, close` or `, wide` changes how much; `Focus on "<a>" and "<b>"` frames both. The steps that follow happen there. |
 | `Pull back`                                    | The camera returns to the whole screen.                                                                                                                                                                     |
+| `Scroll to "<element>"`                        | Brings the element into view, smoothly, where the camera is. `Focus on` does this on its own first.                                                                                                         |
 
 A scene may show more than any case checks — a tab the scientist wants seen,
 a chart opened, a panel scrolled. That is the point of a film, and why it has a
@@ -91,7 +92,10 @@ as the title, `side: 'top'`for an element near the bottom,`align: 'end'`
 - `Focus on "<element>"` is `await focusOn(page, <locator>)` from
   `@fixtures/recording/camera`, with `{ framing: 'close' }` or `'wide'` when the
   line says so, and a list of locators for `and`; `Pull back` is
-  `await pullBack(page)`. Both resolve once the move has settled. A step may
+  `await pullBack(page)`; `Scroll to` is `await scrollTo(page, <locator>)`.
+  Each resolves once the move has settled. One `Focus on` after another is
+  one move flowing into the next; `Pull back` only where the whole screen is
+  wanted again. A step may
   only act inside the frame: Playwright cannot reach what the camera pushed
   off-screen, and fails with "outside of the viewport". Before a step on
   something the frame does not show, the storyboard pulls back or focuses

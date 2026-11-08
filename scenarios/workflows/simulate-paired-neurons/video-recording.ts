@@ -8,6 +8,7 @@
  * Run with `bun run test:video scenarios/workflows/simulate-paired-neurons`.
  */
 
+import { NO_NAVIGATION } from '@fixtures/interactions';
 import { film, hideActionLabel, lastFrame } from '@fixtures/recording';
 import { callout } from '@fixtures/recording/callout';
 import { focusOn, pullBack } from '@fixtures/recording/camera';
@@ -31,7 +32,7 @@ import {
 import { CREDITS } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
 import { entityListing } from '@locators/listing';
-import { scanConfigEditor, scanConfigResults } from '@locators/scan-config';
+import { scanConfigEditor, scanConfigField, scanConfigResults } from '@locators/scan-config';
 import { circuitViewer } from '@locators/viewer';
 import { workflowsHub } from '@locators/workflows';
 
@@ -100,6 +101,26 @@ test('Paired neurons simulation, in one take', { tag: CREDITS }, async ({ page, 
       { title: 'The circuit viewer', align: 'end' }
     );
     await tourCircuitViewer(page);
+  });
+
+  await test.step('The form, up close', async () => {
+    const editor = scanConfigEditor(page);
+    const field = (key: string) => scanConfigField(editor.block(), key);
+
+    // One move flows into the next: no pull back until the end.
+    await focusOn(page, editor.rootElement('info'));
+    await editor.rootElement('info').click(NO_NAVIGATION);
+    await expect(field('campaign_name')).toBeVisible();
+    await focusOn(page, field('campaign_name'));
+    await focusOn(page, field('campaign_description'));
+
+    await focusOn(page, editor.rootElement('initialize'));
+    await editor.rootElement('initialize').click(NO_NAVIGATION);
+    await expect(field('simulation_length')).toBeVisible();
+    await focusOn(page, field('simulation_length'));
+
+    await focusOn(page, editor.rootElement('timestamps'));
+    await pullBack(page);
   });
 
   // The form, the campaign and the results are one shared step, as in the
