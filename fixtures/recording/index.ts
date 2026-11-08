@@ -62,13 +62,21 @@ export function film(options: Film): { viewport: Size; video: PlaywrightWorkerOp
 }
 
 /**
- * Holds the final picture for one pace.
+ * Keeps the picture as it is for `ms`.
  *
- * Playwright holds before an action, never after the last one, and the video
- * ends with the test: the result the whole film led up to would show for the
- * length of its assertion. This is a hold for the viewer, not a wait for the
- * app, which is why it is the one `waitForTimeout` in the suite.
+ * A hold for the viewer, not a wait for the app: nothing in the suite waits
+ * on a clock for a page to answer, and this is the one `waitForTimeout` in
+ * it. A film spends it on its last picture and on each callout's words.
+ */
+export async function hold(page: Page, ms: number): Promise<void> {
+  await page.waitForTimeout(ms);
+}
+
+/**
+ * Holds the final picture for one pace: Playwright holds before an action,
+ * never after the last one, and the video ends with the test, so the result
+ * the whole film led up to would show for the length of its assertion.
  */
 export async function lastFrame(page: Page, pace: number): Promise<void> {
-  await page.waitForTimeout(pace);
+  await hold(page, pace);
 }
