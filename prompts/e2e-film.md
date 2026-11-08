@@ -34,15 +34,17 @@ Show:
 - <What is on screen before the next scene>
 ```
 
-| Line                                           | Means                                                                                                                                                                          |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `Pace:`                                        | How long every click, fill or keypress is held on screen before it runs. The one timing knob.                                                                                  |
-| `Size:`                                        | The window and the picture, `WIDTHxHEIGHT`. Full HD when absent. `E2E_VIDEO_SIZE` overrides it for one run.                                                                    |
-| `User:`                                        | The tag, as in a scenario: `credits`, `authenticated`, `public`.                                                                                                               |
-| `Seed:`                                        | The `seed.json` the form is filled from, when there is one.                                                                                                                    |
-| `## `                                          | A scene. Its title names the `test.step` in the report; nothing is written over the picture.                                                                                   |
-| `Show:`                                        | What the viewer must see before the film moves on. Each line is an assertion: that is what makes the film wait for the page, never a sleep.                                    |
-| `Point at "<element>" as "<title>": "<words>"` | A step that is a callout: a panel beside the element, with an arrow to it, headed by the title and holding the words, shown for a few seconds, then gone before the next step. |
+| Line                                           | Means                                                                                                                                                                                                       |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Pace:`                                        | How long every click, fill or keypress is held on screen before it runs. The one timing knob.                                                                                                               |
+| `Size:`                                        | The window and the picture, `WIDTHxHEIGHT`. Full HD when absent. `E2E_VIDEO_SIZE` overrides it for one run.                                                                                                 |
+| `User:`                                        | The tag, as in a scenario: `credits`, `authenticated`, `public`.                                                                                                                                            |
+| `Seed:`                                        | The `seed.json` the form is filled from, when there is one.                                                                                                                                                 |
+| `## `                                          | A scene. Its title names the `test.step` in the report; nothing is written over the picture.                                                                                                                |
+| `Show:`                                        | What the viewer must see before the film moves on. Each line is an assertion: that is what makes the film wait for the page, never a sleep.                                                                 |
+| `Point at "<element>" as "<title>": "<words>"` | A step that is a callout: a panel beside the element, with an arrow to it, headed by the title and holding the words, shown for a few seconds, then gone before the next step.                              |
+| `Focus on "<element>"`                         | A camera move: in on the element, with room around it so the viewer sees where it sits. `, close` or `, wide` changes how much; `Focus on "<a>" and "<b>"` frames both. The steps that follow happen there. |
+| `Pull back`                                    | The camera returns to the whole screen.                                                                                                                                                                     |
 
 A scene may show more than any case checks — a tab the scientist wants seen,
 a chart opened, a panel scrolled. That is the point of a film, and why it has a
@@ -86,6 +88,17 @@ spec does not already have is written against what you saw, by test id first.
   { title, side, align })`from`@fixtures/recording/callout`: the scene's name
 as the title, `side: 'top'`for an element near the bottom,`align: 'end'`
   for one near the right edge. It resolves once the panel is gone.
+- `Focus on "<element>"` is `await focusOn(page, <locator>)` from
+  `@fixtures/recording/camera`, with `{ framing: 'close' }` or `'wide'` when the
+  line says so, and a list of locators for `and`; `Pull back` is
+  `await pullBack(page)`. Both resolve once the move has settled. A step may
+  only act inside the frame: Playwright cannot reach what the camera pushed
+  off-screen, and fails with "outside of the viewport". Before a step on
+  something the frame does not show, the storyboard pulls back or focuses
+  again. A shared step that does several things at once, such as
+  `chooseEntities`, is taken apart into steps the camera can move between
+  (`openEntityListing`, `searchEntity`, `pickEntity`, `useChosenEntities`),
+  and the spec's step composes them, so both keep one behaviour.
 - A step that only this film takes goes in the film. A step two films take
   goes in `fixtures/recording/`. A step the spec also takes is already in
   `fixtures/steps/` — call it; if it is not there yet, move it there from the

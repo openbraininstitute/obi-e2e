@@ -30,11 +30,17 @@ Show:
 
 Steps:
 
-1. Search for the circuit the seed names and pick it
-2. Press "Use model"
+1. Focus on the search box
+2. Search for the circuit the seed names
+3. Pull back
+4. Focus on the circuit's row
+5. Pick it
+6. Pull back
+7. Press "Use model"
 
 Show:
 
+- The circuit's row, found by its name
 - The Paired neurons simulation form
 
 ## The circuit viewer
@@ -123,3 +129,6 @@ Show:
 A "Point at" line is a callout: a panel beside the element, with an arrow to
 it, headed by the title after "as" and holding the words, shown for a few
 seconds, then gone, before the next step.
+
+"Focus on" moves the camera in on an element, with room around it; "Pull back"
+returns to the whole screen. The steps between happen where the camera is.
