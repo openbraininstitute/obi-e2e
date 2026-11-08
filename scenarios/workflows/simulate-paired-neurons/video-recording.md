@@ -62,6 +62,26 @@ Show:
 - The settings offer the "Zoom slider"
 - "Nodes: 1/2 selected", then "Nodes: 0/2 selected"
 
+## The form, up close
+
+Steps:
+
+1. Focus on "Info"
+2. Open "Info"
+3. Focus on "Campaign name"
+4. Focus on "Campaign description"
+5. Focus on "Initialization"
+6. Open "Initialization"
+7. Focus on "Simulation length"
+8. Focus on "Timestamps"
+9. Pull back
+
+Show:
+
+- The camera goes from each to the next without returning to the whole screen
+- "Campaign name" and "Campaign description" under Info; "Simulation length"
+  under Initialization
+
 ## The form, the campaign and the results
 
 Steps:
@@ -130,5 +150,7 @@ A "Point at" line is a callout: a panel beside the element, with an arrow to
 it, headed by the title after "as" and holding the words, shown for a few
 seconds, then gone, before the next step.
 
-"Focus on" moves the camera in on an element, with room around it; "Pull back"
-returns to the whole screen. The steps between happen where the camera is.
+"Focus on" moves the camera in on an element, with room around it, scrolling
+it into view first; one "Focus on" after another is one move flowing into the
+next. "Pull back" returns to the whole screen. "Scroll to" brings an element
+into view where the camera is. The steps between happen where the camera is.
