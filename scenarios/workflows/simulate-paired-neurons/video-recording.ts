@@ -2,13 +2,13 @@
  * The Paired neurons simulation, start to finish, in one take.
  *
  * `video-recording.md` beside this file is the storyboard; each of its scenes
- * is one `test.step` here, captioned on the picture while it plays. The path
+ * is one `test.step` here, named in the report. The path
  * is the spec's own, from `@fixtures/steps`; the tours of the viewer and of
  * the results, and the callouts, are the film's, from `@fixtures/recording`.
  * Run with `bun run test:video scenarios/workflows/simulate-paired-neurons`.
  */
 
-import { film, lastFrame } from '@fixtures/recording';
+import { film, hideActionLabel, lastFrame } from '@fixtures/recording';
 import { callout } from '@fixtures/recording/callout';
 import {
   tourCircuitViewer,
@@ -45,6 +45,8 @@ test.skip(!runsOnThisDeployment(fixture), notDeployedHere(fixture));
 test.describe.configure({ timeout: campaignTimeout(fixture) + 5 * 60_000 });
 
 test('Paired neurons simulation, in one take', { tag: CREDITS }, async ({ page, workspace }) => {
+  await hideActionLabel(page);
+
   await test.step('The Workflows page', async () => {
     await openWorkflowsHub(page, workspace);
     await callout(

@@ -10,6 +10,11 @@
  * spring of 260 ms becomes a decelerating curve of the same length; the exit
  * is 200 ms, eased out, as there. Enter, hold and exit are one CSS timeline,
  * so a callout is one overlay, shown once and removed once.
+ *
+ * An arrow points from the panel to the middle of the anchor, as the Dock's
+ * menus point at their icon: a square turned 45°, bordered on its two outward
+ * sides, sitting over the panel's edge. It is the panel's sibling, so the
+ * clip that reveals the panel leaves it whole.
  */
 
 import type { Locator, Page } from '@playwright/test';
@@ -30,8 +35,10 @@ export type CalloutOptions = {
   duration?: number;
 };
 
-const SIDE_OFFSET = 8;
+const SIDE_OFFSET = 14;
 const RADIUS = 16;
+/** The arrow's square. Turned 45°, its tip reaches `ARROW / √2` beyond the panel's edge. */
+const ARROW = 14;
 const ENTER_MS = 260;
 const EXIT_MS = 200;
 const DEFAULT_DURATION = 4_000;
@@ -90,6 +97,11 @@ export async function callout(
       ? `left:${Math.round(box.x)}px`
       : `right:${Math.round(viewport.width - box.x - box.width)}px`;
 
+  // The arrow's tip sits under the middle of the anchor, measured from the
+  // panel's edge nearest it, and never closer to a corner than its rounding.
+  const arrowEdge = align === 'start' ? 'left' : 'right';
+  const arrowOffset = `clamp(${RADIUS}px, ${Math.round(box.width / 2 - ARROW / 2)}px, calc(100% - ${RADIUS + ARROW}px))`;
+
   const total = ENTER_MS + duration + EXIT_MS;
   const enterEnd = (ENTER_MS / total) * 100;
   const exitStart = ((ENTER_MS + duration) / total) * 100;
@@ -124,8 +136,20 @@ export async function callout(
 }
 .callout-title { font-weight: 600; margin-bottom: 4px; }
 .callout-text { color: #334155; }
+.callout-arrow {
+  position: absolute;
+  ${side === 'bottom' ? 'top' : 'bottom'}: -${ARROW / 2 + 1}px;
+  ${arrowEdge}: ${arrowOffset};
+  width: ${ARROW}px;
+  height: ${ARROW}px;
+  background: #ffffff;
+  border-left: 1px solid #e2e8f0;
+  border-top: 1px solid #e2e8f0;
+  transform: rotate(${side === 'bottom' ? 45 : 225}deg);
+  z-index: 1;
+}
 </style>
-<div class="callout"><div class="callout-panel">${
+<div class="callout"><div class="callout-arrow"></div><div class="callout-panel">${
     title ? `<div class="callout-title">${escapeHtml(title)}</div>` : ''
   }<div class="callout-text">${escapeHtml(text)}</div></div></div>`;
 
