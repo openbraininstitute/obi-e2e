@@ -6,7 +6,7 @@ import type { Page } from '@playwright/test';
  * Not `validate`: core-web-app #2034 put it behind the `emodel-validation`
  * feature flag, off by default.
  */
-export const CATEGORIES = ['build', 'simulate', 'process', 'optimize'] as const;
+export const CATEGORIES = ['build', 'simulate', 'extract', 'process', 'optimize'] as const;
 
 export type Category = (typeof CATEGORIES)[number];
 

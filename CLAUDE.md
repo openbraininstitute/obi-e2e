@@ -2,7 +2,8 @@
 
 E2E tests for the OBI web app. Bun 1.4, Playwright 1.62, oxlint + oxfmt.
 
-Tests run under Bun via `bun --bun playwright`, so Bun APIs work in test code.
+Tests run under Bun via `bun --bun node_modules/.bin/playwright` (by path: on Bun 1.4.3
+the bin name runs under its `node` shebang instead), so Bun APIs work in test code.
 Always run through the package scripts; `bunx playwright` falls back to Node
 workers where the `Bun` global does not exist.
 

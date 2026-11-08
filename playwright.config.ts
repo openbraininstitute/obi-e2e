@@ -20,7 +20,24 @@ import {
 import { excludedEnvironmentTag } from './fixtures/tags';
 
 const ASSERTION_TIMEOUT = 30_000;
-const SCENARIO_USE = { contextOptions: { reducedMotion: 'reduce' as const } };
+/** Video only on request: `bun run test:video` sets E2E_VIDEO. Scenarios only, never the sign-in. */
+const RECORDING = Boolean(process.env.E2E_VIDEO);
+const SCENARIO_USE = {
+  contextOptions: { reducedMotion: 'reduce' as const },
+  video: RECORDING ? ('on' as const) : ('off' as const),
+};
+
+/**
+ * The size of the window and of the video. Playwright scales a video down to
+ * 800 px unless told the size, and a form read from a video has to be legible.
+ */
+const RECORDING_SIZE = { width: 1280, height: 720 };
+
+/**
+ * A pause after each action. At machine speed a form fills in a blink; this
+ * leaves each click on screen long enough for a viewer to see where it landed.
+ */
+const RECORDING_SLOW_MO = 300;
 
 /** Tags to skip: the other deployment's, plus any named here. */
 function excluding(...also: RegExp[]): RegExp {
@@ -45,6 +62,7 @@ export default defineConfig({
   outputDir: 'test-results/artifacts',
 
   reporter: [
+    ['./scripts/ci/banner.ts'],
     ['list'],
     ['html', { open: isCI ? 'never' : 'on-failure' }],
     ['json', { outputFile: 'test-results/results.json' }],
@@ -146,6 +164,31 @@ export default defineConfig({
             dependencies: ['funding'],
             retries: 0,
             use: { ...SCENARIO_USE, storageState: authStatePath('primary') },
+          },
+        ]
+      : []),
+    /**
+     * One scenario in one take: `scenarios/<section>/<name>/video-recording.ts`
+     * walks the whole journey — hub, form, launch, results — in a single test,
+     * so the video is one film rather than one clip per case. Defined only for
+     * `bun run test:video`: it launches what the project pays for, and a plain
+     * `bun run test` must not pay twice.
+     */
+    ...(RECORDING
+      ? [
+          {
+            name: 'video',
+            testDir: './scenarios',
+            testMatch: /video-recording\.ts$/,
+            dependencies: ['funding'],
+            retries: 0,
+            use: {
+              ...SCENARIO_USE,
+              storageState: authStatePath('primary'),
+              viewport: RECORDING_SIZE,
+              video: { mode: 'on' as const, size: RECORDING_SIZE },
+              launchOptions: { slowMo: RECORDING_SLOW_MO },
+            },
           },
         ]
       : []),

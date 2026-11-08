@@ -176,6 +176,7 @@ bun run test                          # everything, on staging
 bun run test scenarios/data           # one section, or one scenario folder
 bun run test --grep @credits          # by tag
 bun run test:headed                   # watch the browser
+bun run test:video scenarios/x/y.spec.ts  # record: test-results/videos/x-y.webm, one per test under videos/tests/
 bun run test:ui                       # Playwright UI mode
 bun run report                        # open the last HTML report
 bun run check                         # format, lint, types, unit tests
