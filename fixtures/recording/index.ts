@@ -46,8 +46,8 @@ export function videoSize(declared?: Size, fromEnv = process.env.E2E_VIDEO_SIZE)
 
 /**
  * The options a recording file passes to `test.use`: the window, and the video
- * with its holds. Each `test.step` of the film is its scene, and its title is
- * captioned on the picture while it plays.
+ * with its holds. Nothing else is drawn over the page: the film is the screen
+ * as a scientist sees it, plus the pointer and the callouts.
  */
 export function film(options: Film): { viewport: Size; video: PlaywrightWorkerOptions['video'] } {
   const size = videoSize(options.size);
@@ -56,7 +56,7 @@ export function film(options: Film): { viewport: Size; video: PlaywrightWorkerOp
     video: {
       mode: 'on',
       size,
-      show: { actions: { duration: options.pace }, test: { level: 'step' } },
+      show: { actions: { duration: options.pace } },
     },
   };
 }
@@ -70,6 +70,23 @@ export function film(options: Film): { viewport: Size; video: PlaywrightWorkerOp
  */
 export async function hold(page: Page, ms: number): Promise<void> {
   await page.waitForTimeout(ms);
+}
+
+/**
+ * Keeps Playwright's action label off the picture.
+ *
+ * `show.actions` draws three things before each action: the pointer, the
+ * highlight on the target, and a label naming the action, "Click", at a
+ * corner. The first two are what a viewer follows; the label is not the
+ * screen and has no option of its own. The screencast's overlays share the
+ * label's shadow root and are re-added on every new document, so one overlay
+ * holding a style rule hides it for the whole film.
+ *
+ * ponytail: the label's element name, `x-pw-title`, is Playwright's own (read
+ * from 1.62). A rename brings the label back, nothing worse.
+ */
+export async function hideActionLabel(page: Page): Promise<void> {
+  await page.screencast.showOverlay('<style>x-pw-title { display: none !important; }</style>');
 }
 
 /**

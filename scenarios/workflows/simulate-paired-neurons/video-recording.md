@@ -17,7 +17,7 @@ Seed: seed.json
 Steps:
 
 1. Open the Workflows page of my project
-2. Point at "Simulate": "Workflows are grouped by what they do. Simulate runs
+2. Point at "Simulate" as "Workflows": "Workflows are grouped by what they do. Simulate runs
    a model: one neuron, a pair, a microcircuit, a brain region."
 3. Choose "Simulate"
 4. Start "Paired neurons"
@@ -41,7 +41,7 @@ Show:
 
 Steps:
 
-1. Point at "Colour by": "The two neurons of the circuit, drawn from their
+1. Point at "Colour by" as "The circuit viewer": "The two neurons of the circuit, drawn from their
    morphologies. Colour them by any property, show the other populations,
    pick a node in the table."
 2. Colour the cells by "Mtype"
@@ -60,7 +60,7 @@ Show:
 
 Steps:
 
-1. Point at "Generate simulation(s)": "obi-one describes the form, section by
+1. Point at "Generate simulation(s)" as "The form": "obi-one describes the form, section by
    section. The button enables once every section is complete."
 2. Fill the form from the configuration in the seed
 3. Press "Generate simulation(s)"
@@ -79,7 +79,7 @@ Show:
 
 Steps:
 
-1. Point at the coordinate's status: "Each coordinate is one simulation. Its
+1. Point at the coordinate's status as "The campaign": "Each coordinate is one simulation. Its
    status goes from created to running to done, and its files arrive as it
    runs."
 2. Open "Node sets"
@@ -97,7 +97,7 @@ Steps:
 1. Open "Recording 0"
 2. Group the traces by "mtype"
 3. Pick the first cell in the table
-4. Point at "Group by": "The soma voltage of each cell. Group by a property
+4. Point at "Group by" as "The recording": "The soma voltage of each cell. Group by a property
    to compare classes; pick a row to see one cell alone."
 
 Show:
@@ -120,5 +120,6 @@ Show:
 - "Spiking" pressed, and "N of N spikes" counted
 - The raster, held for one pace at the end
 
-A "Point at" line is a callout: a few words beside the element, shown for a
-few seconds, then gone, before the next step.
+A "Point at" line is a callout: a panel beside the element, with an arrow to
+it, headed by the title after "as" and holding the words, shown for a few
+seconds, then gone, before the next step.

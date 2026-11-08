@@ -18,6 +18,6 @@ test('film sizes the window like the video and holds each action for the pace', 
   const size = { width: 1280, height: 720 };
   expect(film({ pace: 1500, size })).toEqual({
     viewport: size,
-    video: { mode: 'on', size, show: { actions: { duration: 1500 }, test: { level: 'step' } } },
+    video: { mode: 'on', size, show: { actions: { duration: 1500 } } },
   });
 });
