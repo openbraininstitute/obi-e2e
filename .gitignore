@@ -38,3 +38,6 @@ perf/report/
 .playwright/
 .playwright-cli/
 
+entitycore-report-*.md
+entitycore-ticket-*.md
+.worktrees

@@ -1,11 +1,11 @@
 # Paired neurons simulation
 
-The film a scientist watches to learn the workflow: the Workflows page, the
-Simulate category, the Paired neurons card, the circuit and its viewer, the
-form, the campaign generated, launched and followed to its traces, and then
-a tour of what the results offer — the input files, the recording's chart,
-the spikes. One take, with time to see each page and what each click shows,
-and a few words beside the things worth explaining.
+This video shows how to run a paired neurons simulation from start to end.
+We go to the Workflows page, pick Simulate, then Paired neurons, choose the
+circuit and play a bit with the viewer. Then we fill the form, generate the
+simulation, launch it and wait for the results. At the end we look around:
+the input files, the voltage traces and the spikes. All in one take, slow
+enough to follow every click, with small popups to explain the important parts.
 
 Pace: 2 seconds
 Size: 1920x1080
