@@ -4,9 +4,13 @@
  * Records a run.
  *
  * `bun run test:video <scenario folder>` films the scenario's
- * `video-recording.ts` — its whole journey in one test, so one take — into
- * test-results/videos/<scenario>.mov (`scenarios/workflows/simulate-paired-neurons`
- * → `workflows-simulate-paired-neurons.mov`). The file declares its pace
+ * `video-recording.ts` — its whole journey in one test, so one take — into a
+ * folder of its own, test-results/videos/<scenario>/<date-time>/<scenario>.mov
+ * (`scenarios/workflows/simulate-paired-neurons` →
+ * `workflows-simulate-paired-neurons/2026-11-09T16-02-11/workflows-simulate-paired-neurons.mov`).
+ * Every run writes only inside its own folder — its clips, its results.json,
+ * its report and its film — and deletes nothing else, so two films can be shot
+ * at once and an earlier take is never lost. The file declares its pace
  * (`film()` in fixtures/recording); every film is 1920x1080, laid out at the
  * video guide's 1512 wide and scaled up here. `E2E_VIDEO_SIZE=2560x1440`
  * changes the size for one run.
@@ -20,13 +24,13 @@
  * in a file QuickTime, Teams and an editor open.
  *
  * With `--project=<name>` it records that project's tests instead, one
- * video.webm per test under test-results/videos/tests/<test>/, joined per spec
- * in file order into test-results/videos/<spec>.webm
- * (`scenarios/site/footer/footer.spec.ts` → `site-footer-footer.webm`). The
- * top level holds only the joined files. Each run starts from an empty folder.
+ * video.webm per test under <run folder>/tests/<test>/, joined per spec in
+ * file order into <run folder>/<spec>.webm
+ * (`scenarios/site/footer/footer.spec.ts` → `site-footer-footer.webm`).
  *
  * Usage: bun scripts/video.ts [--format=mov|mp4|webm] [playwright test arguments]
- *        bun scripts/video.ts --join        joins the last run's videos, nothing re-runs
+ *        bun scripts/video.ts --join[=<run folder>]   joins a run's videos again, the
+ *                                                     latest run's by default; nothing re-runs
  */
 
 import * as fs from 'node:fs';
@@ -35,8 +39,9 @@ import * as path from 'node:path';
 
 import { videoSize } from '@fixtures/recording';
 
-const OUT = 'test-results/videos';
-const TESTS = `${OUT}/tests`;
+/** Where every run's folder goes. */
+const ROOT = 'test-results/videos';
+const RESULTS = 'results.json';
 
 type Attachment = { name: string; path?: string };
 type Spec = { file: string; tests: { results: { attachments: Attachment[] }[] }[] };
@@ -83,17 +88,49 @@ export function withProject(args: string[]): string[] {
   return picked ? args : ['--project=video', ...args];
 }
 
+/**
+ * The folder one run writes to: named after the scenario it films, then the
+ * time it started, to the second. A run of several scenarios, or of a
+ * project, is filed under `run`.
+ */
+export function runFolder(test: string[], startedAt: Date): string {
+  const scenarios = test.filter((arg) => arg.startsWith('scenarios/'));
+  const [only] = scenarios;
+  const name = scenarios.length === 1 && only ? videoName(only.replace(/\/+$/, '')) : 'run';
+  const stamp = startedAt.toISOString().slice(0, 19).replaceAll(':', '-');
+  return path.join(ROOT, name, stamp);
+}
+
+/** The run folder most recently written: the one `--join` alone picks. */
+function latestRun(): string {
+  const runs = fs.existsSync(ROOT)
+    ? fs
+        .readdirSync(ROOT, { recursive: true, encoding: 'utf8' })
+        .filter((entry) => path.basename(entry) === RESULTS)
+        .map((entry) => path.join(ROOT, path.dirname(entry)))
+        .filter((dir) => !dir.includes(`${path.sep}tests${path.sep}`))
+    : [];
+  const latest = runs.toSorted((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs)[0];
+  if (!latest) throw new Error(`No run to join: no ${RESULTS} under ${ROOT}.`);
+  return latest;
+}
+
 /** The first is the default: the guide's .mov. */
 export const FORMATS = ['mov', 'mp4', 'webm'] as const;
 export type Format = (typeof FORMATS)[number];
 
 /** Our own flags, taken out before the rest goes to Playwright. */
-export function parseArgs(argv: string[]): { format: Format; join: boolean; test: string[] } {
+export function parseArgs(argv: string[]): {
+  format: Format;
+  join: boolean | string;
+  test: string[];
+} {
   let format: Format = FORMATS[0];
-  let join = false;
+  let join: boolean | string = false;
   const test: string[] = [];
   for (const arg of argv) {
     if (arg === '--join') join = true;
+    else if (arg.startsWith('--join=')) join = arg.slice('--join='.length);
     else if (arg.startsWith('--format=')) {
       const asked = arg.slice('--format='.length);
       if (!FORMATS.includes(asked as Format)) {
@@ -173,15 +210,20 @@ function ffmpeg(): string {
 }
 
 /** Joins each spec's videos into one file. All come from one viewport, so a stream copy is enough. */
-function stitch(format: Format): void {
-  const results = JSON.parse(fs.readFileSync('test-results/results.json', 'utf8')) as Results;
+function stitch(format: Format, out: string): void {
+  const resultsFile = path.join(out, RESULTS);
+  if (!fs.existsSync(resultsFile)) {
+    console.log(`\n  video  nothing to join: the run wrote no ${resultsFile}`);
+    return;
+  }
+  const results = JSON.parse(fs.readFileSync(resultsFile, 'utf8')) as Results;
   const bySpec = videosBySpec(results);
   if (bySpec.size === 0) {
-    console.log(`\n  video  nothing to join: the last run recorded no test (see ${TESTS})`);
+    console.log(`\n  video  nothing to join: the run recorded no test (see ${out}/tests)`);
     return;
   }
   for (const [file, videos] of bySpec) {
-    const target = path.join(OUT, `${videoName(file)}.webm`);
+    const target = path.join(out, `${videoName(file)}.webm`);
     const list = `${target}.txt`;
     fs.writeFileSync(list, videos.map((video) => `file '${video}'\n`).join(''));
     const run = Bun.spawnSync(
@@ -212,10 +254,12 @@ function stitch(format: Format): void {
 if (import.meta.main) {
   const { format, join, test } = parseArgs(process.argv.slice(2));
   if (join) {
-    stitch(format);
+    stitch(format, typeof join === 'string' ? join : latestRun());
     process.exit(0);
   }
-  fs.rmSync(OUT, { recursive: true, force: true });
+  const out = runFolder(test, new Date());
+  fs.mkdirSync(out, { recursive: true });
+  console.log(`\n  video  this run writes to ${out}\n`);
   const run = Bun.spawnSync(
     [
       'bun',
@@ -223,11 +267,21 @@ if (import.meta.main) {
       'node_modules/.bin/playwright',
       'test',
       '--output',
-      TESTS,
+      path.join(out, 'tests'),
       ...withProject(test),
     ],
-    { stdio: ['inherit', 'inherit', 'inherit'], env: { ...process.env, E2E_VIDEO: '1' } }
+    {
+      stdio: ['inherit', 'inherit', 'inherit'],
+      env: {
+        ...process.env,
+        E2E_VIDEO: '1',
+        E2E_RESULTS_FILE: path.join(out, RESULTS),
+        // The report too, and never opened: a waiting report server would hold the run.
+        PLAYWRIGHT_HTML_OUTPUT_DIR: path.join(out, 'report'),
+        PLAYWRIGHT_HTML_OPEN: 'never',
+      },
+    }
   );
-  stitch(format);
+  stitch(format, out);
   process.exit(run.exitCode);
 }

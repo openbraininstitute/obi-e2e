@@ -176,7 +176,7 @@ the storyboard, `video-recording.md` beside the scenario, then:
 
 ```bash
 /e2e-film scenarios/workflows/simulate-paired-neurons    # writes video-recording.ts from the storyboard
-bun run test:video scenarios/workflows/simulate-paired-neurons    # test-results/videos/workflows-simulate-paired-neurons.mov
+bun run test:video scenarios/workflows/simulate-paired-neurons    # test-results/videos/workflows-simulate-paired-neurons/<date-time>/…mov
 ```
 
 `Pace:` in the storyboard is how long each click is held on screen. Every film

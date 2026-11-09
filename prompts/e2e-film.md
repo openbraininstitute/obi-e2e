@@ -119,7 +119,7 @@ film that needs the product to behave differently has found a bug: report it.
 ## 5. Shoot, then watch
 
 ```bash
-bun run test:video scenarios/<section>/<name>                 # test-results/videos/<section>-<name>.mov, 1920x1080
+bun run test:video scenarios/<section>/<name>                 # test-results/videos/<section>-<name>/<date-time>/<section>-<name>.mov, 1920x1080
 bun run test:video --format=mp4 scenarios/<section>/<name>    # or webm, when the viewer needs one
 bun run check
 ```

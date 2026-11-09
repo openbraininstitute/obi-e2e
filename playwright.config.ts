@@ -53,7 +53,8 @@ export default defineConfig({
     ['./scripts/ci/banner.ts'],
     ['list'],
     ['html', { open: isCI ? 'never' : 'on-failure' }],
-    ['json', { outputFile: 'test-results/results.json' }],
+    // A film run reads its own copy (`scripts/video.ts`), so two runs never share one file.
+    ['json', { outputFile: process.env.E2E_RESULTS_FILE ?? 'test-results/results.json' }],
     ...(isCI ? [['github'] as const] : []),
   ],
 
