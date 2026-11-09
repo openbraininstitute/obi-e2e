@@ -179,6 +179,14 @@ the storyboard, `video-recording.md` beside the scenario, then:
 bun run test:video scenarios/workflows/simulate-paired-neurons    # test-results/videos/workflows-simulate-paired-neurons/<date-time>/…mov
 ```
 
+Have a screen recording of the demo instead? Let the agent write both files
+from it, and answer its questions (which feature flags were on, what to leave
+out):
+
+```bash
+/e2e-from-video ~/Downloads/demo.mp4 scenarios/workflows/simulate-whole-brain-male-cns
+```
+
 `Pace:` in the storyboard is how long each click is held on screen. Every film
 is a 1920x1080 `.mov`. The page is laid out 1512 wide, as the video guide asks,
 so the left menu takes about a quarter of the picture, then scaled to 1920.
