@@ -5,15 +5,19 @@
  *
  * `bun run test:video <scenario folder>` films the scenario's
  * `video-recording.ts` — its whole journey in one test, so one take — into
- * test-results/videos/<scenario>.webm (`scenarios/workflows/simulate-paired-neurons`
- * → `workflows-simulate-paired-neurons.webm`). The file declares its pace and
- * picture size (`film()` in fixtures/recording.ts); `E2E_VIDEO_SIZE=2560x1440`
- * overrides the size for one run.
+ * test-results/videos/<scenario>.mov (`scenarios/workflows/simulate-paired-neurons`
+ * → `workflows-simulate-paired-neurons.mov`). The file declares its pace
+ * (`film()` in fixtures/recording); every film is 1920x1080, laid out at the
+ * video guide's 1512 wide and scaled up here. `E2E_VIDEO_SIZE=2560x1440`
+ * changes the size for one run.
  *
- * `--format=mp4` re-encodes each joined video to H.264 with the ffmpeg on
- * PATH (`brew install ffmpeg`): the one Playwright ships encodes VP8 but
- * cannot decode it. Playwright records at a fixed 1 Mbit/s, so the mp4 carries
- * the same detail in a file QuickTime and Teams open.
+ * Each joined video is re-encoded to H.264 in a .mov, the file the video
+ * guide asks to keep, with the ffmpeg on PATH (`brew install ffmpeg`): the one
+ * Playwright ships encodes VP8 but cannot decode it. `--format=mp4` puts the
+ * same stream in an mp4; `--format=webm` keeps Playwright's file as it is,
+ * at the size the page was laid out (1512x850), and needs no ffmpeg.
+ * Playwright records at a fixed 1 Mbit/s, so the H.264 carries the same detail
+ * in a file QuickTime, Teams and an editor open.
  *
  * With `--project=<name>` it records that project's tests instead, one
  * video.webm per test under test-results/videos/tests/<test>/, joined per spec
@@ -21,13 +25,15 @@
  * (`scenarios/site/footer/footer.spec.ts` → `site-footer-footer.webm`). The
  * top level holds only the joined files. Each run starts from an empty folder.
  *
- * Usage: bun scripts/video.ts [--format=webm|mp4] [playwright test arguments]
+ * Usage: bun scripts/video.ts [--format=mov|mp4|webm] [playwright test arguments]
  *        bun scripts/video.ts --join        joins the last run's videos, nothing re-runs
  */
 
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+
+import { videoSize } from '@fixtures/recording';
 
 const OUT = 'test-results/videos';
 const TESTS = `${OUT}/tests`;
@@ -77,12 +83,13 @@ export function withProject(args: string[]): string[] {
   return picked ? args : ['--project=video', ...args];
 }
 
-export const FORMATS = ['webm', 'mp4'] as const;
+/** The first is the default: the guide's .mov. */
+export const FORMATS = ['mov', 'mp4', 'webm'] as const;
 export type Format = (typeof FORMATS)[number];
 
 /** Our own flags, taken out before the rest goes to Playwright. */
 export function parseArgs(argv: string[]): { format: Format; join: boolean; test: string[] } {
-  let format: Format = 'webm';
+  let format: Format = FORMATS[0];
   let join = false;
   const test: string[] = [];
   for (const arg of argv) {
@@ -99,19 +106,21 @@ export function parseArgs(argv: string[]): { format: Format; join: boolean; test
 }
 
 /**
- * H.264 in an mp4, from a joined webm. CRF 18 is visually lossless for a
- * screen recording, yuv420p is what every player decodes, and faststart puts
- * the index first so a browser plays it while it downloads.
+ * H.264 in a mov or an mp4, from a joined webm, scaled to the video size.
+ * Lanczos keeps text edges sharp when scaling up; CRF 18 is visually lossless
+ * for a screen recording, yuv420p is what every player decodes, and faststart
+ * puts the index first so a player starts before the file has downloaded.
  */
-function toMp4(webm: string): string {
+function encode(webm: string, format: 'mov' | 'mp4'): string {
   const encoder = Bun.which('ffmpeg');
   if (!encoder) {
     throw new Error(
-      'An mp4 needs an ffmpeg with libx264 on PATH (`brew install ffmpeg`): ' +
-        'the one Playwright ships cannot decode the VP8 it recorded.'
+      `A ${format} needs an ffmpeg with libx264 on PATH (\`brew install ffmpeg\`): ` +
+        'the one Playwright ships cannot decode the VP8 it recorded. --format=webm needs none.'
     );
   }
-  const mp4 = webm.replace(/\.webm$/, '.mp4');
+  const out = webm.replace(/\.webm$/, `.${format}`);
+  const { width, height } = videoSize();
   const run = Bun.spawnSync(
     [
       encoder,
@@ -120,6 +129,8 @@ function toMp4(webm: string): string {
       'error',
       '-i',
       webm,
+      '-vf',
+      `scale=${width}:${height}:flags=lanczos`,
       '-c:v',
       'libx264',
       '-preset',
@@ -130,13 +141,13 @@ function toMp4(webm: string): string {
       'yuv420p',
       '-movflags',
       '+faststart',
-      mp4,
+      out,
     ],
     { stdio: ['ignore', 'inherit', 'inherit'] }
   );
-  if (run.exitCode !== 0) throw new Error(`ffmpeg could not encode ${webm} as mp4`);
+  if (run.exitCode !== 0) throw new Error(`ffmpeg could not encode ${webm} as ${format}`);
   fs.rmSync(webm);
-  return mp4;
+  return out;
 }
 
 /** The ffmpeg on PATH, else the one Playwright installed next to its browsers. */
@@ -193,7 +204,7 @@ function stitch(format: Format): void {
     );
     fs.rmSync(list);
     if (run.exitCode !== 0) throw new Error(`ffmpeg could not join the videos of ${file}`);
-    const video = format === 'mp4' ? toMp4(target) : target;
+    const video = format === 'webm' ? target : encode(target, format);
     console.log(`\n  video ${video}  (${videos.length} tests)`);
   }
 }

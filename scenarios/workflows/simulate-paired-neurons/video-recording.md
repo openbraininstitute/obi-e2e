@@ -8,7 +8,6 @@ the input files, the voltage traces and the spikes. All in one take, slow
 enough to follow every click, with small popups to explain the important parts.
 
 Pace: 2 seconds
-Size: 1920x1080
 User: credits
 Seed: seed.json
 

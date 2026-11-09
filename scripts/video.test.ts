@@ -60,6 +60,7 @@ test('parseArgs keeps our flags and passes the rest to Playwright', () => {
     join: false,
     test: ['scenarios/x', '--headed'],
   });
-  expect(parseArgs(['--join'])).toEqual({ format: 'webm', join: true, test: [] });
-  expect(() => parseArgs(['--format=mov'])).toThrow('webm or mp4');
+  expect(parseArgs(['--join'])).toEqual({ format: 'mov', join: true, test: [] });
+  expect(() => parseArgs(['--format=avi'])).toThrow('mov or mp4 or webm');
 });
+
