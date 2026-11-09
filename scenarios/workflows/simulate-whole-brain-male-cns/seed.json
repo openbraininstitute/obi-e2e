@@ -1,0 +1,101 @@
+{
+  "name": "Whole brain simulation of the male CNS",
+  "activity": "simulate",
+  "env": ["staging"],
+  "workflow": {
+    "label": "Whole brain",
+    "type": "whole-brain-circuit-simulation"
+  },
+  "schemaName": "Brian2CircuitSimulationScanConfig",
+  "selection": {
+    "mode": "single",
+    "entities": ["MaleCNS-v1.0-Brian2-LIF-v1"]
+  },
+  "cases": [
+    {
+      "name": "a sinusoidal clamp on the front leg ppk23 neurons, three amplitudes",
+      "config": {
+        "info": {
+          "type": "Info",
+          "campaign_name": "E2E male CNS: pheromone taste to courtship neurons",
+          "campaign_description": "A sinusoidal clamp on the front leg ppk23 taste neurons, at three amplitudes, with the fru dsx neurons recorded."
+        },
+        "neuron_sets": {
+          "front_leg_ppk23": {
+            "type": "PointPopulationPropertyNeuronSet",
+            "$variant": "By neuron property (point)",
+            "property_filter": [
+              {
+                "filter_dict": {
+                  "receptor_type": ["putative_ppk23"],
+                  "entry_nerve": ["ProLN"]
+                }
+              }
+            ]
+          },
+          "fru_dsx": {
+            "type": "PointPopulationPropertyNeuronSet",
+            "$variant": "By neuron property (point)",
+            "property_filter": [
+              {
+                "filter_dict": {
+                  "fru_dsx": ["coexpress_low"]
+                }
+              }
+            ]
+          }
+        },
+        "stimuli": {
+          "front_leg_sine": {
+            "type": "SimulationDtSinusoidalCurrentClampSomaticStimulus",
+            "$variant": "Sinusoidal current clamp (absolute)",
+            "neuron_set": {
+              "block_dict_name": "neuron_sets",
+              "block_name": "front_leg_ppk23"
+            },
+            "duration": 1000,
+            "maximum_amplitude": [1, 2, 8],
+            "frequency": 5
+          }
+        },
+        "recordings": {
+          "fru_dsx_voltage": {
+            "type": "SimulationDtSomaVoltageRecording",
+            "$variant": "Soma voltage recording (full experiment)",
+            "neuron_set": {
+              "block_dict_name": "neuron_sets",
+              "block_name": "fru_dsx"
+            }
+          }
+        }
+      },
+      "expect": {
+        "coordinateCount": 3,
+        "generated": {
+          "inputs": [
+            "Circuit directory",
+            "Node sets",
+            "OBI-ONE Config",
+            "SONATA Simulation Config"
+          ],
+          "outputs": []
+        },
+        "completed": {
+          "within": 10,
+          "inputs": [
+            "Circuit directory",
+            "Launch Config",
+            "Node sets",
+            "OBI-ONE Config",
+            "SONATA Simulation Config"
+          ],
+          "outputs": ["Task Log", "Recording 0", "drosophila"],
+          "views": {
+            "Recording 0": ["cells recorded", "Time (ms)", "Voltage (mV)"],
+            "drosophila": ["drosophila", "spikes"]
+          }
+        }
+      }
+    }
+  ]
+}
