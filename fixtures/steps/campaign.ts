@@ -113,11 +113,15 @@ export function campaignTimeout(fixture: ScanConfigFixture): number {
  * and read; one that says nothing only has to start; one marked `launch: false`
  * stops before it starts at all. See `keepCampaign` for how it survives a
  * reload.
+ *
+ * `afterFill` runs once the form is filled and before it is generated: a film
+ * renames the blocks there, as a scientist would.
  */
 export async function runCampaign(
   page: Page,
   fixture: ScanConfigFixture,
-  configuration: ScanConfigCase
+  configuration: ScanConfigCase,
+  { afterFill }: { afterFill?: () => Promise<void> } = {}
 ): Promise<void> {
   const editor = scanConfigEditor(page);
   const results = scanConfigResults(page);
@@ -125,6 +129,7 @@ export async function runCampaign(
 
   const campaign = await onOnePage(page, async () => {
     await new ScanConfigDriver(page).apply(configuration);
+    await afterFill?.();
 
     await expect(editor.submit).toHaveText(words.generate);
     await expect(editor.submit).toBeEnabled();

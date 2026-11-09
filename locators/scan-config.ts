@@ -192,6 +192,17 @@ export function scanConfigControl(field: Locator): Locator {
 }
 
 /**
+ * A block's tab in the form, and its pencil, which turns the name into a text
+ * box. The pencil is an antd icon with no test id; its label is its name.
+ */
+export function scanConfigEntryRename(entry: Locator) {
+  return {
+    edit: entry.getByRole('img', { name: 'edit' }),
+    name: entry.getByRole('textbox'),
+  };
+}
+
+/**
  * The neuron property filter: properties added from a list, then the values of
  * each picked as chips.
  *

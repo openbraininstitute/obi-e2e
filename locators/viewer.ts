@@ -92,7 +92,8 @@ export function nodesTable(scope: Locator) {
   const row = (index: number): Locator => scope.locator(`[role="row"][row-index="${index}"]`);
 
   return {
-    selection: scope.getByText(/^Nodes: \d+\/\d+ selected/),
+    // A large circuit writes its count with a comma: "Nodes: 2/164,606 selected".
+    selection: scope.getByText(/^Nodes: [\d,]+\/[\d,]+ selected/),
     // The pinned selection cell comes first; the row's own cells follow it.
     select: (index: number): Locator => row(index).getByRole('gridcell').first(),
   };
