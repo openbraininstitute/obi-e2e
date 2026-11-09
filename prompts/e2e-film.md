@@ -19,7 +19,6 @@ is a finished one:
 <Who watches this, and what they should come away knowing. One paragraph.>
 
 Pace: 2 seconds
-Size: 1920x1080
 User: credits
 Seed: seed.json
 
@@ -37,7 +36,6 @@ Show:
 | Line                                           | Means                                                                                                                                                                                                       |
 | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Pace:`                                        | How long every click, fill or keypress is held on screen before it runs. The one timing knob.                                                                                                               |
-| `Size:`                                        | The window and the picture, `WIDTHxHEIGHT`. Full HD when absent. `E2E_VIDEO_SIZE` overrides it for one run.                                                                                                 |
 | `User:`                                        | The tag, as in a scenario: `credits`, `authenticated`, `public`.                                                                                                                                            |
 | `Seed:`                                        | The `seed.json` the form is filled from, when there is one.                                                                                                                                                 |
 | `## `                                          | A scene. Its title names the `test.step` in the report; nothing is written over the picture.                                                                                                                |
@@ -74,7 +72,7 @@ spec does not already have is written against what you saw, by test id first.
 
 `scenarios/workflows/simulate-paired-neurons/video-recording.ts` is the shape:
 
-- The top says how it is shot: `const PACE = <Pace>; test.use(film({ pace: PACE, size }))`.
+- The top says how it is shot: `const PACE = <Pace>; test.use(film({ pace: PACE }))`.
 - One `test`, tagged from `User:`, titled `<Title>, in one take`. Its first
   line is `await hideActionLabel(page)`: the film shows the screen, the
   pointer and the callouts, and nothing else of Playwright's.
@@ -121,12 +119,12 @@ film that needs the product to behave differently has found a bug: report it.
 ## 5. Shoot, then watch
 
 ```bash
-bun run test:video scenarios/<section>/<name>                 # test-results/videos/<section>-<name>.webm
-bun run test:video --format=mp4 scenarios/<section>/<name>    # when the viewer needs an mp4
+bun run test:video scenarios/<section>/<name>                 # test-results/videos/<section>-<name>/<date-time>/<section>-<name>.mov, 1920x1080
+bun run test:video --format=mp4 scenarios/<section>/<name>    # or webm, when the viewer needs one
 bun run check
 ```
 
 Watch the file, not the log: every scene's caption, every `Show:` line on
 screen, the pointer on every click, and the last picture held. Report the
-film's length, its size, where it is, every scene and the step it became, any
+film's length, where it is, every scene and the step it became, any
 step you added to `fixtures/recording/`, and anything you could not show and why.

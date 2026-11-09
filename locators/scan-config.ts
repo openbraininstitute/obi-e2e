@@ -191,6 +191,42 @@ export function scanConfigControl(field: Locator): Locator {
   return field.getByTestId('scan-config-control');
 }
 
+/**
+ * A block's tab in the form, and its pencil, which turns the name into a text
+ * box. The pencil is an antd icon with no test id; its label is its name.
+ */
+export function scanConfigEntryRename(entry: Locator) {
+  return {
+    edit: entry.getByRole('img', { name: 'edit' }),
+    name: entry.getByRole('textbox'),
+  };
+}
+
+/**
+ * The neuron property filter: properties added from a list, then the values of
+ * each picked as chips.
+ *
+ * core-web-app gives none of it a test id yet, and a chip says it is picked
+ * only by its colour, so everything here is found by its role and its words.
+ * A property's header reads "1. receptor_type". A chip is found by its value
+ * across the whole field rather than under its property, the one handle the
+ * markup gives: two properties offering the same value would make it
+ * ambiguous, and the strict locator then says so.
+ */
+export function scanConfigPropertyFilter(field: Locator) {
+  return {
+    addProperty: field.getByRole('button', { name: 'Add new property' }),
+    propertyOption: (key: string): Locator => field.getByRole('button', { name: key, exact: true }),
+    property: (key: string): Locator =>
+      field.getByRole('button', { name: new RegExp(`^\\d+\\.\\s+${escapeRegExp(key)}$`) }),
+    value: (value: string): Locator => field.getByRole('button', { name: value, exact: true }),
+  };
+}
+
+function escapeRegExp(text: string): string {
+  return text.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 /** A number that can be left unset: its value, and the button back to unset. */
 export function scanConfigOptionalNumber(field: Locator) {
   return {

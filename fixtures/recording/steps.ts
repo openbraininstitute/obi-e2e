@@ -7,7 +7,8 @@
 
 import { openGroups } from '@fixtures/checks/campaign-output';
 import { clickUntil, NO_NAVIGATION } from '@fixtures/interactions';
-import { scanConfigResults } from '@locators/scan-config';
+import { focusOn } from '@fixtures/recording/camera';
+import { scanConfigEditor, scanConfigEntryRename, scanConfigResults } from '@locators/scan-config';
 import { circuitViewer, nodesTable, sceneLoading } from '@locators/viewer';
 import { expect, type Locator, type Page } from '@playwright/test';
 
@@ -99,4 +100,28 @@ export async function tourSpikes(page: Page, file: string): Promise<void> {
   await chart.spiking.click(NO_NAVIGATION);
   await expect(chart.spiking).toHaveAttribute('aria-pressed', 'true');
   await expect(results.fileView).toContainText(/\d+ of \d+ spikes/);
+}
+
+/**
+ * Gives a block the name a scientist gave it in a demo: the camera moves in on
+ * its tab, then the pencil, the new name, Enter. The form names a block "Neuron
+ * set 0" and so on; references to it follow the new name.
+ */
+export async function renameEntry(
+  page: Page,
+  root: string,
+  from: string,
+  to: string
+): Promise<void> {
+  const editor = scanConfigEditor(page);
+  const entry = editor.entry(root, from);
+
+  if (!(await entry.isVisible())) await editor.rootElement(root).click(NO_NAVIGATION);
+  await focusOn(page, entry);
+
+  const rename = scanConfigEntryRename(entry);
+  await rename.edit.click(NO_NAVIGATION);
+  await rename.name.fill(to);
+  await rename.name.press('Enter');
+  await expect(editor.entry(root, to)).toBeVisible();
 }

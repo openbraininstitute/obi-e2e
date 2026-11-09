@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { parseArgs, type Results, videoName, videosBySpec, withProject } from './video';
+import { parseArgs, type Results, runFolder, videoName, videosBySpec, withProject } from './video';
 
 const spec = (file: string, ...videos: (string | undefined)[]) => ({
   file,
@@ -60,6 +60,25 @@ test('parseArgs keeps our flags and passes the rest to Playwright', () => {
     join: false,
     test: ['scenarios/x', '--headed'],
   });
-  expect(parseArgs(['--join'])).toEqual({ format: 'webm', join: true, test: [] });
-  expect(() => parseArgs(['--format=mov'])).toThrow('webm or mp4');
+  expect(parseArgs(['--join'])).toEqual({ format: 'mov', join: true, test: [] });
+  expect(parseArgs(['--join=test-results/videos/x/1'])).toEqual({
+    format: 'mov',
+    join: 'test-results/videos/x/1',
+    test: [],
+  });
+  expect(() => parseArgs(['--format=avi'])).toThrow('mov or mp4 or webm');
+});
+
+test('runFolder gives each run its own folder, by scenario and start time', () => {
+  const at = new Date('2026-11-09T16:02:11.345Z');
+  expect(runFolder(['scenarios/workflows/simulate-whole-brain-male-cns/'], at)).toBe(
+    'test-results/videos/workflows-simulate-whole-brain-male-cns/2026-11-09T16-02-11'
+  );
+  expect(runFolder(['--project=credits', 'scenarios/a', 'scenarios/b'], at)).toBe(
+    'test-results/videos/run/2026-11-09T16-02-11'
+  );
+  // A second run a second later never lands in the first one's folder.
+  expect(runFolder(['scenarios/a'], new Date(at.getTime() + 1000))).not.toBe(
+    runFolder(['scenarios/a'], at)
+  );
 });

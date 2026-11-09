@@ -39,10 +39,11 @@ bun run test    # or a single spec while iterating
   `video-recording.md`, by `/e2e-film` (`prompts/e2e-film.md`). One test, one
   `test.step` per scene, run only in the `video` project by
   `bun run test:video <scenario folder>`. Its top says how it is shot,
-  `test.use(film({ pace, size }))`. A step the spec also takes is imported
+  `test.use(film({ pace }))`. A step the spec also takes is imported
   from `fixtures/steps`; a step only films take lives in `fixtures/recording`,
   which no spec imports (oxlint refuses it). A spec and a film never share a
-  file.
+  file. From a screen recording, `/e2e-from-video` (`prompts/e2e-from-video.md`)
+  writes the storyboard, then the film.
 - A test declares its context with a tag, imported from `@fixtures/tags`.
   `VISITOR` (`@public`) runs signed out. `AUTHENTICATED` (`@private`) runs as the
   primary user inside the project the run created for itself. `ONBOARDING`

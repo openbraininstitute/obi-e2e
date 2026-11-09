@@ -14,6 +14,7 @@ import {
   scanConfigModelPicker,
   scanConfigOptionalNumber,
   scanConfigOptions,
+  scanConfigPropertyFilter,
   scanConfigProtocol,
   scanConfigSectionTypes,
   scanConfigSweep,
@@ -291,6 +292,10 @@ export class ScanConfigDriver {
         await this.setSectionTypes(field, value, at);
         return;
 
+      case ScanConfigUiElement.NeuronPropertyFilter:
+        await this.setPropertyFilter(field, value, at);
+        return;
+
       // What the browse step already chose arrives filled in, and a fixture that
       // names nothing leaves it that way.
       case ScanConfigUiElement.ModelIdentifier:
@@ -408,6 +413,52 @@ export class ScanConfigDriver {
 
     // The list stays open after a pick and covers the fields below.
     await this.page.keyboard.press('Escape');
+  }
+
+  /**
+   * Builds a neuron set's property filter: `[{ "filter_dict": { property:
+   * [values] } }]`, as obi-one's schema holds it.
+   *
+   * The form opens with one empty filter card. Each property is added from
+   * the card's list, which closes once it is picked, and its values are then
+   * picked as chips. A chip toggles, and shows that it is picked only by its
+   * colour, so it is clicked exactly once and never retried: a second click
+   * would unpick it. A second filter card ("Add a filter") is not driven yet.
+   */
+  private async setPropertyFilter(field: Locator, value: unknown, at: string): Promise<void> {
+    const filter = Array.isArray(value) && value.length === 1 ? value[0] : null;
+    const properties = isRecord(filter) && isRecord(filter.filter_dict) ? filter.filter_dict : null;
+    if (properties === null || Object.keys(properties).length === 0) {
+      throw new Error(
+        `${at}: needs one filter, [{ "filter_dict": { "<property>": ["<value>"] } }]; ` +
+          'the driver does not add a second filter card yet'
+      );
+    }
+
+    const picker = scanConfigPropertyFilter(field);
+
+    for (const [property, values] of Object.entries(properties)) {
+      if (!Array.isArray(values) || values.length === 0) {
+        throw new Error(`${at}.${property}: needs at least one value to pick`);
+      }
+
+      await expect(async () => {
+        if ((await picker.property(property).count()) > 0) return;
+
+        await this.page.keyboard.press('Escape');
+        await picker.addProperty.click({ ...NO_NAVIGATION, timeout: OPENS_WITHIN });
+        await picker.propertyOption(property).click({ ...NO_NAVIGATION, timeout: OPENS_WITHIN });
+        await expect(picker.property(property)).toBeVisible({ timeout: OPENS_WITHIN });
+      }, `${at}: the filter offers no property "${property}".`).toPass();
+
+      for (const wanted of values) {
+        await expect(
+          picker.value(String(wanted)),
+          `${at}.${property}: no "${wanted}" to pick.`
+        ).toBeVisible();
+        await picker.value(String(wanted)).click(NO_NAVIGATION);
+      }
+    }
   }
 
   /**

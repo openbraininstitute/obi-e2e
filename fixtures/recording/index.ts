@@ -2,7 +2,7 @@
  * What a film needs and a test does not.
  *
  * A scenario's `video-recording.ts` declares at its top how long each action
- * stays on screen and how large the picture is. Steps only a film takes — a
+ * stays on screen. Steps only a film takes — a
  * scene the scientist wants shown that no case checks — live in this folder
  * too, never in `fixtures/steps`: a spec imports nothing from here (oxlint
  * refuses it), so a film can grow without the suite paying for it.
@@ -18,17 +18,25 @@ import type { Page, PlaywrightWorkerOptions } from '@playwright/test';
 
 export type Size = { width: number; height: number };
 
-export const FULL_HD: Size = { width: 1920, height: 1080 };
+/** The video every film is delivered at: HD, 16:9, the ratio most screens show. */
+export const HD: Size = { width: 1920, height: 1080 };
+
+/**
+ * How wide the page is laid out, in CSS pixels. The video guide
+ * (VideoRecording_Guidelines, 2025-12-12) records a 14-inch MacBook Pro at its
+ * default scale, 1512 wide, and checks that the side menu takes about a
+ * quarter of the width. Laid out 1920 wide, the menu keeps its 336 pixels and
+ * falls to 17.5%; at 1512 it is 22%.
+ */
+export const GUIDE_WIDTH = 1512;
 
 /** How a scenario wants to be filmed. */
 export type Film = {
   /** Milliseconds each action is held on screen before it runs. */
   pace: number;
-  /** The window and the video, in pixels. Full HD unless the file says otherwise. */
-  size?: Size;
 };
 
-/** `1920x1080`, as `E2E_VIDEO_SIZE` or a command line spells it. */
+/** `1920x1080`, as `E2E_VIDEO_SIZE` spells it. */
 export function parseSize(spec: string): Size {
   const match = /^(\d{3,5})x(\d{3,5})$/.exec(spec.trim());
   if (!match) throw new Error(`A video size is WIDTHxHEIGHT, such as 1920x1080, not "${spec}".`);
@@ -36,12 +44,23 @@ export function parseSize(spec: string): Size {
 }
 
 /**
- * The size this recording runs at: the command line (`E2E_VIDEO_SIZE`), else
- * what the file declares, else Full HD. The command line wins because it is
- * the choice made for this one run; the file is the scenario's usual size.
+ * The size of the delivered video: `E2E_VIDEO_SIZE` for one run, else HD. One
+ * size for every film, so no two have different ratios; a storyboard does not
+ * choose its own.
  */
-export function videoSize(declared?: Size, fromEnv = process.env.E2E_VIDEO_SIZE): Size {
-  return fromEnv ? parseSize(fromEnv) : (declared ?? FULL_HD);
+export function videoSize(fromEnv = process.env.E2E_VIDEO_SIZE): Size {
+  return fromEnv ? parseSize(fromEnv) : HD;
+}
+
+/**
+ * The page a film records: the guide's width, and the height that gives the
+ * video's ratio (1512x850 for HD). Playwright records it at that size and
+ * never scales up, so `bun run test:video` scales it to the video's size
+ * when it encodes the file. Even, because H.264 in yuv420p needs it.
+ */
+export function pageSize(video: Size): Size {
+  const height = Math.round((GUIDE_WIDTH * video.height) / video.width / 2) * 2;
+  return { width: GUIDE_WIDTH, height };
 }
 
 /**
@@ -50,12 +69,12 @@ export function videoSize(declared?: Size, fromEnv = process.env.E2E_VIDEO_SIZE)
  * as a scientist sees it, plus the pointer and the callouts.
  */
 export function film(options: Film): { viewport: Size; video: PlaywrightWorkerOptions['video'] } {
-  const size = videoSize(options.size);
+  const page = pageSize(videoSize());
   return {
-    viewport: size,
+    viewport: page,
     video: {
       mode: 'on',
-      size,
+      size: page,
       show: { actions: { duration: options.pace } },
     },
   };

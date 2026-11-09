@@ -176,12 +176,22 @@ the storyboard, `video-recording.md` beside the scenario, then:
 
 ```bash
 /e2e-film scenarios/workflows/simulate-paired-neurons    # writes video-recording.ts from the storyboard
-bun run test:video scenarios/workflows/simulate-paired-neurons    # test-results/videos/workflows-simulate-paired-neurons.webm
+bun run test:video scenarios/workflows/simulate-paired-neurons    # test-results/videos/workflows-simulate-paired-neurons/<date-time>/…mov
 ```
 
-`Pace:` in the storyboard is how long each click is held on screen; `Size:` the
-picture. `--format=mp4` encodes with the ffmpeg on PATH; `E2E_VIDEO_SIZE=2560x1440`
-changes the size for one run. The film imports the spec's steps and keeps its
+Have a screen recording of the demo instead? Let the agent write both files
+from it, and answer its questions (which feature flags were on, what to leave
+out):
+
+```bash
+/e2e-from-video ~/Downloads/demo.mp4 scenarios/workflows/simulate-whole-brain-male-cns
+```
+
+`Pace:` in the storyboard is how long each click is held on screen. Every film
+is a 1920x1080 `.mov`. The page is laid out 1512 wide, as the video guide asks,
+so the left menu takes about a quarter of the picture, then scaled to 1920.
+`--format=mp4|webm` changes the file and `E2E_VIDEO_SIZE=2560x1440` the size,
+for one run. The film imports the spec's steps and keeps its
 own in `fixtures/recording/`, which no spec may import.
 
 ## Run the tests

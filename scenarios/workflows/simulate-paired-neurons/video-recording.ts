@@ -36,9 +36,9 @@ import { scanConfigEditor, scanConfigField, scanConfigResults } from '@locators/
 import { circuitViewer } from '@locators/viewer';
 import { workflowsHub } from '@locators/workflows';
 
-/** How the film is shot: each action held this long on screen, in Full HD unless E2E_VIDEO_SIZE says otherwise. */
+/** How the film is shot: each action held this long on screen. */
 const PACE = 2_000;
-test.use(film({ pace: PACE, size: { width: 1920, height: 1080 } }));
+test.use(film({ pace: PACE }));
 
 /** The files the tours open, as the campaign names them. */
 const INPUTS = [
