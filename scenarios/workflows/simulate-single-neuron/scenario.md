@@ -8,8 +8,8 @@ clamps the soma once; the other gives the same clamp two amplitudes, so the
 campaign comes out as a grid of two coordinates. The seed also says which
 deployments the workflow runs on, so no line here does.
 
-An ME-model campaign has no cost estimator behind it, so launching starts the
-simulation straight away rather than asking what it will cost first.
+Launching prices the simulation first: the estimate is shown and has to be
+confirmed before anything starts.
 
 User: credits
 Seed: seed.json
@@ -77,9 +77,18 @@ Steps:
 
 Expected:
 
+- An estimated cost breakdown is shown, with a "Confirm" to press
+
+Steps:
+
+1. Press "Confirm"
+
+Expected:
+
 - The coordinate leaves "created"
-- The coordinate reaches "done" (within 5 minutes)
-- Its outputs are exactly: "Recording 0" and "All", the spikes of the one population
+- The coordinate reaches "done" (within 15 minutes)
+- Its inputs have gained "Launch Config"
+- Its outputs are exactly: "Task Log", "Recording 0" and "All", the spikes of the one population
 
 Steps:
 

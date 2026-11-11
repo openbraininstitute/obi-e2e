@@ -206,7 +206,7 @@ test.describe('Synaptome build', () => {
   });
 
   test(
-    'The viewer opens with a scale bar and a solid neuron',
+    'The viewer opens with a scale bar, and no neuron opacity to set',
     { tag: CREDITS },
     async ({ page }) => {
       const viewer = morphologyViewer(page);
@@ -217,7 +217,9 @@ test.describe('Synaptome build', () => {
       await viewer.settings.click(NO_NAVIGATION);
 
       await expect(viewer.toggle.scaleBar).toBeChecked();
-      await expect(viewer.slider.neuronOpacity).toContainText('100%');
+      // Opacity belongs to a circuit's somas view since core-web-app #2022; a
+      // single neuron is drawn whole and has none to set.
+      await expect(viewer.slider.neuronOpacity).toHaveCount(0);
     }
   );
 });

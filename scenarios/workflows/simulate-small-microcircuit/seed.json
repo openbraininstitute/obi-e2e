@@ -80,12 +80,13 @@
         },
         "completed": {
           "inputs": [
+            "Launch Config",
             "Circuit directory",
             "Node sets",
             "OBI-ONE Config",
             "SONATA Simulation Config"
           ],
-          "outputs": ["Recording 0", "hippocampus_neurons"],
+          "outputs": ["Task Log", "Recording 0", "hippocampus_neurons"],
           "views": {
             "Recording 0": ["9 cells recorded", "Time (ms)", "Voltage (mV)"],
             "hippocampus_neurons": ["Populationhippocampus_neurons", "spikes"]

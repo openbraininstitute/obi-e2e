@@ -5,6 +5,7 @@ import { expect, test } from '@fixtures/test';
 import { WIDE_VIEWPORT } from '@fixtures/viewport';
 import { dataView } from '@locators/data-view';
 import { entityListing } from '@locators/listing';
+import { morphologyViewer } from '@locators/viewer';
 
 const SLUG = entitySlug(Type.Circuit);
 
@@ -22,7 +23,7 @@ const PROPERTIES = [
   'lifecycle_status',
 ];
 
-const SECTIONS = ['visualizations', 'visualization', 'metadata-grid', 'subject-details'];
+const SECTIONS = ['metadata-grid', 'subject-details'];
 
 test.use(WIDE_VIEWPORT);
 
@@ -54,6 +55,9 @@ test.describe('Circuit details', () => {
     await view.viewDetails.click();
     await expect(page).toHaveURL(new RegExp(`/data/view/${SLUG}/[0-9a-f-]+/`));
 
+    // The viewer took the place of the still image (core-web-app #2022), which
+    // now shows only where the viewer fails.
+    await expect(morphologyViewer(page).scene).toBeVisible();
     for (const name of SECTIONS) {
       await expect(view.section(name).first()).toBeVisible();
     }

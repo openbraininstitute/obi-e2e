@@ -88,7 +88,8 @@ Expected:
 
 - The coordinate leaves "created"
 - The coordinate reaches "done"
-- Its outputs are exactly: "Recording 0" and "hippocampus_neurons", the spikes of the one population
+- Its inputs have gained "Launch Config"
+- Its outputs are exactly: "Task Log", "Recording 0" and "hippocampus_neurons", the spikes of the one population
 
 Steps:
 

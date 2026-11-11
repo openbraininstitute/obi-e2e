@@ -85,13 +85,14 @@
         },
         "completed": {
           "inputs": [
+            "Launch Config",
             "Circuit directory",
             "Stimulus 0_spikes",
             "Node sets",
             "OBI-ONE Config",
             "SONATA Simulation Config"
           ],
-          "outputs": ["Recording 0", "S1nonbarrel_neurons"],
+          "outputs": ["Task Log", "Recording 0", "S1nonbarrel_neurons"],
           "views": {
             "Recording 0": ["Time (ms)", "Voltage (mV)"],
             "S1nonbarrel_neurons": ["PopulationS1nonbarrel_neurons", "spikes"]
