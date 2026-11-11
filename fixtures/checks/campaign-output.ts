@@ -48,8 +48,36 @@ export async function openGroups(panel: Locator): Promise<void> {
   }
 }
 
-async function checkFiles(panel: Locator, names: string[]): Promise<void> {
+/**
+ * Opens a simulation's spike file, so its row reads as its population.
+ *
+ * A spike row is named after the population the spike viewer reads from the
+ * file, or the circuit's config before that. An ME-model has no circuit, so its
+ * row reads as the bare file, "spikes", until the file is opened, then "All"
+ * (core-web-app `simulation-files/index.tsx`). The tab used to open on the
+ * spikes; since the Task Log arrives first (core-web-app #2047) it opens on
+ * that, so the row is opened here, as a scientist would. A circuit's row already
+ * carries its population, and opening it changes nothing.
+ *
+ * Picked by its tag: the row's own name is what is about to change.
+ */
+async function openSpikes(panel: Locator): Promise<boolean> {
+  const spikes = panel
+    .locator('[data-file-name]')
+    .filter({ has: panel.page().getByText('Spikes', { exact: true }) });
+  if ((await spikes.count()) === 0) return false;
+  // The first: a circuit's spike file is a row per population, all one file.
+  await spikes.first().click(NO_NAVIGATION);
+  return true;
+}
+
+async function checkFiles(
+  panel: Locator,
+  names: string[],
+  { opensSpikes = false }: { opensSpikes?: boolean } = {}
+): Promise<void> {
   const files = panel.locator('[data-file-name]');
+  let spikesOpened = false;
 
   // Comparing the names, not the count, so a changed output prints what changed.
   // A bounded retry: `toPass()` alone retries until the test runs out of clock,
@@ -58,6 +86,9 @@ async function checkFiles(panel: Locator, names: string[]): Promise<void> {
   // once the run's files are in.
   await expect(async () => {
     await openGroups(panel);
+    // Once: the spike row arrives with the run's other files, and a second
+    // click would only take the selection off a view checked later.
+    if (opensSpikes && !spikesOpened) spikesOpened = await openSpikes(panel);
     const shown = await files.evaluateAll((items) =>
       items.map((item) => item.getAttribute('data-file-name') ?? '')
     );
@@ -106,7 +137,7 @@ export async function checkCompletedOutput(
   const results = scanConfigResults(page);
 
   await checkFiles(results.inputs, completed.inputs);
-  await checkFiles(results.outputs, completed.outputs);
+  await checkFiles(results.outputs, completed.outputs, { opensSpikes: true });
 
   if (completed.outputs.includes(LOG_FILE)) {
     await results.file(LOG_FILE).click(NO_NAVIGATION);
