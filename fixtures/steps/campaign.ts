@@ -15,8 +15,17 @@ import { scanConfigWords } from '../scan-config/activities';
 import { ScanConfigDriver } from '../scan-config/driver';
 import { CREDITS, SLOW } from '../tags';
 
-/** How long an ordinary run may take. */
-const RUN_MINUTES = 5;
+/**
+ * How long an ordinary run may take.
+ *
+ * A ceiling for a run that stalls, not a guess at how long one takes: the wait
+ * ends the moment the coordinate settles, so a healthy run never spends it.
+ * Since core-web-app #2047 every simulation runs on the launch system, which
+ * starts a machine first. Against the preview on 2026-11-11 a small
+ * microcircuit took over five minutes, and the five this used to be failed it
+ * while it was still running fine.
+ */
+const RUN_MINUTES = 15;
 
 /**
  * How long a run marked `slow` may take, when its seed names no budget.

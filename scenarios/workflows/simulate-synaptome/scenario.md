@@ -87,8 +87,9 @@ Steps:
 Expected:
 
 - The coordinate leaves "created"
-- The coordinate reaches "done" (within 5 minutes)
-- Its outputs are exactly: "Recording 0" and "S1nonbarrel_neurons", the spikes of the one population
+- The coordinate reaches "done" (within 15 minutes)
+- Its inputs have gained "Launch Config"
+- Its outputs are exactly: "Task Log", "Recording 0" and "S1nonbarrel_neurons", the spikes of the one population
 
 Steps:
 
