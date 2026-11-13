@@ -42,7 +42,11 @@ test.describe('OBI Assistant', () => {
 
     await clickUntil(panel.open, panel.question);
 
-    await panel.collapse.click();
+    await panel.close.click();
+
+    await expect(panel.closeQuestion).toContainText('Do you want to close the assistant?');
+
+    await panel.confirmClose.click();
 
     await expect(panel.question).toBeHidden();
     await expect(page.getByTestId('project-main-content')).toBeVisible();

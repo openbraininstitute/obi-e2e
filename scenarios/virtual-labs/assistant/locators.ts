@@ -10,7 +10,10 @@ export function assistant(page: Page) {
 
   return {
     open: page.getByTestId('ai-assistant-open-button'),
-    collapse: page.getByTestId('ai-assistant-collapse-button'),
+    close: page.getByTestId('ai-assistant-close-button'),
+    // Closing asks first (core-web-app #2078); the dialog has no test id of its own.
+    closeQuestion: page.getByRole('alertdialog', { name: 'Close assistant' }),
+    confirmClose: page.getByTestId('ai-assistant-close-confirm'),
 
     heading: page.getByRole('heading', { name: 'OBI Assistant' }),
     question,
