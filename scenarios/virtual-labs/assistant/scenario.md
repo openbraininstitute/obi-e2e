@@ -46,7 +46,15 @@ After: Open the assistant panel
 
 Steps:
 
-1. Click "Collapse"
+1. Click "Close"
+
+Expected:
+
+- The assistant asks "Do you want to close the assistant?"
+
+Steps:
+
+1. Click "Close" in that question
 
 Expected:
 
