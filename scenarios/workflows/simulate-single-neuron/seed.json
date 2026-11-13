@@ -4,8 +4,7 @@
   "env": ["staging", "production"],
   "workflow": {
     "label": "Single neuron",
-    "type": "me-model-circuit-simulation",
-    "confirmsCost": false
+    "type": "me-model-circuit-simulation"
   },
   "schemaName": "MEModelSimulationScanConfig",
   "selection": {
@@ -59,8 +58,8 @@
           "outputs": []
         },
         "completed": {
-          "inputs": ["Node sets", "OBI-ONE Config", "SONATA Simulation Config"],
-          "outputs": ["Recording 0", "All"],
+          "inputs": ["Launch Config", "Node sets", "OBI-ONE Config", "SONATA Simulation Config"],
+          "outputs": ["Task Log", "Recording 0", "All"],
           "views": {
             "Recording 0": ["Time (ms)", "Voltage (mV)"],
             "All": ["PopulationAll", "spikes"]
@@ -113,8 +112,8 @@
           "outputs": []
         },
         "completed": {
-          "inputs": ["Node sets", "OBI-ONE Config", "SONATA Simulation Config"],
-          "outputs": ["Recording 0", "All"],
+          "inputs": ["Launch Config", "Node sets", "OBI-ONE Config", "SONATA Simulation Config"],
+          "outputs": ["Task Log", "Recording 0", "All"],
           "views": {
             "Recording 0": ["Time (ms)", "Voltage (mV)"],
             "All": ["PopulationAll", "spikes"]

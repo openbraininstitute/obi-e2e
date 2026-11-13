@@ -2,7 +2,8 @@
 
 E2E tests for the OBI web app. Bun 1.4, Playwright 1.62, oxlint + oxfmt.
 
-Tests run under Bun via `bun --bun playwright`, so Bun APIs work in test code.
+Tests run under Bun via `bun --bun node_modules/.bin/playwright` (by path: on Bun 1.4.3
+the bin name runs under its `node` shebang instead), so Bun APIs work in test code.
 Always run through the package scripts; `bunx playwright` falls back to Node
 workers where the `Bun` global does not exist.
 
@@ -34,6 +35,15 @@ bun run test    # or a single spec while iterating
   `@fixtures/interactions`. Pre-hydration click does nothing, raises no error;
   staging drops it every run.
 - Every test is independent and leaves no data behind outside the QA lab.
+- A scenario's film is `video-recording.ts`, written from its storyboard,
+  `video-recording.md`, by `/e2e-film` (`prompts/e2e-film.md`). One test, one
+  `test.step` per scene, run only in the `video` project by
+  `bun run test:video <scenario folder>`. Its top says how it is shot,
+  `test.use(film({ pace }))`. A step the spec also takes is imported
+  from `fixtures/steps`; a step only films take lives in `fixtures/recording`,
+  which no spec imports (oxlint refuses it). A spec and a film never share a
+  file. From a screen recording, `/e2e-from-video` (`prompts/e2e-from-video.md`)
+  writes the storyboard, then the film.
 - A test declares its context with a tag, imported from `@fixtures/tags`.
   `VISITOR` (`@public`) runs signed out. `AUTHENTICATED` (`@private`) runs as the
   primary user inside the project the run created for itself. `ONBOARDING`
@@ -43,11 +53,13 @@ bun run test    # or a single spec while iterating
 - Every test runs against staging and production. Add `@staging` or
   `@production` only when a test cannot run on the other.
 - Two branches. `main` runs on the preview; `release` runs on staging and
-  production. A test for a new feature goes to `main`. A fix for a test that
-  fails on staging goes to `release`, then a PR `release` → `main`. At each
-  web-app release CI opens the PR `main` → `release`; a person merges it
-  (`.github/workflows/README.md`, "Two branches"). A scan-config workflow
-  says where it runs in its fixture's `env` list, never with a tag.
+  production. Every PR goes to `main`, a fix for a test that fails only on
+  staging or production too; never open one against `release`. `release` moves
+  only by the PR `main` → `release`: CI opens it at each web-app release, and a
+  person merges it (`.github/workflows/README.md`, "Two branches"). Before
+  fixing a staging or production failure, check that `main` does not already
+  have the fix. A scan-config workflow says where it runs in its fixture's
+  `env` list, never with a tag.
 
 ## Browsing the app
 

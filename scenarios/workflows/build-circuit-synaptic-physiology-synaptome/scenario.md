@@ -68,7 +68,7 @@ Steps:
 Expected:
 
 - The coordinate leaves "created"
-- The coordinate reaches "done" (within 5 minutes)
+- The coordinate reaches "done" (within 15 minutes)
 - Its inputs are exactly: "Launch Config", "OBI-ONE Config" and
   "Circuit directory"
 - Its outputs are exactly: "Task Log" and the circuit the build registered,

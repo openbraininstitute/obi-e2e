@@ -20,7 +20,12 @@ import {
 import { excludedEnvironmentTag } from './fixtures/tags';
 
 const ASSERTION_TIMEOUT = 30_000;
-const SCENARIO_USE = { contextOptions: { reducedMotion: 'reduce' as const } };
+/** Video only on request: `bun run test:video` sets E2E_VIDEO. Scenarios only, never the sign-in. */
+const RECORDING = Boolean(process.env.E2E_VIDEO);
+const SCENARIO_USE = {
+  contextOptions: { reducedMotion: 'reduce' as const },
+  video: RECORDING ? ('on' as const) : ('off' as const),
+};
 
 /** Tags to skip: the other deployment's, plus any named here. */
 function excluding(...also: RegExp[]): RegExp {
@@ -45,9 +50,11 @@ export default defineConfig({
   outputDir: 'test-results/artifacts',
 
   reporter: [
+    ['./scripts/ci/banner.ts'],
     ['list'],
     ['html', { open: isCI ? 'never' : 'on-failure' }],
-    ['json', { outputFile: 'test-results/results.json' }],
+    // A film run reads its own copy (`scripts/video.ts`), so two runs never share one file.
+    ['json', { outputFile: process.env.E2E_RESULTS_FILE ?? 'test-results/results.json' }],
     ...(isCI ? [['github'] as const] : []),
   ],
 
@@ -143,6 +150,26 @@ export default defineConfig({
             testDir: './scenarios',
             grep: /@slow/,
             grepInvert: excluding(),
+            dependencies: ['funding'],
+            retries: 0,
+            use: { ...SCENARIO_USE, storageState: authStatePath('primary') },
+          },
+        ]
+      : []),
+    /**
+     * One scenario in one take: `scenarios/<section>/<name>/video-recording.ts`
+     * walks the whole journey — hub, form, launch, results — in a single test,
+     * so the video is one film rather than one clip per case. Each file sets
+     * its own pace and picture size with `film()` from `@fixtures/recording`.
+     * Defined only for `bun run test:video`: it launches what the project pays
+     * for, and a plain `bun run test` must not pay twice.
+     */
+    ...(RECORDING
+      ? [
+          {
+            name: 'video',
+            testDir: './scenarios',
+            testMatch: /video-recording\.ts$/,
             dependencies: ['funding'],
             retries: 0,
             use: { ...SCENARIO_USE, storageState: authStatePath('primary') },

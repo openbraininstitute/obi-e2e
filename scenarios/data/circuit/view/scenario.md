@@ -41,6 +41,6 @@ Steps:
 Expected:
 
 - The Circuit's own page is showing
+- The circuit is drawn in the interactive viewer, at any scale
 - These parts of the page are showing:
-  "visualizations", "visualization", "metadata-grid"
-  "subject-details"
+  "metadata-grid", "subject-details"

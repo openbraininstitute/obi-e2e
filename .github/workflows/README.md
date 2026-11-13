@@ -25,29 +25,29 @@ target runs the branch written for the app it has:
 | preview                | web app `main`    | `main`        |
 | staging and production | a web app release | `release`     |
 
-Where a change goes:
+Where a change goes: every pull request goes to `main`. That holds for a new
+test and for a fix to a test that fails only on staging or production. Nobody
+opens a pull request against `release`, so the two branches never drift and a
+fix is never written twice. Check that `main` does not already hold the fix
+before writing one: production runs `release`, which can be days behind.
 
-- A test for a new or changed feature: a PR to `main`. It runs on the preview
-  now, and reaches staging with the next web app release.
-- A fix for a test that fails on staging or production: a PR to `release`. It
-  runs on staging as soon as it merges.
+`release` moves only by the pull request `main` → `release`, always merged by a
+person:
 
-People merge between the branches, always as a pull request. Nothing merges on
-its own:
-
-- At each web-app release, the `release-branch` job of `e2e.yml` opens the
-  pull request `main` → `release`, named after the release, so it cannot be
-  forgotten. Someone reads it and merges it; staging then runs the tests
-  written for the new app. Conflicts show in that PR, like in any PR.
-- After a fix is merged to `release`, its author opens `release` → `main` and
-  merges it, so the fix is not lost at the next release PR.
+- At each web-app release, the `release-branch` job of `e2e.yml` opens it,
+  named after the release, so it cannot be forgotten. Someone reads it and
+  merges it; staging then runs the tests written for the new app. Conflicts
+  show in that PR, like in any PR.
+- When staging or production needs a fix before the next web-app release,
+  open the same pull request `main` → `release` by hand and merge it.
 
 The first run after the job lands creates `release` from `main`. The reporting
 scripts under `scripts/ci/` run from the branch that was checked out, so a
 change to them reaches staging runs with the next release PR too.
 
-One thing to accept: a test fix merged to `main` alone does not reach staging
-until the next release PR. Merge it to `release` when staging needs it.
+One thing to accept: a test fix merged to `main` does not reach staging or
+production until `main` → `release` is merged, at the next web-app release or
+by hand.
 
 What starts the release run is not core-web-app but the Azure deploy:
 `azure-terraform-deployment`'s E2E gate waits until staging serves the new tag,

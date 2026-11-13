@@ -87,7 +87,7 @@ Steps:
 Expected:
 
 - The coordinate leaves "created"
-- The coordinate reaches "done" (within 5 minutes)
+- The coordinate reaches "done" (within 15 minutes)
 - Its outputs are exactly: "Recording 0" and "All", the spikes of the one population
 
 Steps:

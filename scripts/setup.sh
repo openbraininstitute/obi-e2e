@@ -30,6 +30,20 @@ step "Packages, the playwright-cli skill and Chromium"
 make install
 make browsers
 
+step "ffmpeg, for films as mov or mp4"
+# `make test-video` re-encodes with it. Playwright ships an ffmpeg
+# that records VP8 but cannot decode it, so this one has to come from the system.
+if command -v ffmpeg >/dev/null 2>&1 && ffmpeg -hide_banner -encoders 2>/dev/null | grep -q libx264; then
+  echo "ffmpeg $(ffmpeg -version 2>/dev/null | head -1 | cut -d' ' -f3) is installed, with H.264."
+elif command -v brew >/dev/null 2>&1; then
+  brew install ffmpeg
+elif command -v apt-get >/dev/null 2>&1; then
+  sudo apt-get install -y ffmpeg
+else
+  echo "Not installed, and no brew or apt-get to install it with. Films still record as"
+  echo "webm (--format=webm); install ffmpeg with libx264 yourself for mov or mp4."
+fi
+
 step "Your secrets"
 if [ -f .env.staging.local ]; then
   echo ".env.staging.local is there; leaving it as it is."

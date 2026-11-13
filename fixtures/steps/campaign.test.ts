@@ -29,7 +29,7 @@ test('a scenario gets the clock its slowest case needs', () => {
     cases: [caseWith({ followed: true }), caseWith({ followed: true, slow: true })],
   } as Parameters<typeof campaignTimeout>[0];
 
-  expect(campaignTimeout(quick)).toBe((5 + 3) * 60_000);
+  expect(campaignTimeout(quick)).toBe((15 + 3) * 60_000);
   expect(campaignTimeout(slow)).toBe((240 + 3) * 60_000);
 });
 

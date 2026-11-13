@@ -4,7 +4,9 @@ User: onboarding
 
 The onboarding auth setup performs the real sign-in before these browser cases
 run. The first case verifies that an authenticated onboarding session can enter
-the application after visiting the public home and login routes.
+the application after visiting the public home and login routes. A user with no
+virtual lab is met by the first-run wizard instead; the onboarding user goes
+through it, and the run removes the lab it created afterwards.
 
 ## Onboarding user reaches the authenticated application after opening the home page
 
@@ -14,12 +16,17 @@ Steps:
 
 1. Open the home page
 2. Open the login route
+3. If the app asks to create a virtual lab, pick the country "Switzerland" and
+   the affiliation "E2E Test Organization", create the virtual lab, and go to
+   the project it set up
 
 Expected:
 
 - The authenticated onboarding user is redirected into a virtual lab workspace
 - The current virtual lab and first project are visible
 - The user profile control is visible
+- A virtual lab the run created is recorded, with its first project, for
+  onboarding-only cleanup
 
 ## Onboarding user creates a project in the virtual lab
 

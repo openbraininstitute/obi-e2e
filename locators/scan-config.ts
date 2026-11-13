@@ -8,6 +8,8 @@
 import type { Locator, Page } from '@playwright/test';
 import { kebabCase } from 'es-toolkit';
 
+import { nodesTable } from './viewer';
+
 /** Both attribute names: older deployments use the second, newer ones the first. */
 export const UI_ELEMENT_ATTRIBUTES = [
   'data-scan-config-block-element-container-of',
@@ -103,6 +105,31 @@ export function scanConfigResults(page: Page) {
 
     logs: view,
 
+    /**
+     * The chart a recording or a spike file opens, and its controls.
+     *
+     * The pane draws the chart's toolbar twice (checked on main.preview,
+     * 2026-11-08), both visible and both driving the one chart, so the first
+     * is taken. The controls carry no test id; a selector is a button in the
+     * combobox role showing its label and value, "Group byAll". That role
+     * takes no name from its text, so it is told apart by the text itself.
+     */
+    chart: {
+      groupBy: view
+        .getByRole('combobox')
+        .filter({ hasText: /^Group by/ })
+        .first(),
+      orderBy: view
+        .getByRole('combobox')
+        .filter({ hasText: /^Order by/ })
+        .first(),
+      /** One choice of an open selector, by the words it shows. */
+      option: (name: string): Locator => page.getByRole('option', { name, exact: true }),
+      /** Spike file: only the cells that fired. */
+      spiking: view.getByRole('button', { name: 'Spiking', exact: true }),
+      nodes: nodesTable(view),
+    },
+
     preview: {
       entity: {
         card: mini,
@@ -162,6 +189,42 @@ export function scanConfigHeld(control: Locator, value: string): Locator {
 
 export function scanConfigControl(field: Locator): Locator {
   return field.getByTestId('scan-config-control');
+}
+
+/**
+ * A block's tab in the form, and its pencil, which turns the name into a text
+ * box. The pencil is an antd icon with no test id; its label is its name.
+ */
+export function scanConfigEntryRename(entry: Locator) {
+  return {
+    edit: entry.getByRole('img', { name: 'edit' }),
+    name: entry.getByRole('textbox'),
+  };
+}
+
+/**
+ * The neuron property filter: properties added from a list, then the values of
+ * each picked as chips.
+ *
+ * core-web-app gives none of it a test id yet, and a chip says it is picked
+ * only by its colour, so everything here is found by its role and its words.
+ * A property's header reads "1. receptor_type". A chip is found by its value
+ * across the whole field rather than under its property, the one handle the
+ * markup gives: two properties offering the same value would make it
+ * ambiguous, and the strict locator then says so.
+ */
+export function scanConfigPropertyFilter(field: Locator) {
+  return {
+    addProperty: field.getByRole('button', { name: 'Add new property' }),
+    propertyOption: (key: string): Locator => field.getByRole('button', { name: key, exact: true }),
+    property: (key: string): Locator =>
+      field.getByRole('button', { name: new RegExp(`^\\d+\\.\\s+${escapeRegExp(key)}$`) }),
+    value: (value: string): Locator => field.getByRole('button', { name: value, exact: true }),
+  };
+}
+
+function escapeRegExp(text: string): string {
+  return text.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /** A number that can be left unset: its value, and the button back to unset. */

@@ -1,0 +1,79 @@
+{
+  "name": "Microcircuit simulation of layer 4",
+  "activity": "simulate",
+  "env": ["staging", "production"],
+  "workflow": {
+    "label": "Microcircuit",
+    "type": "microcircuit-simulation"
+  },
+  "schemaName": "CircuitSimulationScanConfig",
+  "selection": {
+    "mode": "single",
+    "entities": ["nbS1-HEX0"]
+  },
+  "cases": [
+    {
+      "name": "a clamp on the layer 4 inhibitory neurons, two recordings",
+      "launch": false,
+      "config": {
+        "info": {
+          "type": "Info",
+          "campaign_name": "L4-INH-Exp-01",
+          "campaign_description": "Layer 4 inhibition experiment"
+        },
+        "neuron_sets": {
+          "l4_inh": {
+            "type": "BiophysicalPopulationPropertyNeuronSet",
+            "$variant": "By neuron property (biophysical)",
+            "property_filter": [{ "filter_dict": { "layer": ["4"], "synapse_class": ["INH"] } }]
+          },
+          "l4_exc": {
+            "type": "BiophysicalPopulationPropertyNeuronSet",
+            "$variant": "By neuron property (biophysical)",
+            "property_filter": [{ "filter_dict": { "layer": ["4"], "synapse_class": ["EXC"] } }]
+          },
+          "l23_exc": {
+            "type": "BiophysicalPopulationPropertyNeuronSet",
+            "$variant": "By neuron property (biophysical)",
+            "property_filter": [
+              { "filter_dict": { "layer": ["3", "2"], "synapse_class": ["EXC"] } }
+            ]
+          }
+        },
+        "stimuli": {
+          "l4_inh_clamp": {
+            "type": "RelativeConstantCurrentClampSomaticStimulus",
+            "$variant": "Constant current clamp (relative)",
+            "neuron_set": { "block_dict_name": "neuron_sets", "block_name": "l4_inh" },
+            "duration": 500,
+            "percentage_of_threshold_current": 150
+          }
+        },
+        "recordings": {
+          "l4_exc_voltage": {
+            "type": "SomaVoltageRecording",
+            "$variant": "Soma voltage recording (full experiment)",
+            "neuron_set": { "block_dict_name": "neuron_sets", "block_name": "l4_exc" }
+          },
+          "l23_exc_voltage": {
+            "type": "SomaVoltageRecording",
+            "$variant": "Soma voltage recording (full experiment)",
+            "neuron_set": { "block_dict_name": "neuron_sets", "block_name": "l23_exc" }
+          }
+        }
+      },
+      "expect": {
+        "coordinateCount": 1,
+        "generated": {
+          "inputs": [
+            "Circuit directory",
+            "Node sets",
+            "OBI-ONE Config",
+            "SONATA Simulation Config"
+          ],
+          "outputs": []
+        }
+      }
+    }
+  ]
+}

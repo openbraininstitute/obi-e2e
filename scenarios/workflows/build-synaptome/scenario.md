@@ -117,7 +117,7 @@ Steps:
 Expected:
 
 - The coordinate leaves "created"
-- The coordinate reaches "done" (within 5 minutes)
+- The coordinate reaches "done" (within 15 minutes)
 - Its inputs are exactly:
   "Launch Config", "OBI-ONE Config" and "Circuit directory"
 - Its outputs are exactly:
@@ -305,7 +305,7 @@ Expected:
 
 - The zoom slider is gone from the scene
 
-## The viewer opens with a scale bar and a solid neuron
+## The viewer opens with a scale bar, and no neuron opacity to set
 
 Precondition:
 
@@ -318,4 +318,5 @@ Steps:
 Expected:
 
 - The scale bar toggle is on
-- The neuron opacity reads "100%"
+- There is no neuron opacity slider: one neuron is drawn whole, and only a
+  circuit's somas view offers one (core-web-app #2022)

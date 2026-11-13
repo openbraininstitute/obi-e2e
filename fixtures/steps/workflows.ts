@@ -19,7 +19,14 @@ async function appears(locator: Locator): Promise<boolean> {
     .catch(() => false);
 }
 
-/** Opens the hub, through the nav when the first load lands elsewhere. */
+/**
+ * Opens the hub, through the nav when the load lands elsewhere.
+ *
+ * A project page whose project fetch fails on the server bounces through
+ * `/app/virtual-lab/sync` to the project home — after the document has arrived
+ * at `/workflows`, so the URL alone is no proof the hub is coming. The hub
+ * itself settles it, and a page that was bounced goes back through the nav.
+ */
 export async function openWorkflowsHub(page: Page, workspace: Workspace): Promise<void> {
   await page.goto(routes.workflows(workspace.labId, workspace.projectId), {
     waitUntil: 'domcontentloaded',
@@ -33,10 +40,8 @@ export async function openWorkflowsHub(page: Page, workspace: Workspace): Promis
         : page.getByRole('link', { name: /^Workflows/ }).first();
       await link.click();
     }
-    expect(page.url()).toMatch(/\/workflows$/);
+    await expect(workflowsHub(page).categoryMenu).toBeVisible({ timeout: APPEARS_TIMEOUT });
   }).toPass();
-
-  await expect(workflowsHub(page).categoryMenu).toBeVisible();
 }
 
 /**
@@ -116,22 +121,21 @@ export async function startWorkflow(
   await page.waitForURL(new RegExp(`/workflows/${activity}/(new|configure)/`));
 }
 
+/** The cell of `row` that shows `name`: the one a single pick clicks. */
+export function entityNameCell(row: Locator, name: string): Locator {
+  // The first of the cells showing the name: a description can repeat it.
+  return row.getByRole('gridcell').filter({ hasText: name }).first();
+}
+
 /**
- * Picks what the workflow works from. Returns a reason when the project has none.
- *
- * `rowId` is for an entity whose name others share, such as a circuit a build
- * registered: every build of one circuit registers its copy under the same
- * name, and a copy another test is still uploading is the newest row.
+ * Brings up the listing the workflow picks from, on the scope the selection
+ * names. Nothing to do when the workflow picks nothing.
  */
-export async function chooseEntities(
-  page: Page,
-  selection: ScanConfigSelection,
-  rowId?: string
-): Promise<WorkflowUnavailable> {
+export async function openEntityListing(page: Page, selection: ScanConfigSelection): Promise<void> {
   const browse = workflowBrowse(page);
   const listing = entityListing(page);
 
-  if (selection.mode === 'none') return null;
+  if (selection.mode === 'none') return;
 
   // The prerequisite is a page of its own, ahead of the listing and its scope
   // tabs: the EM circuit build asks for the dataset before it shows a morphology.
@@ -147,48 +151,103 @@ export async function chooseEntities(
   if (selection.scope) {
     await clickUntil(browse.scope(selection.scope), browse.activeScope(selection.scope));
   }
+}
 
-  for (const name of selection.entities) {
-    await listing.search.fill(name);
-    await expect(listing.resultCount).toBeVisible();
+/**
+ * Searches the listing for `name` and returns its row, or null when the
+ * project holds none.
+ *
+ * `rowId` is for an entity whose name others share, such as a circuit a build
+ * registered: every build of one circuit registers its copy under the same
+ * name, and a copy another test is still uploading is the newest row.
+ */
+export async function searchEntity(
+  page: Page,
+  name: string,
+  rowId?: string
+): Promise<Locator | null> {
+  const listing = entityListing(page);
 
-    // The name's first row, unless one id was asked for: the search matches by
-    // substring, and the id alone names the row then. What the search box finds
-    // need not be what the row shows — a skeletonized morphology is found by
-    // the neuron id in its description and shown under its mesh's id.
-    const row = (
-      rowId
-        ? listing.rows.and(page.locator(`[row-id="${rowId}"]`))
-        : listing.rows.filter({ hasText: name })
-    ).first();
-    if (!(await appears(row))) {
-      return `This project holds no "${name}" to build from.`;
+  await listing.search.fill(name);
+  await expect(listing.resultCount).toBeVisible();
+
+  // The name's first row, unless one id was asked for: the search matches by
+  // substring, and the id alone names the row then. What the search box finds
+  // need not be what the row shows — a skeletonized morphology is found by
+  // the neuron id in its description and shown under its mesh's id.
+  const row = (
+    rowId
+      ? listing.rows.and(page.locator(`[row-id="${rowId}"]`))
+      : listing.rows.filter({ hasText: name })
+  ).first();
+  return (await appears(row)) ? row : null;
+}
+
+/** Picks the row `searchEntity` found for `name`. Returns a reason when it offers nothing to pick. */
+export async function pickEntity(
+  page: Page,
+  selection: ScanConfigSelection,
+  name: string,
+  row: Locator
+): Promise<WorkflowUnavailable> {
+  const browse = workflowBrowse(page);
+  const listing = entityListing(page);
+
+  if (selection.mode === 'multiple') {
+    const checkbox = selectionCheckbox(listing, await row.getAttribute('row-index'));
+    if ((await checkbox.count()) === 0) {
+      return `The "${name}" listing offers nothing to tick, so nothing can be selected.`;
     }
-
-    if (selection.mode === 'multiple') {
-      const checkbox = selectionCheckbox(listing, await row.getAttribute('row-index'));
-      if ((await checkbox.count()) === 0) {
-        return `The "${name}" listing offers nothing to tick, so nothing can be selected.`;
-      }
-      await pickRow(
-        name,
-        () => checkbox.check(NO_NAVIGATION),
-        () => expect(checkbox).toBeChecked({ timeout: 5_000 })
-      );
-      continue;
-    }
-
     await pickRow(
       name,
-      () => row.getByRole('gridcell').filter({ hasText: name }).first().click(NO_NAVIGATION),
-      () => expect(browse.useModel).toBeVisible({ timeout: 5_000 })
+      () => checkbox.check(NO_NAVIGATION),
+      () => expect(checkbox).toBeChecked({ timeout: 5_000 })
     );
+    return null;
   }
+
+  await pickRow(
+    name,
+    () => entityNameCell(row, name).click(NO_NAVIGATION),
+    () => expect(browse.useModel).toBeVisible({ timeout: 5_000 })
+  );
+  return null;
+}
+
+/** Takes what was picked into the editor. */
+export async function useChosenEntities(page: Page, selection: ScanConfigSelection): Promise<void> {
+  const browse = workflowBrowse(page);
 
   await (selection.mode === 'single' ? browse.useModel : browse.useSelection).click();
 
   // The editor is a route, so this waits on the navigation clock rather than
   // the shorter one an assertion gets.
   await page.waitForURL(/\/configure\//);
+}
+
+/**
+ * Picks what the workflow works from. Returns a reason when the project has none.
+ *
+ * The listing, each search and pick, and the step into the editor are steps
+ * of their own above, so a film can look closer between them.
+ */
+export async function chooseEntities(
+  page: Page,
+  selection: ScanConfigSelection,
+  rowId?: string
+): Promise<WorkflowUnavailable> {
+  if (selection.mode === 'none') return null;
+
+  await openEntityListing(page, selection);
+
+  for (const name of selection.entities) {
+    const row = await searchEntity(page, name, rowId);
+    if (!row) return `This project holds no "${name}" to build from.`;
+
+    const unpickable = await pickEntity(page, selection, name, row);
+    if (unpickable) return unpickable;
+  }
+
+  await useChosenEntities(page, selection);
   return null;
 }
