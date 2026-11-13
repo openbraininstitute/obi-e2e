@@ -11,6 +11,10 @@ deployments the workflow runs on, so no line here does.
 Launching prices the simulation first: the estimate is shown and has to be
 confirmed before anything starts.
 
+A finished run opens on its Task Log. Its spike file reads as the bare file,
+"spikes", until it has been opened once; then it reads as its population,
+"All". An ME-model has no circuit to name it from before that.
+
 User: credits
 Seed: seed.json
 
@@ -87,6 +91,13 @@ Expected:
 
 - The coordinate leaves "created"
 - The coordinate reaches "done" (within 15 minutes)
+
+Steps:
+
+1. Open the spikes file
+
+Expected:
+
 - Its inputs have gained "Launch Config"
 - Its outputs are exactly: "Task Log", "Recording 0" and "All", the spikes of the one population
 
