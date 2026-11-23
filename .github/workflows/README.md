@@ -14,6 +14,13 @@ here: GitHub runs every YAML file in this folder, whatever its name.
 | `core-web-app-main` dispatch    | preview     | regular                     | Teams card |
 | Manual run                      | your choice | regular, and slow if ticked | Teams card |
 
+A PR labelled `skip` does not start the run when it merges to `main`: the
+`matrix` job reads the labels of the PR behind the pushed commit and plans
+nothing, as it does for the off-hour schedule. Add the label before merging. A
+push with no PR, or a label lookup that fails, still runs the tests. A skipped
+push still cancels the push run still in flight, because they share a
+concurrency group.
+
 ## Two branches
 
 The preview serves the web app's `main`; staging and production serve a
