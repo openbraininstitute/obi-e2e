@@ -15,6 +15,7 @@ make setup
 
 Open `.env.staging.local` and fill in the QA user and `LAB_ID`.
 Ask a maintainer for these values.
+
 ## 2. Sign in
 
 ```bash
