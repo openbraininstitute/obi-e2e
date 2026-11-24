@@ -340,14 +340,21 @@ export class ScanConfigDriver {
       throw new Error(`${at}: a sweep takes numbers, got ${JSON.stringify(value[0])}`);
     }
 
-    const sweep = scanConfigSweep(field);
-    await sweep.expand.click(NO_NAVIGATION);
-    for (let index = 1; index < value.length; index += 1) {
-      await sweep.add.click(NO_NAVIGATION);
+    if (value.length < 2) {
+      throw new Error(`${at}: a sweep needs at least two values, got ${value.length}`);
     }
 
+    const sweep = scanConfigSweep(field);
     const inputs = scanConfigSweepValues(field);
-    await expect(inputs).toHaveCount(value.length);
+    await sweep.expand.click(NO_NAVIGATION);
+    // Expanding opens the value already there plus one empty row (core-web-app
+    // #2080, "one press is enough to start a scan"). Counting from one and
+    // then pressing add once more leaves a row the seed never asked for.
+    await expect(inputs).toHaveCount(2);
+    for (let count = 2; count < value.length; count += 1) {
+      await sweep.add.click(NO_NAVIGATION);
+      await expect(inputs).toHaveCount(count + 1);
+    }
     for (const [index, entry] of value.entries()) {
       await inputs.nth(index).fill(String(entry));
     }
