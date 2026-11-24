@@ -42,3 +42,4 @@ Expected:
 - The Synaptome (legacy)'s own page is showing
 - These parts of the page are showing:
   "metadata-grid"
+- The action menu offers Copy ID, Simulate and Download, and nothing else.

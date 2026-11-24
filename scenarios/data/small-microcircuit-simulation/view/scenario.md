@@ -50,3 +50,4 @@ Expected:
   "Info", "Initialization", "Neuron sets", "Morphology locations",
   "Stimuli", "Recordings", "Distributions", "Neuronal manipulations",
   "Synaptic manipulations" and "Timestamps"
+- The page has no action menu.

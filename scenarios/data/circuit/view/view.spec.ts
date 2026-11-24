@@ -1,3 +1,5 @@
+import { expectDetailActions } from '@fixtures/checks/detail-actions';
+import { detailActions } from '@fixtures/detail-actions';
 import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
 import { routes } from '@fixtures/routes';
 import { AUTHENTICATED } from '@fixtures/tags';
@@ -58,6 +60,8 @@ test.describe('Circuit details', () => {
     // The viewer took the place of the still image (core-web-app #2022), which
     // now shows only where the viewer fails.
     await expect(morphologyViewer(page).scene).toBeVisible();
+    await expectDetailActions(page, detailActions(Type.Circuit));
+
     for (const name of SECTIONS) {
       await expect(view.section(name).first()).toBeVisible();
     }

@@ -44,3 +44,4 @@ Expected:
 - The circuit is drawn in the interactive viewer, at any scale
 - These parts of the page are showing:
   "metadata-grid", "subject-details"
+- The action menu offers Copy ID, Simulate and Download, and nothing else.

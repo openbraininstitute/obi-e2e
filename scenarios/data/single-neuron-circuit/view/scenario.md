@@ -43,3 +43,4 @@ Expected:
 - These parts of the page are showing:
   "viewer-scene", "viewer-settings", "metadata-grid"
   "subject-details"
+- The action menu offers Copy ID and Download, and nothing else.

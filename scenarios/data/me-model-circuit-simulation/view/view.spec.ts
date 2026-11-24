@@ -1,3 +1,5 @@
+import { expectDetailActions } from '@fixtures/checks/detail-actions';
+import { detailActions } from '@fixtures/detail-actions';
 import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
 import { clickUntil } from '@fixtures/interactions';
 import { routes } from '@fixtures/routes';
@@ -52,6 +54,7 @@ test.describe('Single neuron details', () => {
 
     await view.viewDetails.click();
     await expect(page).toHaveURL(new RegExp(`/data/view/${SLUG}/[0-9a-f-]+/`));
+    await expectDetailActions(page, detailActions(Type.MemodelCircuitSimulation));
 
     for (const name of TABS) {
       await expect(view.section(name).first()).toBeVisible();

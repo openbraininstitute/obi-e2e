@@ -42,3 +42,4 @@ Expected:
 - These parts of the page are showing:
   "visualizations", "morpho-viewer", "metadata-grid"
   "subject-details", "morphometrics"
+- The action menu offers Copy ID and Download, and nothing else.
