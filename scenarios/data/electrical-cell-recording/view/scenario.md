@@ -41,3 +41,4 @@ Expected:
 - The Single cell electrophysiology's own page is showing
 - These parts of the page are showing:
   "visualizations", "metadata-grid", "subject-details"
+- The action menu offers Copy ID and Download, and nothing else.

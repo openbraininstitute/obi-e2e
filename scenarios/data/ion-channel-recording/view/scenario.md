@@ -42,3 +42,4 @@ Expected:
 - The Ion channel electrophysiology's own page is showing
 - These parts of the page are showing:
   "visualizations", "metadata-grid", "subject-details"
+- The action menu offers Copy ID, Build and Download, and nothing else.

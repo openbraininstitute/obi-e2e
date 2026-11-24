@@ -20,6 +20,36 @@ const WORKSPACE_PATH = /^\/app\/virtual-lab\/([^/]+)\/([^/?#]+)$/;
  */
 const PROVISION_TIMEOUT = 90_000;
 
+/**
+ * An address that belongs to no person.
+ *
+ * The invite is asserted on the members list, which is what the app records.
+ * Reading the mail itself needs a mailbox, which this suite does not have.
+ * `example.com` is reserved, so a message that does leave cannot reach anyone.
+ */
+function inviteAddress(): string {
+  return `e2e-${RUN_ID}@example.com`;
+}
+
+/** The pending invite, whether the members list is a table or a plain list. */
+function pendingInvite(page: OnboardingPage, email: string) {
+  return page
+    .getByRole('row')
+    .filter({ hasText: email })
+    .or(page.getByRole('listitem').filter({ hasText: email }));
+}
+
+/** Sees the pending invite, then withdraws that one. */
+async function expectPendingThenWithdraw(page: OnboardingPage, email: string): Promise<void> {
+  const pending = pendingInvite(page, email);
+  await expect(pending).toBeVisible();
+  const cancel = pending.getByRole('button', { name: 'Cancel invitation' });
+  await expect(cancel).toBeVisible();
+  await expect(cancel).toBeEnabled();
+  await cancel.click();
+  await expect(pending).toHaveCount(0);
+}
+
 function workspaceOf(url: string): { labId: string; projectId: string } {
   const match = new URL(url).pathname.match(WORKSPACE_PATH);
   if (!match?.[1] || !match[2]) {
@@ -141,10 +171,10 @@ test.describe('Onboarding user', () => {
       await clickUntil(locators.addProjectMember, locators.projectInviteHeading);
 
       await expect(locators.projectInviteHeading).toBeVisible();
-      await expect(locators.projectInviteEmail).toBeVisible();
-      await expect(locators.projectInviteRole).toBeVisible();
-      await expect(locators.addProjectMemberField).toBeVisible();
-      await expect(locators.sendProjectInvite).toBeVisible();
+      const invitee = inviteAddress();
+      await locators.projectInviteEmail.fill(invitee);
+      await locators.sendProjectInvite.click();
+      await expectPendingThenWithdraw(page, invitee);
     }
   );
 
@@ -163,9 +193,10 @@ test.describe('Onboarding user', () => {
       await expect(locators.addAdministrator).toBeVisible();
       await locators.addAdministrator.click();
 
-      await expect(locators.labAdminInviteEmail).toBeVisible();
-      await expect(locators.addLabAdministratorField).toBeVisible();
-      await expect(locators.sendLabAdministratorInvite).toBeVisible();
+      const invitee = inviteAddress();
+      await locators.labAdminInviteEmail.fill(invitee);
+      await locators.sendLabAdministratorInvite.click();
+      await expectPendingThenWithdraw(page, invitee);
     }
   );
 

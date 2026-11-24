@@ -41,3 +41,4 @@ Expected:
 - The EM mesh's own page is showing
 - These parts of the page are showing:
   "metadata-grid", "subject-details"
+- The action menu offers Copy ID and Download, and nothing else.

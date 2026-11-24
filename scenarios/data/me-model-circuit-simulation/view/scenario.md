@@ -49,3 +49,4 @@ Expected:
 - These form sections are showing:
   "Info", "Initialization", "Morphology locations", "Stimuli",
   "Recordings", "Neuronal manipulations" and "Timestamps"
+- The page has no action menu.

@@ -49,11 +49,14 @@ Expected:
 Steps:
 
 1. Click "Add member"
+2. Enter an email address reserved for this run
+3. Press "Send"
 
 Expected:
 
 - The "Invite new members to virtual lab" form is visible
-- "Add member" and "Send" are visible
+- After the invited address is sent, that address is listed as a pending member
+- "Cancel invitation" is available for it
 
 ## Onboarding user opens the virtual lab administrator invitation controls
 
@@ -62,11 +65,14 @@ Steps:
 1. Open the virtual lab menu
 2. Open the "Administrators" tab
 3. Click "Add administrator"
+4. Enter an email address reserved for this run
+5. Press "Send"
 
 Expected:
 
 - The team members section is visible
-- An email field and "Send" action are visible for adding an administrator
+- After the invited address is sent, that address is listed as a pending administrator
+- "Cancel invitation" is available for it
 
 ## Onboarding user reaches the credit verification gate
 
