@@ -412,6 +412,10 @@ export class ScanConfigDriver {
 
         await this.page.keyboard.press('Escape');
         await picker.search.click({ ...NO_NAVIGATION, timeout: OPENS_WITHIN });
+        // Escape keeps what the last try typed: start from an empty search,
+        // or every retry searches the label repeated and finds nothing.
+        // fill, not Backspace: Backspace on an empty search drops a held tag.
+        await picker.search.fill('');
         await picker.search.pressSequentially(label);
         await picker.search.press('Enter');
         await expect(held).toBeVisible({ timeout: OPENS_WITHIN });
