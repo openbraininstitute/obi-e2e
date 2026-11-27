@@ -1,0 +1,55 @@
+{
+  "name": "Circuit extraction from rCA1-CYLINDER-REF",
+  "activity": "extract",
+  "env": ["staging", "production"],
+  "workflow": {
+    "label": "Circuit",
+    "type": "circuit-extraction-campaign"
+  },
+  "schemaName": "CircuitExtractionScanConfig",
+  "selection": {
+    "mode": "single",
+    "scope": "public",
+    "entities": ["rCA1-CYLINDER-REF"]
+  },
+  "cases": [
+    {
+      "name": "the single neuron with ID 0",
+      "config": {
+        "info": {
+          "type": "Info",
+          "campaign_name": "E2E single neuron extraction",
+          "campaign_description": "Extracts the neuron with ID 0 from rCA1-CYLINDER-REF."
+        },
+        "neuron_sets": {
+          "target": {
+            "type": "BiophysicalPopulationIDNeuronSet",
+            "$variant": "By ID (biophysical)",
+            "neuron_ids": [0]
+          }
+        },
+        "initialize": {
+          "type": "CircuitExtractionScanConfig.Initialize",
+          "neuron_set": {
+            "block_dict_name": "neuron_sets",
+            "block_name": "target"
+          }
+        }
+      },
+      "expect": {
+        "coordinateCount": 1,
+        "cost": 5,
+        "completed": {
+          "inputs": ["Circuit directory", "Launch Config", "OBI-ONE Config"],
+          "outputs": ["Task Log", "rCA1-CYLINDER-REF__E2E-single-neuron-extraction"],
+          "views": {
+            "rCA1-CYLINDER-REF__E2E-single-neuron-extraction": {
+              "Number of synapses": "918",
+              "Number of connections": "860"
+            }
+          }
+        }
+      }
+    }
+  ]
+}
