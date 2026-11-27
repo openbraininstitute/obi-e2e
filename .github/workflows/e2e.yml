@@ -99,6 +99,9 @@ jobs:
   # halves of one run two threads and two folders.
   matrix:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read # to read the labels of the PR a push to main merged
     outputs:
       runs: ${{ steps.plan.outputs.runs }}
       slow: ${{ steps.plan.outputs.slow }}
@@ -117,6 +120,8 @@ jobs:
           SHA: ${{ github.sha }}
           REF: ${{ github.ref_name }}
           RUN: ${{ github.run_id }}
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
           PREVIEW_APP_URI: ${{ vars.PREVIEW_APP_URI }}
           STAGING_APP_URI: ${{ vars.STAGING_APP_URI }}
           PRODUCTION_APP_URI: ${{ vars.PRODUCTION_APP_URI }}
@@ -128,6 +133,18 @@ jobs:
             want="0 $((8 - 10#${offset:1:2})) * * *"
             if [[ "$SCHEDULE" != "$want" ]]; then
               echo "::notice::'$SCHEDULE' is not 08:00 in Zurich today ('$want' is); nothing to run."
+              echo "runs=[]" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+
+          # A PR labelled `skip` does not start the tests when it merges to `main`.
+          # The PR is found from the merge commit; a failed lookup, or a push with
+          # no PR, runs the tests: skipping is opt-in and never the fallback.
+          if [[ "$EVENT" == push && "$REF" == main ]]; then
+            if labels=$(gh api "repos/$REPO/commits/$SHA/pulls" --jq '.[].labels[].name') \
+              && grep -qx skip <<< "$labels"; then
+              echo "::notice::The merged PR has the 'skip' label; nothing to run."
               echo "runs=[]" >> "$GITHUB_OUTPUT"
               exit 0
             fi

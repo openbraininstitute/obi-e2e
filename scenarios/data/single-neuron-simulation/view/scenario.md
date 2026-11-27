@@ -42,3 +42,4 @@ Steps:
 Expected:
 
 - The Single neuron (legacy)'s own page is showing
+- The action menu offers Copy ID and Download, and nothing else.

@@ -42,6 +42,7 @@ Expected:
 - The ME-model's own page is showing
 - These parts of the page are showing:
   "metadata-grid"
+- The action menu offers Copy ID, Simulate and Download, and nothing else.
 
 ## Open simulate page from details view
 

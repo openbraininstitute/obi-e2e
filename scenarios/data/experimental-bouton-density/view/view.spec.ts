@@ -1,3 +1,5 @@
+import { expectDetailActions } from '@fixtures/checks/detail-actions';
+import { detailActions } from '@fixtures/detail-actions';
 import { entitySlug, ExtendedEntitiesTypeDict as Type } from '@fixtures/entity-types';
 import { routes } from '@fixtures/routes';
 import { AUTHENTICATED } from '@fixtures/tags';
@@ -41,6 +43,8 @@ test.describe('Bouton density details', () => {
 
     await view.viewDetails.click();
     await expect(page).toHaveURL(new RegExp(`/data/view/${SLUG}/[0-9a-f-]+/`));
+
+    await expectDetailActions(page, detailActions(Type.ExperimentalBoutonDensity));
 
     for (const name of SECTIONS) {
       await expect(view.section(name).first()).toBeVisible();

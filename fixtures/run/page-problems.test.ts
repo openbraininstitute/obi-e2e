@@ -107,4 +107,19 @@ describe('taskError', () => {
     expect(taskError(JSON.stringify(failed))).toBe('Out of memory');
     expect(taskError(JSON.stringify({ status: 'done', logs: [] }))).toBeUndefined();
   });
+
+  test('leads with the exception, not the httpx access log the executor pastes first', () => {
+    const message = [
+      'Task execution failed: User code failed with exit code 1. stderr: INFO:httpx2:HTTP Request: POST https://example/access-token "HTTP/1.1 200 OK"',
+      'INFO:httpx2:HTTP Request: PATCH https://example/task-activity/abc "HTTP/1.1 200 OK"',
+      'Traceback (most recent call last):',
+      '  File "main.py", line 1, in <module>',
+      '    raise OBIONEError(msg)',
+      "obi_one.core.exception.OBIONEError: The EM materialization engine is temporarily unavailable after retries; please try again later (underlying error: 500 Server Error: 'ipc_compress').",
+    ].join('\n');
+
+    expect(taskError(JSON.stringify({ level: 'ERROR', message }))).toStartWith(
+      'obi_one.core.exception.OBIONEError: The EM materialization engine is temporarily unavailable after retries'
+    );
+  });
 });

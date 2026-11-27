@@ -52,3 +52,4 @@ Steps:
 Expected:
 
 - The "Info" section of the form is showing
+- The page has no action menu.

@@ -201,13 +201,22 @@ export function taskError(body: string): string | undefined {
     (entry) => entry.level === 'ERROR' && typeof entry.message === 'string'
   );
   const message = failed?.message as string | undefined;
+  if (message === undefined) return undefined;
+
   // The first line only says how many things failed; the next ones say which.
-  return message
-    ?.split('\n')
+  // An executor also pastes the whole stderr in front, and that starts with
+  // httpx's access log, which is how a real exception used to be sliced off.
+  const lines = message
+    .split('\n')
     .map((line) => line.trim())
-    .filter((line) => line !== '' && !line.startsWith('For further information'))
-    .join(' · ')
-    .slice(0, REASON_LENGTH);
+    .filter(
+      (line) =>
+        line !== '' && !line.startsWith('For further information') && !line.startsWith('INFO:httpx')
+    );
+  const exception = lines.find((line) => /(?:Error|Exception): /.test(line));
+  const ordered =
+    exception === undefined ? lines : [exception, ...lines.filter((line) => line !== exception)];
+  return ordered.join(' · ').slice(0, REASON_LENGTH);
 }
 
 /** `entitycore` for `https://…/api/entitycore/brain-atlas?page=1`, and the rest. */
