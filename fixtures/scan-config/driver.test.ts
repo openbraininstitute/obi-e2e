@@ -180,3 +180,73 @@ describe('the value a control is asked for', () => {
     expect(await held(markup, 'Neuron set 1')).toBe(0);
   });
 });
+/**
+ * The neuron IDs field.
+ *
+ * The markup is the shape core-web-app serves: "No IDs" and an Edit button, a
+ * code editor that appears on Edit and answers the keyboard only once focused,
+ * and an Apply button that turns what was typed into "N ID(s)".
+ */
+function aNeuronIdsField(): string {
+  return `
+    <div id="scan-config-middle-content">
+      <button data-testid="scan-config-root-element-initialize">Initialization</button>
+      <div data-scan-config-block="block_single" data-testid="scan-config-block-initialize">
+        <div
+          data-testid="scan-config-field-neuron_ids"
+          data-scan-config-block-element-container-of="neuron_ids"
+        >
+          <label for="neuron_ids">Neuron IDs</label><span id="summary">No IDs</span><button id="edit" type="button">Edit</button>
+          <div id="box" hidden>
+            <div id="editor" role="textbox" aria-label="Editor content" tabindex="0" contenteditable="true"></div>
+            <button id="apply" type="button">Apply</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      (() => {
+        const box = document.getElementById('box');
+        document.getElementById('edit').addEventListener('click', () => {
+          box.hidden = false;
+        });
+        document.getElementById('apply').addEventListener('click', () => {
+          const ids = document.getElementById('editor').innerText.split(/[\\s,]+/).filter(Boolean);
+          document.getElementById('summary').textContent =
+            ids.length === 0 ? 'No IDs' : ids.length + (ids.length === 1 ? ' ID' : ' IDs');
+          box.hidden = true;
+        });
+      })();
+    </script>`;
+}
+function neuronIdsCase(ids: unknown): ScanConfigCase {
+  return {
+    name: 'neuron ids',
+    config: { initialize: { type: 'Initialize', neuron_ids: ids } },
+    expect: { coordinateCount: 1 },
+  };
+}
+function theNeuronIdsField() {
+  return scanConfigField(scanConfigEditor(page).block(), 'neuron_ids');
+}
+describe('typing neuron IDs', () => {
+  test('applies one ID and the field reads "1 ID"', async () => {
+    await page.setContent(aNeuronIdsField());
+    await new ScanConfigDriver(page).apply(neuronIdsCase([0]));
+    expect(await theNeuronIdsField().innerText()).toContain('1 ID');
+  });
+  test('applies several IDs and the field reads how many', async () => {
+    await page.setContent(aNeuronIdsField());
+    await new ScanConfigDriver(page).apply(neuronIdsCase([0, 5, 12]));
+    expect(await theNeuronIdsField().innerText()).toContain('3 IDs');
+  });
+  test('refuses a list that holds no IDs, naming the field', async () => {
+    await page.setContent(aNeuronIdsField());
+    // Caught rather than handed to `rejects`, which under Bun waits seconds past the throw.
+    const error = await new ScanConfigDriver(page)
+      .apply(neuronIdsCase([]))
+      .then(() => null)
+      .catch((thrown: unknown) => thrown);
+    expect(String(error)).toContain('initialize.neuron_ids: needs a list of neuron IDs');
+  });
+});

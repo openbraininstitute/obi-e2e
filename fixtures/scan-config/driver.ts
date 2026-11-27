@@ -12,6 +12,7 @@ import {
   scanConfigField,
   scanConfigHeld,
   scanConfigModelPicker,
+  scanConfigNeuronIds,
   scanConfigOptionalNumber,
   scanConfigOptions,
   scanConfigPropertyFilter,
@@ -295,6 +296,9 @@ export class ScanConfigDriver {
       case ScanConfigUiElement.NeuronPropertyFilter:
         await this.setPropertyFilter(field, value, at);
         return;
+      case ScanConfigUiElement.NeuronIds:
+        await this.setNeuronIds(field, value, at);
+        return;
 
       // What the browse step already chose arrives filled in, and a fixture that
       // names nothing leaves it that way.
@@ -314,6 +318,33 @@ export class ScanConfigDriver {
     }
   }
 
+  /**
+   * Types the neuron IDs into the field's editor and applies them.
+   *
+   * The field then reads how many it holds, which is what proves the editor
+   * took them: a list the editor could not read leaves "No IDs" or a lower count.
+   */
+  private async setNeuronIds(field: Locator, value: unknown, at: string): Promise<void> {
+    if (
+      !Array.isArray(value) ||
+      value.length === 0 ||
+      !value.every((id) => Number.isInteger(id) && id >= 0)
+    ) {
+      throw new Error(`${at}: needs a list of neuron IDs, such as [0] for the first neuron`);
+    }
+    const ids = scanConfigNeuronIds(field);
+    await ids.edit.click(NO_NAVIGATION);
+    await ids.editor.focus();
+    await this.page.keyboard.type(value.join(', '));
+    await ids.apply.click(NO_NAVIGATION);
+    // The field's text runs together, "Neuron IDs1 IDClear Edit", so no word
+    // boundary sits on either side of the count: a digit before it or an "s"
+    // after it is what would make it a different count.
+    const count = `${value.length} ${value.length === 1 ? 'ID' : 'IDs'}`;
+    await expect(field, `${at}: the field does not read "${count}"`).toContainText(
+      new RegExp(`(?<!\\d)${count}(?!s)`)
+    );
+  }
   /** A number that can be left unset: null clears it. Not a sweep — there is nothing to expand. */
   private async setOptionalNumber(field: Locator, value: unknown): Promise<void> {
     if (value === undefined) return;
