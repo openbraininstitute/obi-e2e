@@ -44,6 +44,8 @@
           "outputs": ["Task Log", "rCA1-CYLINDER-REF__E2E-single-neuron-extraction"],
           "views": {
             "rCA1-CYLINDER-REF__E2E-single-neuron-extraction": {
+              "Scale": "Single",
+              "Number of neurons": "1",
               "Number of synapses": "918",
               "Number of connections": "860"
             }

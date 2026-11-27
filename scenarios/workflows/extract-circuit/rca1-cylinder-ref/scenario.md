@@ -95,7 +95,7 @@ Expected:
 - Its inputs are exactly the ones the seed names
 - Its outputs are exactly the ones the seed names
 - The task log reads "Task execution completed."
-- The card of the circuit it registered reads as the seed says
+- The card of the circuit it registered reads as the seed says: scale "Single", 1 neuron
 - "View details" on that card opens the circuit as a Synaptome, so it is of scale "single"
 
 Steps:
