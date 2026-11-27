@@ -61,8 +61,8 @@
           "outputs": []
         },
         "completed": {
-          "inputs": ["Node sets", "OBI-ONE Config", "SONATA Simulation Config"],
-          "outputs": ["Recording 0", "All"],
+          "inputs": ["Launch Config", "Node sets", "OBI-ONE Config", "SONATA Simulation Config"],
+          "outputs": ["Task Log", "Recording 0", "All"],
           "views": {
             "Recording 0": ["Time (ms)", "Voltage (mV)"],
             "All": ["PopulationAll", "spikes"]
