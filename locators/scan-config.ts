@@ -94,6 +94,15 @@ export function scanConfigResults(page: Page) {
     launch: results.getByTestId('scan-config-launch'),
 
     costConfirm: page.getByTestId('scan-config-cost-confirm'),
+    /**
+     * The dialog's total, such as "5 credits". core-web-app gives it no test id yet.
+     * The last of the amounts: each coordinate's row prints one above it.
+     */
+    costTotal: page
+      .getByRole('dialog')
+      .filter({ has: page.getByTestId('scan-config-cost-confirm') })
+      .getByText(/^[\d,.]+ credits$/)
+      .last(),
     costCancel: page.getByTestId('scan-config-cost-cancel'),
 
     inputs: page.getByTestId('scan-config-inputs'),
@@ -429,6 +438,21 @@ export function scanConfigSectionTypes(field: Locator) {
   };
 }
 
+/**
+ * The neuron IDs field: a list of IDs typed into a code editor.
+ *
+ * It reads "No IDs" until Edit opens the editor, and Apply takes what was typed
+ * back into the field, which then reads "1 ID" or "3 IDs". The editor's text
+ * layer sits over its input, so a pointer click on the box is intercepted: it is
+ * focused instead, and keys go to whatever has focus.
+ */
+export function scanConfigNeuronIds(field: Locator) {
+  return {
+    edit: field.getByRole('button', { name: /^Edit/ }),
+    editor: field.getByRole('textbox', { name: 'Editor content' }),
+    apply: field.getByRole('button', { name: 'Apply' }),
+  };
+}
 /** Quotes a value so it can sit inside an attribute selector. */
 export function cssEscape(value: string): string {
   return value.replaceAll('\\', '\\\\').replaceAll('"', '\\"');

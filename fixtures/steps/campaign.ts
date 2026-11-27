@@ -173,7 +173,7 @@ export async function runCampaign(
     // A case the lab cannot afford to run stops with the button offered, unpressed.
     if (configuration.launch === false) return;
 
-    await launchOnce(page, fixture, step);
+    await launchOnce(page, fixture, configuration, step);
 
     await step(() =>
       expect(
@@ -225,7 +225,7 @@ export async function runForItsOutput(
       await openTab(page, editor, words.resultsTab);
     });
 
-    await launchOnce(page, fixture, step);
+    await launchOnce(page, fixture, configuration, step);
 
     await waitForCampaign(status, runMinutes(configuration));
     await step(() =>
@@ -377,7 +377,12 @@ async function keepCampaign(
  * it is not pressed again: the coordinate leaving "created" says whether it
  * took.
  */
-async function launchOnce(page: Page, fixture: ScanConfigFixture, step: Step): Promise<void> {
+async function launchOnce(
+  page: Page,
+  fixture: ScanConfigFixture,
+  configuration: ScanConfigCase,
+  step: Step
+): Promise<void> {
   let sent = false;
   const sends = (request: Request): void => {
     if (request.method() === 'POST' && LAUNCHES_THE_CAMPAIGN.test(request.url())) sent = true;
@@ -386,15 +391,22 @@ async function launchOnce(page: Page, fixture: ScanConfigFixture, step: Step): P
   page.on('request', sends);
   try {
     await step(async () => {
-      if (!sent) await launchCampaign(page, fixture);
+      if (!sent) await launchCampaign(page, fixture, configuration);
     });
   } finally {
     page.off('request', sends);
   }
 }
 
-/** Presses Launch, confirms the cost where the workflow asks, and waits for the call. */
-async function launchCampaign(page: Page, fixture: ScanConfigFixture): Promise<void> {
+/**
+ * Presses Launch, confirms the cost where the workflow asks, and waits for the call.
+ * A seed that names the cost has the dialog's total read before Confirm.
+ */
+async function launchCampaign(
+  page: Page,
+  fixture: ScanConfigFixture,
+  configuration: ScanConfigCase
+): Promise<void> {
   const results = scanConfigResults(page);
 
   const launched = callSent(page, LAUNCHES_THE_CAMPAIGN);
@@ -402,6 +414,12 @@ async function launchCampaign(page: Page, fixture: ScanConfigFixture): Promise<v
 
   if (fixture.workflow.confirmsCost) {
     await expect(results.costConfirm).toBeVisible();
+    const cost = configuration.expect.cost;
+    if (cost !== undefined) {
+      await expect(results.costTotal, 'The launch is estimated at another cost.').toHaveText(
+        `${cost.toLocaleString('en-US')} credits`
+      );
+    }
     await results.costConfirm.click(NO_NAVIGATION);
   }
 

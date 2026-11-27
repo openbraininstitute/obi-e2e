@@ -38,6 +38,11 @@ export type ScanConfigCase = {
   config: Record<string, unknown>;
   expect: {
     coordinateCount: number;
+    /**
+     * Credits the cost dialog totals before the launch is confirmed, as a
+     * whole number the dialog prints. Left out, the cost is confirmed unread.
+     */
+    cost?: number;
     generated?: ScanConfigFiles;
     /** Left out when the run is too long to sit through: it only has to start. */
     completed?: ScanConfigCompleted;
@@ -264,6 +269,10 @@ function parseCase(
     fail(`${at}.expect.coordinateCount must be a positive integer`);
   }
 
+  const cost = expected.cost;
+  if (cost !== undefined && (!Number.isInteger(cost) || (cost as number) < 0)) {
+    fail(`${at}.expect.cost must be the whole number of credits the launch is estimated at`);
+  }
   const slow = entry.slow;
   if (slow !== undefined && typeof slow !== 'boolean') {
     fail(`${at}.slow must be true or false`);
@@ -277,6 +286,9 @@ function parseCase(
   if (launch === false && expected.completed !== undefined) {
     fail(`${at} cannot expect a completed run when it never launches one`);
   }
+  if (launch === false && cost !== undefined) {
+    fail(`${at} cannot expect a launch cost when it never launches`);
+  }
 
   return {
     name: text(entry.name, `${at}.name`),
@@ -285,6 +297,7 @@ function parseCase(
     config,
     expect: {
       coordinateCount: coordinateCount as number,
+      ...(cost === undefined ? {} : { cost: cost as number }),
       ...(expected.generated === undefined
         ? {}
         : { generated: parseFiles(expected.generated, `${at}.expect.generated`, fail) }),
