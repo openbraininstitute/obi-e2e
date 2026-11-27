@@ -6,10 +6,9 @@ import { campaignTags, campaignTimeout, runCampaign } from '@fixtures/steps/camp
 import { chooseEntities, openWorkflowsHub, startWorkflow } from '@fixtures/steps/workflows';
 import { CREDITS } from '@fixtures/tags';
 import { expect, test } from '@fixtures/test';
+import { circuitDownloads } from '@locators/circuit-downloads';
 import { scanConfigEditor, scanConfigResults } from '@locators/scan-config';
 import type { Page } from '@playwright/test';
-
-import { circuitDownloads } from './locators';
 
 const fixture = loadSeed(import.meta.dir);
 const words = scanConfigWords[fixture.activity];

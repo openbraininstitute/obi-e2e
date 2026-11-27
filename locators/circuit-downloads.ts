@@ -1,5 +1,5 @@
 /** The download panel a circuit's card opens. */
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 
 export function circuitDownloads(page: Page) {
   const panel = page.getByTestId('circuit-download-panel');
@@ -11,5 +11,11 @@ export function circuitDownloads(page: Page) {
      * id yet; its element id is the only handle, and it is unique in the panel.
      */
     fullCircuit: panel.locator('#download-header'),
+    /**
+     * A file the panel lists by name, such as "connectivity_matrix.h5" under
+     * "Connectivity matrices". A section whose asset is missing lists no file,
+     * only an error, so the name alone says the asset is there.
+     */
+    file: (name: string): Locator => panel.getByText(name, { exact: true }),
   };
 }

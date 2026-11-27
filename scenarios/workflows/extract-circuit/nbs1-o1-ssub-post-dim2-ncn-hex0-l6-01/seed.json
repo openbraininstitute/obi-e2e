@@ -1,0 +1,55 @@
+{
+  "name": "Circuit extraction from nbS1-O1-sSub-post-dim2-nCN-HEX0-L6-01",
+  "activity": "extract",
+  "env": ["staging", "production"],
+  "workflow": {
+    "label": "Circuit",
+    "type": "circuit-extraction-campaign"
+  },
+  "schemaName": "CircuitExtractionScanConfig",
+  "selection": {
+    "mode": "single",
+    "scope": "public",
+    "entities": ["nbS1-O1-sSub-post-dim2-nCN-HEX0-L6-01"]
+  },
+  "cases": [
+    {
+      "name": "the pair of neurons with IDs 0 and 1",
+      "config": {
+        "info": {
+          "type": "Info",
+          "campaign_name": "E2E pair extraction",
+          "campaign_description": "Extracts the neurons with IDs 0 and 1 from nbS1-O1-sSub-post-dim2-nCN-HEX0-L6-01."
+        },
+        "neuron_sets": {
+          "target": {
+            "type": "BiophysicalPopulationIDNeuronSet",
+            "$variant": "By ID (biophysical)",
+            "neuron_ids": [0, 1]
+          }
+        },
+        "initialize": {
+          "type": "CircuitExtractionScanConfig.Initialize",
+          "neuron_set": {
+            "block_dict_name": "neuron_sets",
+            "block_name": "target"
+          }
+        }
+      },
+      "expect": {
+        "coordinateCount": 1,
+        "cost": 5,
+        "completed": {
+          "inputs": ["Circuit directory", "Launch Config", "OBI-ONE Config"],
+          "outputs": ["Task Log", "nbS1-O1-sSub-post-dim2-nCN-HEX0-L6-01__E2E-pair-extraction"],
+          "views": {
+            "nbS1-O1-sSub-post-dim2-nCN-HEX0-L6-01__E2E-pair-extraction": {
+              "Scale": "Pair neuron",
+              "Number of neurons": "2"
+            }
+          }
+        }
+      }
+    }
+  ]
+}
